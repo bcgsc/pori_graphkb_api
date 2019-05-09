@@ -17,7 +17,6 @@ It is a graph database which is used to store variants, ontologies, and the rele
   - [Test Envinronments](#test-envinronments)
   - [Generate the User Manual](#generate-the-user-manual)
 - [Deploy with PM2](#deploy-with-pm2)
-- [Importing External Content](#importing-external-content)
 
 ## About
 
@@ -175,15 +174,3 @@ You should now be able to view the running process with
 ```bash
 pm2 ls
 ```
-
-## Importing External Content
-
-Automatic Import modules are provided for a variety of input sources. To Start importing external data, first the GraphKB API
-must already be running. Then the command line interface can be used for upload. Get the help menu
-detailing the commands and required inputs as follows
-
-```bash
-npm run import -- --help
-```
-
-If loaded in order, some modules will link to one another.
