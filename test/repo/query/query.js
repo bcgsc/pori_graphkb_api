@@ -18,7 +18,7 @@ const {stripSQL} = require('./util');
 
 
 describe('Query Parsing', () => {
-    it('parses a complex traversal', () => {
+    test('parses a complex traversal', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.V, {
             where: {
                 attr: 'inE(ImpliedBy).vertex',
@@ -59,7 +59,7 @@ describe('Query Parsing', () => {
         );
         expect(parsed).to.eql(expected);
     });
-    it('uses contains for an edge traversal', () => {
+    test('uses contains for an edge traversal', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.V, {
             where: {
                 attr: 'out(ImpliedBy).vertex.reference1.name',
@@ -93,7 +93,7 @@ describe('Query Parsing', () => {
         );
         expect(parsed.toString()).to.eql(expected.toString());
     });
-    it('parses a simple single Comparison', () => {
+    test('parses a simple single Comparison', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
             where: [{
                 attr: 'name',
@@ -112,7 +112,7 @@ describe('Query Parsing', () => {
         );
         expect(expected).to.eql(parsed);
     });
-    it('parses a simple single Comparison including history', () => {
+    test('parses a simple single Comparison including history', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
             where: [{
                 attr: 'name',
@@ -133,7 +133,7 @@ describe('Query Parsing', () => {
         expect(parsed).to.eql(expected);
     });
     describe('nested Clause', () => {
-        it('AND then OR', () => {
+        test('AND then OR', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [
                     {attr: 'name', value: 'thing'},
@@ -165,12 +165,12 @@ describe('Query Parsing', () => {
         });
     });
     describe('list attributes', () => {
-        it('uses contains if the input value is not also a list', () => {
+        test('uses contains if the input value is not also a list', () => {
 
         });
     });
     describe('orderBy', () => {
-        it('parses a single order column', () => {
+        test('parses a single order column', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [],
                 activeOnly: false,
@@ -188,7 +188,7 @@ describe('Query Parsing', () => {
             expect(params).to.eql({});
             expect(stripSQL(query)).to.equal(stripSQL(sql));
         });
-        it('descending order', () => {
+        test('descending order', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [],
                 activeOnly: false,
@@ -207,7 +207,7 @@ describe('Query Parsing', () => {
             expect(params).to.eql({});
             expect(stripSQL(query)).to.equal(stripSQL(sql));
         });
-        it('parses a multiple ordering columns', () => {
+        test('parses a multiple ordering columns', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [],
                 activeOnly: false,
@@ -227,7 +227,7 @@ describe('Query Parsing', () => {
         });
     });
     describe('subquery', () => {
-        it('link in subquery', () => {
+        test('link in subquery', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [
                     {
@@ -274,7 +274,7 @@ describe('Query Parsing', () => {
             expect(params).to.eql({param0: 'disease-ontology'});
             expect(query).to.equal(sql);
         });
-        it('link in neighborhood subquery', () => {
+        test('link in neighborhood subquery', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [
                     {
@@ -319,7 +319,7 @@ describe('Query Parsing', () => {
             expect(params).to.eql({param0: 'disease-ontology'});
             expect(stripSQL(query)).to.equal(stripSQL(sql));
         });
-        it('query by string in subset', () => {
+        test('query by string in subset', () => {
 
         });
     });
@@ -328,30 +328,30 @@ describe('Query Parsing', () => {
 
 describe('Comparison', () => {
     describe('constructor', () => {
-        it('throws error on non-std operator', () => {
+        test('throws error on non-std operator', () => {
             expect(() => {
                 new Comparison('blargh', 'monkeys', 'BAD');
             }).to.throw('Invalid operator');
         });
-        it('throws error on AND operator', () => {
+        test('throws error on AND operator', () => {
             expect(() => {
                 new Comparison('blargh', 'monkeys', 'AND');
             }).to.throw('Invalid operator');
         });
-        it('throws error on OR operator', () => {
+        test('throws error on OR operator', () => {
             expect(() => {
                 new Comparison('blargh', 'monkeys', 'OR');
             }).to.throw('Invalid operator');
         });
     });
     describe('toString', () => {
-        it('wrap when negated', () => {
+        test('wrap when negated', () => {
             const comp = new Comparison('blargh', 'monkeys', OPERATORS.EQ, true);
             const {query, params} = comp.toString();
             expect(query).to.equal('NOT (blargh = :param0)');
             expect(params).to.eql({param0: 'monkeys'});
         });
-        it('value is a list', () => {
+        test('value is a list', () => {
             const comp = new Comparison('blargh', ['monkeys', 'monkees'], OPERATORS.EQ, true);
             const {query, params} = comp.toString();
             expect(query).to.equal('NOT (blargh = [:param0, :param1])');
@@ -359,7 +359,7 @@ describe('Comparison', () => {
         });
     });
     describe('validate', () => {
-        it('throws error on GT and iterable prop', () => {
+        test('throws error on GT and iterable prop', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -375,7 +375,7 @@ describe('Comparison', () => {
                 'cannot be used in conjunction with an iterable property'
             );
         });
-        it('casts all values in an Array individually', () => {
+        test('casts all values in an Array individually', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -390,7 +390,7 @@ describe('Comparison', () => {
             comp.validate();
             expect(comp.value).to.eql([1, 2, 3]);
         });
-        it('checks values against an choices for each value in an Array', () => {
+        test('checks values against an choices for each value in an Array', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -404,7 +404,7 @@ describe('Comparison', () => {
             );
             comp.validate();
         });
-        it('Error on bad choices value in array', () => {
+        test('Error on bad choices value in array', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -418,7 +418,7 @@ describe('Comparison', () => {
             );
             expect(comp.validate.bind(comp)).to.throw('restricted to enum values');
         });
-        it('Error on non-terable prop = LIST', () => {
+        test('Error on non-terable prop = LIST', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -431,7 +431,7 @@ describe('Comparison', () => {
             );
             expect(comp.validate.bind(comp)).to.throw('Using a direct comparison');
         });
-        it('Error on iterable prop CONTAINS LIST', () => {
+        test('Error on iterable prop CONTAINS LIST', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -444,7 +444,7 @@ describe('Comparison', () => {
             );
             expect(comp.validate.bind(comp)).to.throw('CONTAINS should be used with non-iterable values');
         });
-        it('Error on non-iterable prop contains', () => {
+        test('Error on non-iterable prop contains', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -457,7 +457,7 @@ describe('Comparison', () => {
             );
             expect(comp.validate.bind(comp)).to.throw('CONTAINS can only be used with iterable properties');
         });
-        it('Error on iterable prop contains NULL', () => {
+        test('Error on iterable prop contains NULL', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -470,7 +470,7 @@ describe('Comparison', () => {
             );
             expect(comp.validate.bind(comp)).to.throw('used for NULL comparison');
         });
-        it('Error on non-iterable value using IN', () => {
+        test('Error on non-iterable value using IN', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',
@@ -483,7 +483,7 @@ describe('Comparison', () => {
             );
             expect(comp.validate.bind(comp)).to.throw('IN should only be used with iterable values');
         });
-        it('Error on iterable prop = non-null, non-iterable value', () => {
+        test('Error on iterable prop = non-null, non-iterable value', () => {
             const comp = new Comparison(
                 new Traversal({
                     attr: 'blargh',

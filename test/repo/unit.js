@@ -12,7 +12,7 @@ const {
 
 
 describe('groupRecordsBy', () => {
-    it('groups single level', () => {
+    test('groups single level', () => {
         const records = [
             {name: 'bob', city: 'van'},
             {name: 'alice', city: 'van'},
@@ -23,7 +23,7 @@ describe('groupRecordsBy', () => {
             monkeys: ['blargh']
         });
     });
-    it('error on no aggregate and non-unique grouping', () => {
+    test('error on no aggregate and non-unique grouping', () => {
         const records = [
             {name: 'bob', city: 'van'},
             {name: 'alice', city: 'van'},
@@ -33,7 +33,7 @@ describe('groupRecordsBy', () => {
             groupRecordsBy(records, ['city'], {value: 'name', aggregate: false});
         }).to.throw('non-unique grouping');
     });
-    it('uses the whole record when nestedProperty is null', () => {
+    test('uses the whole record when nestedProperty is null', () => {
         const records = [
             {name: 'bob', city: 'van'},
             {name: 'alice', city: 'van'},
@@ -44,7 +44,7 @@ describe('groupRecordsBy', () => {
             monkeys: [{name: 'blargh', city: 'monkeys'}]
         });
     });
-    it('groups 2+ levels', () => {
+    test('groups 2+ levels', () => {
         const records = [
             {name: 'bob', city: 'van', country: 'canada'},
             {name: 'alice', city: 'van', country: 'canada'},
@@ -55,7 +55,7 @@ describe('groupRecordsBy', () => {
             narnia: {monkeys: ['blargh']}
         });
     });
-    it('no aggregate', () => {
+    test('no aggregate', () => {
         const records = [
             {name: 'bob', city: 'van', country: 'canada'},
             {name: 'alice', city: 'van', country: 'mordor'},
@@ -71,27 +71,27 @@ describe('groupRecordsBy', () => {
 
 
 describe('hasRecordAccess', () => {
-    it('user with no groups', () => {
+    test('user with no groups', () => {
         const access = hasRecordAccess({groups: []}, {groupRestrictions: [{'@rid': '#2:0'}]});
         expect(access).to.be.false;
     });
-    it('record with no groups', () => {
+    test('record with no groups', () => {
         const access = hasRecordAccess({groups: []}, {});
         expect(access).to.be.true;
     });
-    it('record with no groups but admin user', () => {
+    test('record with no groups but admin user', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#2:0'}]}, {});
         expect(access).to.be.true;
     });
-    it('record with different group', () => {
+    test('record with different group', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#3:0'}]}, {groupRestrictions: [{'@rid': '#4:0'}]});
         expect(access).to.be.false;
     });
-    it('record with different group and admin user', () => {
+    test('record with different group and admin user', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#2:0'}]}, {groupRestrictions: [{'@rid': '#4:0'}]});
         expect(access).to.be.false;
     });
-    it('record with the correct group', () => {
+    test('record with the correct group', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#2:0'}, {'@rid': '#4:0'}]}, {groupRestrictions: [{'@rid': '#2:0'}]});
         expect(access).to.be.true;
     });
@@ -99,7 +99,7 @@ describe('hasRecordAccess', () => {
 
 
 describe('trimRecords', () => {
-    it('removes protected records (default ok)', () => {
+    test('removes protected records (default ok)', () => {
         const records = [
             {name: 'bob'},
             {name: 'alice', link: {name: 'george', '@rid': '#44:0'}}
@@ -107,7 +107,7 @@ describe('trimRecords', () => {
         const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).to.eql(records);
     });
-    it('removes protected records (explicit group)', () => {
+    test('removes protected records (explicit group)', () => {
         const records = [
             {name: 'bob', groupRestrictions: [{'@rid': '#2:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
@@ -115,7 +115,7 @@ describe('trimRecords', () => {
         const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).to.eql([{name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}]);
     });
-    it('removes protected edges (default ok)', () => {
+    test('removes protected edges (default ok)', () => {
         const records = [
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {
@@ -130,7 +130,7 @@ describe('trimRecords', () => {
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ]);
     });
-    it('removes protected edges (explicit group)', () => {
+    test('removes protected edges (explicit group)', () => {
         const records = [
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', out_link: {'@rid': '44:1', groupRestrictions: [{'@rid': '#2:0'}]}, groupRestrictions: [{'@rid': '#1:0'}]}
@@ -141,7 +141,7 @@ describe('trimRecords', () => {
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ]);
     });
-    it('removes nested protected records', () => {
+    test('removes nested protected records', () => {
         const records = [
             {name: 'bob'},
             {name: 'alice', link: {name: 'george', '@rid': '#44:1', groupRestrictions: [{'@rid': '#55:5'}]}, groupRestrictions: [{'@rid': '#2:1'}]}

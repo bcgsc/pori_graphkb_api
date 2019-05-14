@@ -44,17 +44,13 @@
     "eslint-plugin-import": "^2.13.0",
     "eslint-plugin-jsx-a11y": "^6.1.1",
     "eslint-plugin-react": "^7.10.0",
-    "istanbul": "^0.4.5",
+    "jest": "^24.8.0",
+    "jest-bamboo-formatter": "^1.0.1",
+    "jest-junit": "^6.4.0",
     "js-beautify": "^1.10.0",
     "jsdoc": "^3.4.3",
     "jsdoc-to-markdown": "^4.0.1",
-    "mocha": "^5.2.0",
-    "mocha-bamboo-reporter": "^1.1.2",
-    "mocha-multi-reporters": "^1.1.7",
-    "nodemon": "^1.18.11",
-    "nyc": "^11.9.0",
-    "qs": "^6.5.2",
-    "rewire": "^4.0.1"
+    "qs": "^6.5.2"
   },
   "nyc": {
     "reporter": [
@@ -68,8 +64,8 @@
     "start:dev": "NODE_ENV=development node server.js",
     "start:test": "NODE_ENV=test node server.js",
     "start:local": "NODE_ENV=local node server.js",
-    "test": "NODE_ENV=test nyc mocha test/{routes,repo}",
-    "test:unit": "NODE_ENV=testnyc mocha test/*/{unit,schema,query}*",
+    "test": "NODE_ENV=test jest test/{routes,repo} --config config/jest/int.config.js",
+    "test:unit": "NODE_ENV=test jest test/*/{unit,schema,query}* --config config/jest/unit.config.js",
     "lint": "eslint -c .eslintrc.jon app test",
     "build:docs": "jsdocref --input app --output doc; cp README.md doc",
     "start:docs": "docsify serve doc",

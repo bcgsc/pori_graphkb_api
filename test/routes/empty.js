@@ -15,6 +15,8 @@ const {generateToken} = require('./../../app/routes/auth');
 chai.use(chaiHttp);
 
 const REALLY_LONG_TIME = 10000000000;
+const TEST_TIMEOUT_MS = 20000;
+jest.setTimeout(TEST_TIMEOUT_MS);
 
 /**
  * Mocks a set of 3 disease records related as aliases
@@ -81,7 +83,7 @@ describe('API', () => {
         server,
         conf,
         dbName;
-    before(async () => {
+    beforeAll(async () => {
         const {AppServer, createConfig} = require('./../../app'); // eslint-disable-line global-require
         ({
             db,
@@ -97,9 +99,17 @@ describe('API', () => {
         await app.listen();
         mockToken = await generateToken(db, admin.name, conf.GKB_KEY, REALLY_LONG_TIME);
     });
+    afterAll(async () => {
+        if (server) {
+            if (db && dbName) {
+                await server.drop({name: dbName});
+            }
+            await server.close();
+        }
+    });
 
     describe('GET /stats', () => {
-        it('gathers table stats', async () => {
+        test('gathers table stats', async () => {
             const res = await chai.request(app.app)
                 .get(`${app.prefix}/stats`)
                 .type('json')
@@ -125,7 +135,7 @@ describe('API', () => {
             source = res.body.result;
         });
         describe('GET /users', () => {
-            it('name', async () => {
+            test('name', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/users?name=${admin.name}`)
                     .set('Authorization', mockToken);
@@ -134,7 +144,7 @@ describe('API', () => {
                 expect(res.body.result.length).to.equal(1);
                 expect(res.body.result[0].name).to.equal(admin.name);
             });
-            it('aggregates the count', async () => {
+            test('aggregates the count', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/users?count=true`)
                     .set('Authorization', mockToken);
@@ -143,7 +153,7 @@ describe('API', () => {
             });
         });
         describe('POST /users/search', () => {
-            it('name', async () => {
+            test('name', async () => {
                 const res = await chai.request(app.app)
                     .post(`${app.prefix}/users/search`)
                     .set('Authorization', mockToken)
@@ -160,7 +170,7 @@ describe('API', () => {
                 expect(res.body.result.length).to.equal(1);
                 expect(res.body.result[0].name).to.equal(admin.name);
             });
-            it('BAD REQUEST for query params', async () => {
+            test('BAD REQUEST for query params', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -182,7 +192,7 @@ describe('API', () => {
             });
         });
         describe('POST /users', () => {
-            it('OK', async () => {
+            test('OK', async () => {
                 const res = await chai.request(app.app)
                     .post(`${app.prefix}/users`)
                     .type('json')
@@ -194,7 +204,7 @@ describe('API', () => {
                 expect(res.body.result).to.be.a('object');
                 expect(res.body.result.name).to.equal('blargh monkeys');
             });
-            it('BAD REQUEST', async () => {
+            test('BAD REQUEST', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -209,7 +219,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
                 expect(res.response.body).to.have.property('name', 'ValidationError');
             });
-            it('UNAUTHORIZED', async () => {
+            test('UNAUTHORIZED', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -223,7 +233,7 @@ describe('API', () => {
                 }
                 expect(res).to.have.status(HTTP_STATUS.UNAUTHORIZED);
             });
-            it('CONFLICT', async () => {
+            test('CONFLICT', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -268,19 +278,27 @@ describe('API', () => {
                     .set('Authorization', mockToken)
                 ).body.result;
             });
-            it('modify the group associated with a user', async () => {
-                const updatedUser = (await chai.request(app.app)
-                    .patch(`${app.prefix}/users/${user['@rid'].slice(1)}`)
-                    .type('json')
-                    .send({groups: [adminGroup['@rid']]})
-                    .set('Authorization', mockToken)
-                ).body.result;
+            test('modify the group associated with a user', async () => {
+                console.log(user);
+                console.log(`${app.prefix}/users/${user['@rid'].slice(1)}`);
+                let updatedUser;
+                try {
+                    updatedUser = (await chai.request(app.app)
+                        .patch(`${app.prefix}/users/${user['@rid'].slice(1)}`)
+                        .type('json')
+                        .send({groups: [adminGroup['@rid']]})
+                        .set('Authorization', mockToken)
+                    ).body.result;
+                } catch (err) {
+                    console.error(err);
+                    throw err;
+                }
                 expect(updatedUser).to.have.property('groups');
                 expect(updatedUser.groups).to.have.property('length', 1);
                 expect(updatedUser.groups[0]).to.equal(adminGroup['@rid']);
                 expect(updatedUser).to.have.property('name', 'alice');
             });
-            it('rename the user', async () => {
+            test('rename the user', async () => {
                 const updatedUser = (await chai.request(app.app)
                     .patch(`${app.prefix}/users/${user['@rid'].slice(1)}`)
                     .type('json')
@@ -322,7 +340,7 @@ describe('API', () => {
                     .set('Authorization', mockToken)
                 ).body.result;
             });
-            it('delete the current user', async () => {
+            test('delete the current user', async () => {
                 const updatedUser = (await chai.request(app.app)
                     .delete(`${app.prefix}/users/${user['@rid'].slice(1)}`)
                     .type('json')
@@ -332,7 +350,7 @@ describe('API', () => {
                 expect(updatedUser.deletedBy).to.equal(admin['@rid'].toString());
             });
         });
-        it('POST /usergroups', async () => {
+        test('POST /usergroups', async () => {
             const group = (await chai.request(app.app)
                 .post(`${app.prefix}/usergroups`)
                 .type('json')
@@ -359,7 +377,7 @@ describe('API', () => {
                     .set('Authorization', mockToken)
                 ).body.result;
             });
-            it('modify permissions', async () => {
+            test('modify permissions', async () => {
                 const updated = (await chai.request(app.app)
                     .patch(`${app.prefix}/usergroups/${group['@rid'].toString().slice(1)}`)
                     .type('json')
@@ -373,7 +391,7 @@ describe('API', () => {
             });
         });
         describe('GET /features', () => {
-            it('BAD REQUEST on invalid biotype', async () => {
+            test('BAD REQUEST on invalid biotype', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -386,7 +404,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
                 expect(res.response.body).to.have.property('name', 'ValidationError');
             });
-            it('BAD REQUEST on invalid special query param', async () => {
+            test('BAD REQUEST on invalid special query param', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -399,7 +417,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
                 expect(res.response.body).to.have.property('name', 'ValidationError');
             });
-            it('aggregates on count', async () => {
+            test('aggregates on count', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/features?count=t`)
                     .type('json')
@@ -408,7 +426,7 @@ describe('API', () => {
             });
         });
         describe('GET /features/{rid}', () => {
-            it('BAD REQUEST on invalid rid', async () => {
+            test('BAD REQUEST on invalid rid', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -423,7 +441,7 @@ describe('API', () => {
             });
         });
         describe('POST /diseases', () => {
-            it('OK', async () => {
+            test('OK', async () => {
                 const res = await chai.request(app.app)
                     .post(`${app.prefix}/diseases`)
                     .type('json')
@@ -437,7 +455,7 @@ describe('API', () => {
                 expect(res.body.result).to.have.property('sourceId', 'cancer');
                 expect(res.body.result.source).to.eql(source['@rid']);
             });
-            it('BAD REQUEST (no source given)', async () => {
+            test('BAD REQUEST (no source given)', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -453,7 +471,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
                 expect(res.response.body).to.have.property('name', 'ValidationError');
             });
-            it('BAD REQUEST (no sourceId given)', async () => {
+            test('BAD REQUEST (no sourceId given)', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -469,7 +487,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
                 expect(res.response.body).to.have.property('name', 'ValidationError');
             });
-            it('UNAUTHORIZED', async () => {
+            test('UNAUTHORIZED', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -484,7 +502,7 @@ describe('API', () => {
                 }
                 expect(res).to.have.status(HTTP_STATUS.UNAUTHORIZED);
             });
-            it('CONFLICT', async () => {
+            test('CONFLICT', async () => {
                 let res;
                 res = await chai.request(app.app)
                     .post(`${app.prefix}/diseases`)
@@ -525,7 +543,7 @@ describe('API', () => {
                 disease = res.body.result;
                 diseaseId = disease['@rid'].replace('#', '');
             });
-            it('OK', async () => {
+            test('OK', async () => {
                 const res = await chai.request(app.app)
                     .patch(`${app.prefix}/diseases/${diseaseId}`)
                     .type('json')
@@ -541,7 +559,7 @@ describe('API', () => {
                 expect(res.body.result).to.have.property('history');
                 expect(res.body.result.history).to.not.equal(disease['@rid']);
             });
-            it('NOT FOUND', async () => {
+            test('NOT FOUND', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -557,7 +575,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.NOT_FOUND);
                 expect(res.response.body).to.have.property('name', 'NoRecordFoundError');
             });
-            it('UNAUTHORIZED', async () => {
+            test('UNAUTHORIZED', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -572,7 +590,7 @@ describe('API', () => {
                 }
                 expect(res).to.have.status(HTTP_STATUS.UNAUTHORIZED);
             });
-            it('CONFLICT', async () => {
+            test('CONFLICT', async () => {
                 let res;
                 res = await chai.request(app.app)
                     .post(`${app.prefix}/diseases`)
@@ -612,7 +630,7 @@ describe('API', () => {
                 disease = res.body.result;
                 diseaseId = res.body.result['@rid'].replace('#', '');
             });
-            it('OK', async () => {
+            test('OK', async () => {
                 const res = await chai.request(app.app)
                     .delete(`${app.prefix}/diseases/${diseaseId}`)
                     .type('json')
@@ -626,7 +644,7 @@ describe('API', () => {
                 expect(res.body.result.deletedAt).to.be.a.number;
                 expect(res.body.result).to.have.property('deletedBy', admin['@rid'].toString());
             });
-            it('NOT FOUND', async () => {
+            test('NOT FOUND', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -639,7 +657,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.NOT_FOUND);
                 expect(res.response.body).to.have.property('name', 'NoRecordFoundError');
             });
-            it('UNAUTHORIZED', async () => {
+            test('UNAUTHORIZED', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -656,7 +674,7 @@ describe('API', () => {
             beforeEach(async () => {
                 await mockRelatedDiseases({app, source, mockToken});
             });
-            it('default limits to active records', async () => {
+            test('default limits to active records', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/diseases`)
                     .set('Authorization', mockToken)
@@ -665,7 +683,7 @@ describe('API', () => {
                 expect(res.body.result[0]).to.have.property('out_AliasOf');
                 expect(res.body.result[0].out_AliasOf).to.eql([]);
             });
-            it('neighborhood query returns both', async () => {
+            test('neighborhood query returns both', async () => {
                 const res = await chai.request(app.app)
                     .post(`${app.prefix}/diseases/search`)
                     .set('Authorization', mockToken)
@@ -679,7 +697,7 @@ describe('API', () => {
                 expect(res.body.result[0]).to.have.property('out_AliasOf');
                 expect(res.body.result[0].out_AliasOf).to.eql([]);
             });
-            it('includes deleted when not limited to active', async () => {
+            test('includes deleted when not limited to active', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/diseases`)
                     .set('Authorization', mockToken)
@@ -695,14 +713,14 @@ describe('API', () => {
                 const result = await mockRelatedDiseases({app, source, mockToken});
                 ([record1, deletedRecord, record2] = result.map(rec => rec['@rid'].slice(1)));
             });
-            it('ok for 2 existing records', async () => {
+            test('ok for 2 existing records', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/records`)
                     .set('Authorization', mockToken)
                     .query({rid: `${record1},${record2}`});
                 expect(res.body.result).to.have.property('length', 2);
             });
-            it('fails for properly formatted non-existant cluster RID', async () => {
+            test('fails for properly formatted non-existant cluster RID', async () => {
                 let res;
                 try {
                     await chai.request(app.app)
@@ -716,14 +734,14 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('One or more invalid record cluster IDs (<cluster>:#)');
             });
-            it('Ignores non-existant RID on a valid cluster', async () => {
+            test('Ignores non-existant RID on a valid cluster', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/records`)
                     .set('Authorization', mockToken)
                     .query({rid: `${record1},1:1111`});
                 expect(res.body.result).to.have.property('length', 1);
             });
-            it('error on bad neighbors argument', async () => {
+            test('error on bad neighbors argument', async () => {
                 let res;
                 try {
                     await chai.request(app.app)
@@ -740,7 +758,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('k is not a valid decimal integer');
             });
-            it('error on unrecognized argument', async () => {
+            test('error on unrecognized argument', async () => {
                 let res;
                 try {
                     await chai.request(app.app)
@@ -757,7 +775,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('Invalid query parameter(s) (limit)');
             });
-            it('error on malformed RID', async () => {
+            test('error on malformed RID', async () => {
                 let res;
                 try {
                     await chai.request(app.app)
@@ -773,14 +791,14 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('not a valid RID');
             });
-            it('ignores deleted records', async () => {
+            test('ignores deleted records', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/records`)
                     .set('Authorization', mockToken)
                     .query({rid: `${record1},${record2},${deletedRecord}`});
                 expect(res.body.result).to.have.property('length', 2);
             });
-            it('includes deleted records when activeOnly off', async () => {
+            test('includes deleted records when activeOnly off', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/records`)
                     .set('Authorization', mockToken)
@@ -804,7 +822,7 @@ describe('API', () => {
                     })
                     .set('Authorization', mockToken);
             });
-            it('Does not throw permissions error', async () => {
+            test('Does not throw permissions error', async () => {
                 const resp = await chai.request(app.app)
                     .get(`${app.prefix}/ontologies`)
                     .type('json')
@@ -812,7 +830,7 @@ describe('API', () => {
                 expect(resp.body).to.have.property('result');
                 expect(resp.body.result).to.have.property('length', 1);
             });
-            it('query by subset single term', async () => {
+            test('query by subset single term', async () => {
                 const resp = await chai.request(app.app)
                     .get(`${app.prefix}/ontologies`)
                     .type('json')
@@ -852,7 +870,7 @@ describe('API', () => {
                     })
                     .set('Authorization', mockToken);
             });
-            it('requires all terms', async () => {
+            test('requires all terms', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/diseases`)
                     .type('json')
@@ -863,7 +881,7 @@ describe('API', () => {
 
                 expect(res.body.result[0]).to.have.property('name', 'liver cancer');
             });
-            it('ignores case (due to cast)', async () => {
+            test('ignores case (due to cast)', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/diseases`)
                     .type('json')
@@ -969,7 +987,7 @@ describe('API', () => {
                     })
                     .set('Authorization', mockToken);
             });
-            it('retrieves by appliesTo', async () => {
+            test('retrieves by appliesTo', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/search`)
                     .type('json')
@@ -977,7 +995,7 @@ describe('API', () => {
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 1);
             });
-            it('retrieves by impliedBy', async () => {
+            test('retrieves by impliedBy', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/search`)
                     .type('json')
@@ -985,7 +1003,7 @@ describe('API', () => {
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 1);
             });
-            it('Ignores supportedBy', async () => {
+            test('Ignores supportedBy', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/search`)
                     .type('json')
@@ -993,7 +1011,7 @@ describe('API', () => {
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 0);
             });
-            it('retrieves by relevance', async () => {
+            test('retrieves by relevance', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/search`)
                     .type('json')
@@ -1001,7 +1019,7 @@ describe('API', () => {
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 3);
             });
-            it('retrieves by either', async () => {
+            test('retrieves by either', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/search`)
                     .type('json')
@@ -1010,7 +1028,7 @@ describe('API', () => {
                 expect(res).to.have.status(HTTP_STATUS.OK);
                 expect(res.body.result).to.have.property('length', 2);
             });
-            it('with skip', async () => {
+            test('with skip', async () => {
                 const res = await chai.request(app.app)
                     .get(`${app.prefix}/search`)
                     .type('json')
@@ -1048,7 +1066,7 @@ describe('API', () => {
                     return res.body.result;
                 }));
             });
-            it('BAD REQUEST error on supportedBy undefined', async () => {
+            test('BAD REQUEST error on supportedBy undefined', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1067,7 +1085,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('must include an array property supportedBy');
             });
-            it('BAD REQUEST error on supportedBy empty array', async () => {
+            test('BAD REQUEST error on supportedBy empty array', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1087,7 +1105,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('must include an array property supportedBy');
             });
-            it('BAD REQUEST error on supportedBy bad RID format', async () => {
+            test('BAD REQUEST error on supportedBy bad RID format', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1107,7 +1125,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('does not look like a valid RID');
             });
-            it('BAD REQUEST error on impliedBy undefined', async () => {
+            test('BAD REQUEST error on impliedBy undefined', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1126,7 +1144,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('must include an array property impliedBy');
             });
-            it('BAD REQUEST error on impliedBy empty array', async () => {
+            test('BAD REQUEST error on impliedBy empty array', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1146,7 +1164,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('must include an array property impliedBy');
             });
-            it('BAD REQUEST error on impliedBy bad RID format', async () => {
+            test('BAD REQUEST error on impliedBy bad RID format', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1166,7 +1184,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('does not look like a valid RID');
             });
-            it('BAD REQUEST error in finding one of the dependencies', async () => {
+            test('BAD REQUEST error in finding one of the dependencies', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1186,7 +1204,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('error in retrieving one or more of the dependencies');
             });
-            it('BAD REQUEST error on missing relevance', async () => {
+            test('BAD REQUEST error on missing relevance', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1205,7 +1223,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('must have the relevance property');
             });
-            it('BAD REQUEST error on missing appliesTo', async () => {
+            test('BAD REQUEST error on missing appliesTo', async () => {
                 let res;
                 try {
                     res = await chai.request(app.app)
@@ -1224,7 +1242,7 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('message');
                 expect(res.response.body.message).to.include('must have the appliesTo property');
             });
-            it('creates statement', async () => {
+            test('creates statement', async () => {
                 const res = await chai.request(app.app)
                     .post(`${app.prefix}/statements`)
                     .type('json')
@@ -1242,13 +1260,5 @@ describe('API', () => {
             // clear all V/E records
             await clearDB(db, admin);
         });
-    });
-    after(async () => {
-        if (server) {
-            if (db && dbName) {
-                await server.drop({name: dbName});
-            }
-            await server.close();
-        }
     });
 });
