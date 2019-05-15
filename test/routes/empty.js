@@ -104,8 +104,12 @@ describe('API', () => {
             if (db && dbName) {
                 await server.drop({name: dbName});
             }
-            await server.close();
+            await app.close();
         }
+    });
+    afterEach(async () => {
+        // clear all V/E records
+        await clearDB(db, admin);
     });
 
     describe('GET /stats', () => {
@@ -279,20 +283,12 @@ describe('API', () => {
                 ).body.result;
             });
             test('modify the group associated with a user', async () => {
-                console.log(user);
-                console.log(`${app.prefix}/users/${user['@rid'].slice(1)}`);
-                let updatedUser;
-                try {
-                    updatedUser = (await chai.request(app.app)
-                        .patch(`${app.prefix}/users/${user['@rid'].slice(1)}`)
-                        .type('json')
-                        .send({groups: [adminGroup['@rid']]})
-                        .set('Authorization', mockToken)
-                    ).body.result;
-                } catch (err) {
-                    console.error(err);
-                    throw err;
-                }
+                const updatedUser = (await chai.request(app.app)
+                    .patch(`${app.prefix}/users/${user['@rid'].slice(1)}`)
+                    .type('json')
+                    .send({groups: [adminGroup['@rid']]})
+                    .set('Authorization', mockToken)
+                ).body.result;
                 expect(updatedUser).to.have.property('groups');
                 expect(updatedUser.groups).to.have.property('length', 1);
                 expect(updatedUser.groups[0]).to.equal(adminGroup['@rid']);
@@ -1255,10 +1251,6 @@ describe('API', () => {
                     .set('Authorization', mockToken);
                 expect(res).to.have.status(HTTP_STATUS.CREATED);
             });
-        });
-        afterEach(async () => {
-            // clear all V/E records
-            await clearDB(db, admin);
         });
     });
 });
