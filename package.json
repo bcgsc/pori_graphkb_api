@@ -64,7 +64,7 @@
     "start:dev": "NODE_ENV=development node server.js",
     "start:test": "NODE_ENV=test node server.js",
     "start:local": "NODE_ENV=local node server.js",
-    "test": "NODE_ENV=test jest test/{routes,repo} --config config/jest/int.config.js",
+    "test": "NODE_ENV=test jest test/{routes,repo} --config config/jest/int.config.js --detectOpenHandles --forceExit",
     "test:unit": "NODE_ENV=test jest test/*/{unit,schema,query}* --config config/jest/unit.config.js",
     "lint": "eslint -c .eslintrc.jon app test",
     "build:docs": "jsdocref --input app --output doc; cp README.md doc",
