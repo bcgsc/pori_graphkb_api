@@ -22,24 +22,24 @@ jest.setTimeout(TEST_TIMEOUT_MS);
  * Mocks a set of 3 disease records related as aliases
  */
 const mockRelatedDiseases = async ({app, mockToken, source}) => {
-    const res1 = await chai.request(app.app)
-        .post(`${app.prefix}/diseases`)
+    const res1 = await chai.request(app.url)
+        .post('/diseases')
         .type('json')
         .send({
             sourceId: 'cancer',
             source
         })
         .set('Authorization', mockToken);
-    const res2 = await chai.request(app.app)
-        .post(`${app.prefix}/diseases`)
+    const res2 = await chai.request(app.url)
+        .post('/diseases')
         .type('json')
         .send({
             sourceId: 'carcinoma',
             source
         })
         .set('Authorization', mockToken);
-    await chai.request(app.app)
-        .post(`${app.prefix}/aliasof`)
+    await chai.request(app.url)
+        .post('/aliasof')
         .type('json')
         .send({
             out: res1.body.result['@rid'],
@@ -47,16 +47,16 @@ const mockRelatedDiseases = async ({app, mockToken, source}) => {
             source
         })
         .set('Authorization', mockToken);
-    const res3 = await chai.request(app.app)
-        .post(`${app.prefix}/diseases`)
+    const res3 = await chai.request(app.url)
+        .post('/diseases')
         .type('json')
         .send({
             sourceId: 'disease of cellular proliferation',
             source
         })
         .set('Authorization', mockToken);
-    const res4 = await chai.request(app.app)
-        .post(`${app.prefix}/aliasof`)
+    const res4 = await chai.request(app.url)
+        .post('/aliasof')
         .type('json')
         .send({
             out: res1.body.result['@rid'],
@@ -64,11 +64,11 @@ const mockRelatedDiseases = async ({app, mockToken, source}) => {
             source
         })
         .set('Authorization', mockToken);
-    await chai.request(app.app)
-        .delete(`${app.prefix}/diseases/${res2.body.result['@rid'].slice(1)}`)
+    await chai.request(app.url)
+        .delete(`/diseases/${res2.body.result['@rid'].slice(1)}`)
         .set('Authorization', mockToken);
-    await chai.request(app.app)
-        .delete(`${app.prefix}/aliasof/${res4.body.result['@rid'].slice(1)}`)
+    await chai.request(app.url)
+        .delete(`/aliasof/${res4.body.result['@rid'].slice(1)}`)
         .set('Authorization', mockToken);
 
     return [res1.body.result, res2.body.result, res3.body.result];
@@ -104,6 +104,7 @@ describe('API', () => {
             if (db && dbName) {
                 await server.drop({name: dbName});
             }
+            // await server.close();
             await app.close();
         }
     });
@@ -114,8 +115,8 @@ describe('API', () => {
 
     describe('GET /stats', () => {
         test('gathers table stats', async () => {
-            const res = await chai.request(app.app)
-                .get(`${app.prefix}/stats`)
+            const res = await chai.request(app.url)
+                .get('/stats')
                 .type('json')
                 .set('Authorization', mockToken);
             expect(res).to.have.status(HTTP_STATUS.OK);
@@ -128,8 +129,8 @@ describe('API', () => {
     describe('database', () => {
         let source;
         beforeEach(async () => {
-            const res = await chai.request(app.app)
-                .post(`${app.prefix}/sources`)
+            const res = await chai.request(app.url)
+                .post('/sources')
                 .type('json')
                 .send({
                     name: 'bcgsc',
@@ -140,8 +141,8 @@ describe('API', () => {
         });
         describe('GET /users', () => {
             test('name', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/users?name=${admin.name}`)
+                const res = await chai.request(app.url)
+                    .get(`/users?name=${admin.name}`)
                     .set('Authorization', mockToken);
                 expect(res).to.have.status(HTTP_STATUS.OK);
                 expect(res.body.result).to.be.a('array');
@@ -149,8 +150,8 @@ describe('API', () => {
                 expect(res.body.result[0].name).to.equal(admin.name);
             });
             test('aggregates the count', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/users?count=true`)
+                const res = await chai.request(app.url)
+                    .get('/users?count=true')
                     .set('Authorization', mockToken);
                 expect(res).to.have.status(HTTP_STATUS.OK);
                 expect(res.body.result).to.eql([{count: 1}]);
@@ -158,8 +159,8 @@ describe('API', () => {
         });
         describe('POST /users/search', () => {
             test('name', async () => {
-                const res = await chai.request(app.app)
-                    .post(`${app.prefix}/users/search`)
+                const res = await chai.request(app.url)
+                    .post('/users/search')
                     .set('Authorization', mockToken)
                     .type('json')
                     .send({
@@ -177,8 +178,8 @@ describe('API', () => {
             test('BAD REQUEST for query params', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/users/search?neighbors=1`)
+                    res = await chai.request(app.url)
+                        .post('/users/search?neighbors=1')
                         .set('Authorization', mockToken)
                         .type('json')
                         .send({
@@ -197,8 +198,8 @@ describe('API', () => {
         });
         describe('POST /users', () => {
             test('OK', async () => {
-                const res = await chai.request(app.app)
-                    .post(`${app.prefix}/users`)
+                const res = await chai.request(app.url)
+                    .post('/users')
                     .type('json')
                     .send({
                         name: 'blargh monkeys'
@@ -211,8 +212,8 @@ describe('API', () => {
             test('BAD REQUEST', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/users`)
+                    res = await chai.request(app.url)
+                        .post('/users')
                         .type('json')
                         .send({
                         })
@@ -226,8 +227,8 @@ describe('API', () => {
             test('UNAUTHORIZED', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/users`)
+                    res = await chai.request(app.url)
+                        .post('/users')
                         .type('json')
                         .send({
                             name: 'blargh monkeys'
@@ -240,8 +241,8 @@ describe('API', () => {
             test('CONFLICT', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/users`)
+                    res = await chai.request(app.url)
+                        .post('/users')
                         .type('json')
                         .set('Authorization', mockToken)
                         .send({
@@ -258,8 +259,8 @@ describe('API', () => {
                 adminGroup,
                 user;
             beforeEach(async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/usergroups`)
+                const res = await chai.request(app.url)
+                    .get('/usergroups')
                     .type('json')
                     .set('Authorization', mockToken);
                 for (const group of res.body.result) {
@@ -272,8 +273,8 @@ describe('API', () => {
                 if (!readyOnly || !adminGroup) {
                     throw new Error('failed to find the readonly and admin user groups');
                 }
-                user = (await chai.request(app.app)
-                    .post(`${app.prefix}/users`)
+                user = (await chai.request(app.url)
+                    .post('/users')
                     .type('json')
                     .send({
                         name: 'alice',
@@ -283,8 +284,8 @@ describe('API', () => {
                 ).body.result;
             });
             test('modify the group associated with a user', async () => {
-                const updatedUser = (await chai.request(app.app)
-                    .patch(`${app.prefix}/users/${user['@rid'].slice(1)}`)
+                const updatedUser = (await chai.request(app.url)
+                    .patch(`/users/${user['@rid'].slice(1)}`)
                     .type('json')
                     .send({groups: [adminGroup['@rid']]})
                     .set('Authorization', mockToken)
@@ -295,8 +296,8 @@ describe('API', () => {
                 expect(updatedUser).to.have.property('name', 'alice');
             });
             test('rename the user', async () => {
-                const updatedUser = (await chai.request(app.app)
-                    .patch(`${app.prefix}/users/${user['@rid'].slice(1)}`)
+                const updatedUser = (await chai.request(app.url)
+                    .patch(`/users/${user['@rid'].slice(1)}`)
                     .type('json')
                     .send({name: 'bob'})
                     .set('Authorization', mockToken)
@@ -312,8 +313,8 @@ describe('API', () => {
                 adminGroup,
                 user;
             beforeEach(async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/usergroups`)
+                const res = await chai.request(app.url)
+                    .get('/usergroups')
                     .type('json')
                     .set('Authorization', mockToken);
                 for (const group of res.body.result) {
@@ -326,8 +327,8 @@ describe('API', () => {
                 if (!readyOnly || !adminGroup) {
                     throw new Error('failed to find the readonly and admin user groups');
                 }
-                user = (await chai.request(app.app)
-                    .post(`${app.prefix}/users`)
+                user = (await chai.request(app.url)
+                    .post('/users')
                     .type('json')
                     .send({
                         name: 'alice',
@@ -337,8 +338,8 @@ describe('API', () => {
                 ).body.result;
             });
             test('delete the current user', async () => {
-                const updatedUser = (await chai.request(app.app)
-                    .delete(`${app.prefix}/users/${user['@rid'].slice(1)}`)
+                const updatedUser = (await chai.request(app.url)
+                    .delete(`/users/${user['@rid'].slice(1)}`)
                     .type('json')
                     .set('Authorization', mockToken)
                 ).body.result;
@@ -347,8 +348,8 @@ describe('API', () => {
             });
         });
         test('POST /usergroups', async () => {
-            const group = (await chai.request(app.app)
-                .post(`${app.prefix}/usergroups`)
+            const group = (await chai.request(app.url)
+                .post('/usergroups')
                 .type('json')
                 .send({
                     name: 'wonderland',
@@ -363,8 +364,8 @@ describe('API', () => {
         describe('PATCH /usergroups/{rid}', () => {
             let group;
             beforeEach(async () => {
-                group = (await chai.request(app.app)
-                    .post(`${app.prefix}/usergroups`)
+                group = (await chai.request(app.url)
+                    .post('/usergroups')
                     .type('json')
                     .send({
                         name: 'wonderland',
@@ -374,8 +375,8 @@ describe('API', () => {
                 ).body.result;
             });
             test('modify permissions', async () => {
-                const updated = (await chai.request(app.app)
-                    .patch(`${app.prefix}/usergroups/${group['@rid'].toString().slice(1)}`)
+                const updated = (await chai.request(app.url)
+                    .patch(`/usergroups/${group['@rid'].toString().slice(1)}`)
                     .type('json')
                     .send({
                         permissions: {V: 15, E: 15}
@@ -390,8 +391,8 @@ describe('API', () => {
             test('BAD REQUEST on invalid biotype', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .get(`${app.prefix}/features?biotype=blargh`)
+                    res = await chai.request(app.url)
+                        .get('/features?biotype=blargh')
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
@@ -403,8 +404,8 @@ describe('API', () => {
             test('BAD REQUEST on invalid special query param', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .get(`${app.prefix}/features?neighbors=-1`)
+                    res = await chai.request(app.url)
+                        .get('/features?neighbors=-1')
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
@@ -414,8 +415,8 @@ describe('API', () => {
                 expect(res.response.body).to.have.property('name', 'ValidationError');
             });
             test('aggregates on count', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/features?count=t`)
+                const res = await chai.request(app.url)
+                    .get('/features?count=t')
                     .type('json')
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.eql([{count: 0}]);
@@ -425,8 +426,8 @@ describe('API', () => {
             test('BAD REQUEST on invalid rid', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .get(`${app.prefix}/features/kme`)
+                    res = await chai.request(app.url)
+                        .get('/features/kme')
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
@@ -438,8 +439,8 @@ describe('API', () => {
         });
         describe('POST /diseases', () => {
             test('OK', async () => {
-                const res = await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                const res = await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: 'cancer',
@@ -454,8 +455,8 @@ describe('API', () => {
             test('BAD REQUEST (no source given)', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/diseases`)
+                    res = await chai.request(app.url)
+                        .post('/diseases')
                         .type('json')
                         .send({
                             sourceId: 'cancer'
@@ -470,8 +471,8 @@ describe('API', () => {
             test('BAD REQUEST (no sourceId given)', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/diseases`)
+                    res = await chai.request(app.url)
+                        .post('/diseases')
                         .type('json')
                         .send({
                             source
@@ -486,8 +487,8 @@ describe('API', () => {
             test('UNAUTHORIZED', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/diseases`)
+                    res = await chai.request(app.url)
+                        .post('/diseases')
                         .type('json')
                         .send({
                             sourceId: 'cancer',
@@ -500,8 +501,8 @@ describe('API', () => {
             });
             test('CONFLICT', async () => {
                 let res;
-                res = await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                res = await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: 'cancer',
@@ -510,8 +511,8 @@ describe('API', () => {
                     .set('Authorization', mockToken);
                 expect(res).to.have.status(HTTP_STATUS.CREATED);
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/diseases`)
+                    res = await chai.request(app.url)
+                        .post('/diseases')
                         .type('json')
                         .send({
                             sourceId: 'cancer',
@@ -528,8 +529,8 @@ describe('API', () => {
             let disease,
                 diseaseId;
             beforeEach(async () => {
-                const res = await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                const res = await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: 'cancer',
@@ -540,8 +541,8 @@ describe('API', () => {
                 diseaseId = disease['@rid'].replace('#', '');
             });
             test('OK', async () => {
-                const res = await chai.request(app.app)
-                    .patch(`${app.prefix}/diseases/${diseaseId}`)
+                const res = await chai.request(app.url)
+                    .patch(`/diseases/${diseaseId}`)
                     .type('json')
                     .send({
                         sourceId: 'carcinoma'
@@ -558,8 +559,8 @@ describe('API', () => {
             test('NOT FOUND', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .patch(`${app.prefix}/diseases/456:0`)
+                    res = await chai.request(app.url)
+                        .patch('/diseases/456:0')
                         .type('json')
                         .send({
                             sourceId: 'cancer'
@@ -574,8 +575,8 @@ describe('API', () => {
             test('UNAUTHORIZED', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .patch(`${app.prefix}/diseases/${diseaseId}`)
+                    res = await chai.request(app.url)
+                        .patch(`/diseases/${diseaseId}`)
                         .type('json')
                         .send({
                             sourceId: 'cancer',
@@ -588,8 +589,8 @@ describe('API', () => {
             });
             test('CONFLICT', async () => {
                 let res;
-                res = await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                res = await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: 'carcinoma',
@@ -598,8 +599,8 @@ describe('API', () => {
                     .set('Authorization', mockToken);
                 expect(res).to.have.status(HTTP_STATUS.CREATED);
                 try {
-                    res = await chai.request(app.app)
-                        .patch(`${app.prefix}/diseases/${diseaseId}`)
+                    res = await chai.request(app.url)
+                        .patch(`/diseases/${diseaseId}`)
                         .type('json')
                         .send({
                             sourceId: 'carcinoma'
@@ -615,8 +616,8 @@ describe('API', () => {
             let disease,
                 diseaseId;
             beforeEach(async () => {
-                const res = await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                const res = await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: 'cancer',
@@ -627,8 +628,8 @@ describe('API', () => {
                 diseaseId = res.body.result['@rid'].replace('#', '');
             });
             test('OK', async () => {
-                const res = await chai.request(app.app)
-                    .delete(`${app.prefix}/diseases/${diseaseId}`)
+                const res = await chai.request(app.url)
+                    .delete(`/diseases/${diseaseId}`)
                     .type('json')
                     .set('Authorization', mockToken);
                 expect(res).to.have.status(HTTP_STATUS.OK);
@@ -643,8 +644,8 @@ describe('API', () => {
             test('NOT FOUND', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .delete(`${app.prefix}/diseases/456:0`)
+                    res = await chai.request(app.url)
+                        .delete('/diseases/456:0')
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
@@ -656,8 +657,8 @@ describe('API', () => {
             test('UNAUTHORIZED', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .delete(`${app.prefix}/diseases/${diseaseId}`)
+                    res = await chai.request(app.url)
+                        .delete(`/diseases/${diseaseId}`)
                         .type('json');
                 } catch (err) {
                     res = err;
@@ -671,8 +672,8 @@ describe('API', () => {
                 await mockRelatedDiseases({app, source, mockToken});
             });
             test('default limits to active records', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/diseases`)
+                const res = await chai.request(app.url)
+                    .get('/diseases')
                     .set('Authorization', mockToken)
                     .query({neighbors: 2});
                 expect(res.body.result[0]).to.have.property('sourceId', 'cancer');
@@ -680,8 +681,8 @@ describe('API', () => {
                 expect(res.body.result[0].out_AliasOf).to.eql([]);
             });
             test('neighborhood query returns both', async () => {
-                const res = await chai.request(app.app)
-                    .post(`${app.prefix}/diseases/search`)
+                const res = await chai.request(app.url)
+                    .post('/diseases/search')
                     .set('Authorization', mockToken)
                     .type('json')
                     .send({
@@ -694,8 +695,8 @@ describe('API', () => {
                 expect(res.body.result[0].out_AliasOf).to.eql([]);
             });
             test('includes deleted when not limited to active', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/diseases`)
+                const res = await chai.request(app.url)
+                    .get('/diseases')
                     .set('Authorization', mockToken)
                     .query({neighbors: 2, activeOnly: false});
                 expect(res.body.result).to.have.property('length', 6);
@@ -710,8 +711,8 @@ describe('API', () => {
                 ([record1, deletedRecord, record2] = result.map(rec => rec['@rid'].slice(1)));
             });
             test('ok for 2 existing records', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/records`)
+                const res = await chai.request(app.url)
+                    .get('/records')
                     .set('Authorization', mockToken)
                     .query({rid: `${record1},${record2}`});
                 expect(res.body.result).to.have.property('length', 2);
@@ -719,8 +720,8 @@ describe('API', () => {
             test('fails for properly formatted non-existant cluster RID', async () => {
                 let res;
                 try {
-                    await chai.request(app.app)
-                        .get(`${app.prefix}/records`)
+                    await chai.request(app.url)
+                        .get('/records')
                         .set('Authorization', mockToken)
                         .query({rid: `${record1},1111:1111`});
                 } catch (err) {
@@ -731,8 +732,8 @@ describe('API', () => {
                 expect(res.response.body.message).to.include('One or more invalid record cluster IDs (<cluster>:#)');
             });
             test('Ignores non-existant RID on a valid cluster', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/records`)
+                const res = await chai.request(app.url)
+                    .get('/records')
                     .set('Authorization', mockToken)
                     .query({rid: `${record1},1:1111`});
                 expect(res.body.result).to.have.property('length', 1);
@@ -740,8 +741,8 @@ describe('API', () => {
             test('error on bad neighbors argument', async () => {
                 let res;
                 try {
-                    await chai.request(app.app)
-                        .get(`${app.prefix}/records`)
+                    await chai.request(app.url)
+                        .get('/records')
                         .set('Authorization', mockToken)
                         .query({
                             rid: `${record1}`,
@@ -757,8 +758,8 @@ describe('API', () => {
             test('error on unrecognized argument', async () => {
                 let res;
                 try {
-                    await chai.request(app.app)
-                        .get(`${app.prefix}/records`)
+                    await chai.request(app.url)
+                        .get('/records')
                         .set('Authorization', mockToken)
                         .query({
                             rid: `${record1}`,
@@ -774,8 +775,8 @@ describe('API', () => {
             test('error on malformed RID', async () => {
                 let res;
                 try {
-                    await chai.request(app.app)
-                        .get(`${app.prefix}/records`)
+                    await chai.request(app.url)
+                        .get('/records')
                         .set('Authorization', mockToken)
                         .query({
                             rid: `${record1},7`
@@ -788,15 +789,15 @@ describe('API', () => {
                 expect(res.response.body.message).to.include('not a valid RID');
             });
             test('ignores deleted records', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/records`)
+                const res = await chai.request(app.url)
+                    .get('/records')
                     .set('Authorization', mockToken)
                     .query({rid: `${record1},${record2},${deletedRecord}`});
                 expect(res.body.result).to.have.property('length', 2);
             });
             test('includes deleted records when activeOnly off', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/records`)
+                const res = await chai.request(app.url)
+                    .get('/records')
                     .set('Authorization', mockToken)
                     .query({
                         rid: `${record1},${record2},${deletedRecord}`,
@@ -807,8 +808,8 @@ describe('API', () => {
         });
         describe('GET /ontologies', () => {
             beforeEach(async () => {
-                await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: '2',
@@ -819,16 +820,16 @@ describe('API', () => {
                     .set('Authorization', mockToken);
             });
             test('Does not throw permissions error', async () => {
-                const resp = await chai.request(app.app)
-                    .get(`${app.prefix}/ontologies`)
+                const resp = await chai.request(app.url)
+                    .get('/ontologies')
                     .type('json')
                     .set('Authorization', mockToken);
                 expect(resp.body).to.have.property('result');
                 expect(resp.body.result).to.have.property('length', 1);
             });
             test('query by subset single term', async () => {
-                const resp = await chai.request(app.app)
-                    .get(`${app.prefix}/ontologies`)
+                const resp = await chai.request(app.url)
+                    .get('/ontologies')
                     .type('json')
                     .query({subsets: 'a'})
                     .set('Authorization', mockToken);
@@ -838,8 +839,8 @@ describe('API', () => {
         });
         describe('Query FULLTEXT index', () => {
             beforeEach(async () => {
-                await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: '2',
@@ -847,8 +848,8 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken);
-                await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: '3',
@@ -856,8 +857,8 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken);
-                await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: '1',
@@ -867,8 +868,8 @@ describe('API', () => {
                     .set('Authorization', mockToken);
             });
             test('requires all terms', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/diseases`)
+                const res = await chai.request(app.url)
+                    .get('/diseases')
                     .type('json')
                     .query({name: '~liver cancer'})
                     .set('Authorization', mockToken);
@@ -878,8 +879,8 @@ describe('API', () => {
                 expect(res.body.result[0]).to.have.property('name', 'liver cancer');
             });
             test('ignores case (due to cast)', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/diseases`)
+                const res = await chai.request(app.url)
+                    .get('/diseases')
                     .type('json')
                     .query({name: '~CAncer'})
                     .set('Authorization', mockToken);
@@ -896,8 +897,8 @@ describe('API', () => {
                 vocab,
                 feature;
             beforeEach(async () => {
-                liverCancer = (await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                liverCancer = (await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: '2',
@@ -905,8 +906,8 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken)).body.result['@rid'];
-                breastCancer = (await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                breastCancer = (await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: '3',
@@ -914,8 +915,8 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken)).body.result['@rid'];
-                liverAngiosarc = (await chai.request(app.app)
-                    .post(`${app.prefix}/diseases`)
+                liverAngiosarc = (await chai.request(app.url)
+                    .post('/diseases')
                     .type('json')
                     .send({
                         sourceId: '1',
@@ -923,8 +924,8 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken)).body.result['@rid'];
-                publication = (await chai.request(app.app)
-                    .post(`${app.prefix}/publications`)
+                publication = (await chai.request(app.url)
+                    .post('/publications')
                     .type('json')
                     .send({
                         sourceId: 'article',
@@ -932,8 +933,8 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken)).body.result['@rid'];
-                vocab = (await chai.request(app.app)
-                    .post(`${app.prefix}/vocabulary`)
+                vocab = (await chai.request(app.url)
+                    .post('/vocabulary')
                     .type('json')
                     .send({
                         sourceId: 'vocab',
@@ -941,8 +942,8 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken)).body.result['@rid'];
-                feature = (await chai.request(app.app)
-                    .post(`${app.prefix}/features`)
+                feature = (await chai.request(app.url)
+                    .post('/features')
                     .type('json')
                     .send({
                         sourceId: 'gene',
@@ -952,8 +953,8 @@ describe('API', () => {
                     })
                     .set('Authorization', mockToken)).body.result['@rid'];
                 // now create the statements
-                await chai.request(app.app)
-                    .post(`${app.prefix}/statements`)
+                await chai.request(app.url)
+                    .post('/statements')
                     .type('json')
                     .send({
                         appliesTo: feature,
@@ -962,8 +963,8 @@ describe('API', () => {
                         supportedBy: [{target: publication}]
                     })
                     .set('Authorization', mockToken);
-                await chai.request(app.app)
-                    .post(`${app.prefix}/statements`)
+                await chai.request(app.url)
+                    .post('/statements')
                     .type('json')
                     .send({
                         appliesTo: feature,
@@ -972,8 +973,8 @@ describe('API', () => {
                         supportedBy: [{target: publication}]
                     })
                     .set('Authorization', mockToken);
-                await chai.request(app.app)
-                    .post(`${app.prefix}/statements`)
+                await chai.request(app.url)
+                    .post('/statements')
                     .type('json')
                     .send({
                         appliesTo: breastCancer,
@@ -984,40 +985,40 @@ describe('API', () => {
                     .set('Authorization', mockToken);
             });
             test('retrieves by appliesTo', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/search`)
+                const res = await chai.request(app.url)
+                    .get('/search')
                     .type('json')
                     .query({keyword: 'breast cancer', limit: 10, neighbors: 0})
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 1);
             });
             test('retrieves by impliedBy', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/search`)
+                const res = await chai.request(app.url)
+                    .get('/search')
                     .type('json')
                     .query({keyword: 'liver cancer', limit: 10, neighbors: 0})
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 1);
             });
             test('Ignores supportedBy', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/search`)
+                const res = await chai.request(app.url)
+                    .get('/search')
                     .type('json')
                     .query({keyword: 'article', limit: 10, neighbors: 0})
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 0);
             });
             test('retrieves by relevance', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/search`)
+                const res = await chai.request(app.url)
+                    .get('/search')
                     .type('json')
                     .query({keyword: 'vocab', limit: 10, neighbors: 0})
                     .set('Authorization', mockToken);
                 expect(res.body.result).to.have.property('length', 3);
             });
             test('retrieves by either', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/search`)
+                const res = await chai.request(app.url)
+                    .get('/search')
                     .type('json')
                     .query({keyword: 'cancer'})
                     .set('Authorization', mockToken);
@@ -1025,8 +1026,8 @@ describe('API', () => {
                 expect(res.body.result).to.have.property('length', 2);
             });
             test('with skip', async () => {
-                const res = await chai.request(app.app)
-                    .get(`${app.prefix}/search`)
+                const res = await chai.request(app.url)
+                    .get('/search')
                     .type('json')
                     .query({keyword: 'cancer', skip: 1})
                     .set('Authorization', mockToken);
@@ -1054,8 +1055,8 @@ describe('API', () => {
                     {content: {name: 'relevance1', sourceId: 'relevance1'}, route: 'vocabulary'},
                     {content: {name: 'relevance2', sourceId: 'relevance2'}, route: 'vocabulary'}
                 ], async (opt) => {
-                    const res = await chai.request(app.app)
-                        .post(`${app.prefix}/${opt.route}`)
+                    const res = await chai.request(app.url)
+                        .post(`/${opt.route}`)
                         .type('json')
                         .set('Authorization', mockToken)
                         .send(Object.assign({source}, opt.content));
@@ -1065,8 +1066,8 @@ describe('API', () => {
             test('BAD REQUEST error on supportedBy undefined', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: disease1['@rid'],
@@ -1084,8 +1085,8 @@ describe('API', () => {
             test('BAD REQUEST error on supportedBy empty array', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: disease1['@rid'],
@@ -1104,8 +1105,8 @@ describe('API', () => {
             test('BAD REQUEST error on supportedBy bad RID format', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: disease1['@rid'],
@@ -1124,8 +1125,8 @@ describe('API', () => {
             test('BAD REQUEST error on impliedBy undefined', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: disease1['@rid'],
@@ -1143,8 +1144,8 @@ describe('API', () => {
             test('BAD REQUEST error on impliedBy empty array', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: disease1['@rid'],
@@ -1163,8 +1164,8 @@ describe('API', () => {
             test('BAD REQUEST error on impliedBy bad RID format', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: disease1['@rid'],
@@ -1183,8 +1184,8 @@ describe('API', () => {
             test('BAD REQUEST error in finding one of the dependencies', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: '#448989898:0',
@@ -1203,8 +1204,8 @@ describe('API', () => {
             test('BAD REQUEST error on missing relevance', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             appliesTo: disease1,
@@ -1222,8 +1223,8 @@ describe('API', () => {
             test('BAD REQUEST error on missing appliesTo', async () => {
                 let res;
                 try {
-                    res = await chai.request(app.app)
-                        .post(`${app.prefix}/statements`)
+                    res = await chai.request(app.url)
+                        .post('/statements')
                         .type('json')
                         .send({
                             impliedBy: [{target: disease1}],
@@ -1239,8 +1240,8 @@ describe('API', () => {
                 expect(res.response.body.message).to.include('must have the appliesTo property');
             });
             test('creates statement', async () => {
-                const res = await chai.request(app.app)
-                    .post(`${app.prefix}/statements`)
+                const res = await chai.request(app.url)
+                    .post('/statements')
                     .type('json')
                     .send({
                         appliesTo: disease1,
