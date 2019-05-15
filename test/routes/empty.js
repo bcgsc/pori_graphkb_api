@@ -119,7 +119,7 @@ describe('API', () => {
                 .get('/stats')
                 .type('json')
                 .set('Authorization', mockToken);
-            expect(res).to.have.status(HTTP_STATUS.OK);
+            expect(res.status).to.equal(HTTP_STATUS.OK);
             expect(res.body).to.have.property('result');
             expect(res.body.result).to.have.property('User', 1);
             expect(res.body.result).to.not.have.property('ProteinPosition'); // ignore embedded
@@ -144,7 +144,7 @@ describe('API', () => {
                 const res = await chai.request(app.url)
                     .get(`/users?name=${admin.name}`)
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.be.a('array');
                 expect(res.body.result.length).to.equal(1);
                 expect(res.body.result[0].name).to.equal(admin.name);
@@ -153,7 +153,7 @@ describe('API', () => {
                 const res = await chai.request(app.url)
                     .get('/users?count=true')
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.eql([{count: 1}]);
             });
         });
@@ -170,7 +170,7 @@ describe('API', () => {
                         neighbors: 1,
                         limit: 10
                     });
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.be.a('array');
                 expect(res.body.result.length).to.equal(1);
                 expect(res.body.result[0].name).to.equal(admin.name);
@@ -190,10 +190,10 @@ describe('API', () => {
                             limit: 10
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('name', 'ValidationError');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('name', 'ValidationError');
             });
         });
         describe('POST /users', () => {
@@ -205,7 +205,7 @@ describe('API', () => {
                         name: 'blargh monkeys'
                     })
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.CREATED);
+                expect(res.status).to.equal(HTTP_STATUS.CREATED);
                 expect(res.body.result).to.be.a('object');
                 expect(res.body.result.name).to.equal('blargh monkeys');
             });
@@ -219,10 +219,10 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('name', 'ValidationError');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('name', 'ValidationError');
             });
             test('UNAUTHORIZED', async () => {
                 let res;
@@ -234,9 +234,9 @@ describe('API', () => {
                             name: 'blargh monkeys'
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.UNAUTHORIZED);
+                expect(res.status).to.equal(HTTP_STATUS.UNAUTHORIZED);
             });
             test('CONFLICT', async () => {
                 let res;
@@ -249,9 +249,9 @@ describe('API', () => {
                             name: admin.name
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.CONFLICT);
+                expect(res.status).to.equal(HTTP_STATUS.CONFLICT);
             });
         });
         describe('PATCH /users/{rid}', () => {
@@ -396,10 +396,10 @@ describe('API', () => {
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('name', 'ValidationError');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('name', 'ValidationError');
             });
             test('BAD REQUEST on invalid special query param', async () => {
                 let res;
@@ -409,10 +409,10 @@ describe('API', () => {
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('name', 'ValidationError');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('name', 'ValidationError');
             });
             test('aggregates on count', async () => {
                 const res = await chai.request(app.url)
@@ -431,10 +431,10 @@ describe('API', () => {
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('name', 'ValidationError');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('name', 'ValidationError');
             });
         });
         describe('POST /diseases', () => {
@@ -447,7 +447,7 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.CREATED);
+                expect(res.status).to.equal(HTTP_STATUS.CREATED);
                 expect(res.body.result).to.be.a('object');
                 expect(res.body.result).to.have.property('sourceId', 'cancer');
                 expect(res.body.result.source).to.eql(source['@rid']);
@@ -463,10 +463,10 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('name', 'ValidationError');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('name', 'ValidationError');
             });
             test('BAD REQUEST (no sourceId given)', async () => {
                 let res;
@@ -479,10 +479,10 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('name', 'ValidationError');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('name', 'ValidationError');
             });
             test('UNAUTHORIZED', async () => {
                 let res;
@@ -495,9 +495,9 @@ describe('API', () => {
                             source
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.UNAUTHORIZED);
+                expect(res.status).to.equal(HTTP_STATUS.UNAUTHORIZED);
             });
             test('CONFLICT', async () => {
                 let res;
@@ -509,7 +509,7 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.CREATED);
+                expect(res.status).to.equal(HTTP_STATUS.CREATED);
                 try {
                     res = await chai.request(app.url)
                         .post('/diseases')
@@ -520,9 +520,9 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.CONFLICT);
+                expect(res.status).to.equal(HTTP_STATUS.CONFLICT);
             });
         });
         describe('PATCH /diseases', () => {
@@ -548,7 +548,7 @@ describe('API', () => {
                         sourceId: 'carcinoma'
                     })
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.be.a('object');
                 expect(res.body.result).to.have.property('sourceId', 'carcinoma');
                 expect(res.body.result).to.have.property('source', disease.source);
@@ -567,10 +567,10 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.NOT_FOUND);
-                expect(res.response.body).to.have.property('name', 'NoRecordFoundError');
+                expect(res.status).to.equal(HTTP_STATUS.NOT_FOUND);
+                expect(res.body).to.have.property('name', 'NoRecordFoundError');
             });
             test('UNAUTHORIZED', async () => {
                 let res;
@@ -583,9 +583,9 @@ describe('API', () => {
                             source
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.UNAUTHORIZED);
+                expect(res.status).to.equal(HTTP_STATUS.UNAUTHORIZED);
             });
             test('CONFLICT', async () => {
                 let res;
@@ -597,7 +597,7 @@ describe('API', () => {
                         source
                     })
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.CREATED);
+                expect(res.status).to.equal(HTTP_STATUS.CREATED);
                 try {
                     res = await chai.request(app.url)
                         .patch(`/diseases/${diseaseId}`)
@@ -607,9 +607,9 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.CONFLICT);
+                expect(res.status).to.equal(HTTP_STATUS.CONFLICT);
             });
         });
         describe('DELETE /diseases', () => {
@@ -632,7 +632,7 @@ describe('API', () => {
                     .delete(`/diseases/${diseaseId}`)
                     .type('json')
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.be.a('object');
                 expect(res.body.result).to.have.property('sourceId', disease.sourceId);
                 expect(res.body.result).to.have.property('source', disease.source);
@@ -649,10 +649,10 @@ describe('API', () => {
                         .type('json')
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.NOT_FOUND);
-                expect(res.response.body).to.have.property('name', 'NoRecordFoundError');
+                expect(res.status).to.equal(HTTP_STATUS.NOT_FOUND);
+                expect(res.body).to.have.property('name', 'NoRecordFoundError');
             });
             test('UNAUTHORIZED', async () => {
                 let res;
@@ -661,9 +661,9 @@ describe('API', () => {
                         .delete(`/diseases/${diseaseId}`)
                         .type('json');
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.UNAUTHORIZED);
+                expect(res.status).to.equal(HTTP_STATUS.UNAUTHORIZED);
             });
         });
         // select neighbors that are not deleted
@@ -720,16 +720,16 @@ describe('API', () => {
             test('fails for properly formatted non-existant cluster RID', async () => {
                 let res;
                 try {
-                    await chai.request(app.url)
+                    res = await chai.request(app.url)
                         .get('/records')
                         .set('Authorization', mockToken)
                         .query({rid: `${record1},1111:1111`});
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.NOT_FOUND);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('One or more invalid record cluster IDs (<cluster>:#)');
+                expect(res.status).to.equal(HTTP_STATUS.NOT_FOUND);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('One or more invalid record cluster IDs (<cluster>:#)');
             });
             test('Ignores non-existant RID on a valid cluster', async () => {
                 const res = await chai.request(app.url)
@@ -741,7 +741,7 @@ describe('API', () => {
             test('error on bad neighbors argument', async () => {
                 let res;
                 try {
-                    await chai.request(app.url)
+                    res = await chai.request(app.url)
                         .get('/records')
                         .set('Authorization', mockToken)
                         .query({
@@ -749,16 +749,16 @@ describe('API', () => {
                             neighbors: 'k'
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('k is not a valid decimal integer');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('k is not a valid decimal integer');
             });
             test('error on unrecognized argument', async () => {
                 let res;
                 try {
-                    await chai.request(app.url)
+                    res = await chai.request(app.url)
                         .get('/records')
                         .set('Authorization', mockToken)
                         .query({
@@ -766,27 +766,27 @@ describe('API', () => {
                             limit: 100
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('Invalid query parameter(s) (limit)');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('Invalid query parameter(s) (limit)');
             });
             test('error on malformed RID', async () => {
                 let res;
                 try {
-                    await chai.request(app.url)
+                    res = await chai.request(app.url)
                         .get('/records')
                         .set('Authorization', mockToken)
                         .query({
                             rid: `${record1},7`
                         });
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('not a valid RID');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('not a valid RID');
             });
             test('ignores deleted records', async () => {
                 const res = await chai.request(app.url)
@@ -873,7 +873,7 @@ describe('API', () => {
                     .type('json')
                     .query({name: '~liver cancer'})
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.have.property('length', 1);
 
                 expect(res.body.result[0]).to.have.property('name', 'liver cancer');
@@ -884,7 +884,7 @@ describe('API', () => {
                     .type('json')
                     .query({name: '~CAncer'})
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.have.property('length', 2);
             });
         });
@@ -1022,7 +1022,7 @@ describe('API', () => {
                     .type('json')
                     .query({keyword: 'cancer'})
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.have.property('length', 2);
             });
             test('with skip', async () => {
@@ -1031,7 +1031,7 @@ describe('API', () => {
                     .type('json')
                     .query({keyword: 'cancer', skip: 1})
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.OK);
+                expect(res.status).to.equal(HTTP_STATUS.OK);
                 expect(res.body.result).to.have.property('length', 1);
             });
         });
@@ -1076,11 +1076,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('must include an array property supportedBy');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('must include an array property supportedBy');
             });
             test('BAD REQUEST error on supportedBy empty array', async () => {
                 let res;
@@ -1096,11 +1096,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('must include an array property supportedBy');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('must include an array property supportedBy');
             });
             test('BAD REQUEST error on supportedBy bad RID format', async () => {
                 let res;
@@ -1116,11 +1116,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('does not look like a valid RID');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('does not look like a valid RID');
             });
             test('BAD REQUEST error on impliedBy undefined', async () => {
                 let res;
@@ -1135,11 +1135,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('must include an array property impliedBy');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('must include an array property impliedBy');
             });
             test('BAD REQUEST error on impliedBy empty array', async () => {
                 let res;
@@ -1155,11 +1155,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('must include an array property impliedBy');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('must include an array property impliedBy');
             });
             test('BAD REQUEST error on impliedBy bad RID format', async () => {
                 let res;
@@ -1175,11 +1175,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('does not look like a valid RID');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('does not look like a valid RID');
             });
             test('BAD REQUEST error in finding one of the dependencies', async () => {
                 let res;
@@ -1195,11 +1195,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('error in retrieving one or more of the dependencies');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('error in retrieving one or more of the dependencies');
             });
             test('BAD REQUEST error on missing relevance', async () => {
                 let res;
@@ -1214,11 +1214,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('must have the relevance property');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('must have the relevance property');
             });
             test('BAD REQUEST error on missing appliesTo', async () => {
                 let res;
@@ -1233,11 +1233,11 @@ describe('API', () => {
                         })
                         .set('Authorization', mockToken);
                 } catch (err) {
-                    res = err;
+                    res = err.response;
                 }
-                expect(res).to.have.status(HTTP_STATUS.BAD_REQUEST);
-                expect(res.response.body).to.have.property('message');
-                expect(res.response.body.message).to.include('must have the appliesTo property');
+                expect(res.status).to.equal(HTTP_STATUS.BAD_REQUEST);
+                expect(res.body).to.have.property('message');
+                expect(res.body.message).to.include('must have the appliesTo property');
             });
             test('creates statement', async () => {
                 const res = await chai.request(app.url)
@@ -1250,7 +1250,7 @@ describe('API', () => {
                         relevance: relevance1
                     })
                     .set('Authorization', mockToken);
-                expect(res).to.have.status(HTTP_STATUS.CREATED);
+                expect(res.status).to.equal(HTTP_STATUS.CREATED);
             });
         });
     });
