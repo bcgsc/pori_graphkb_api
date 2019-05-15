@@ -15,7 +15,7 @@ const {generateToken} = require('./../../app/routes/auth');
 chai.use(chaiHttp);
 
 const REALLY_LONG_TIME = 10000000000;
-const TEST_TIMEOUT_MS = 20000;
+const TEST_TIMEOUT_MS = 50000;
 jest.setTimeout(TEST_TIMEOUT_MS);
 
 /**

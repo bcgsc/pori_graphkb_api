@@ -23,7 +23,8 @@ const {
 
 const {createConfig} = require('./../../app');
 
-const TEST_TIMEOUT_MS = 20000;
+const TEST_TIMEOUT_MS = 50000;
+jest.setTimeout(TEST_TIMEOUT_MS);
 
 if (process.env.GKB_DBS_PASS) {
     describe('schema', () => {
@@ -35,7 +36,6 @@ if (process.env.GKB_DBS_PASS) {
             server,
             dbName;
         beforeAll(async () => {
-            jest.setTimeout(TEST_TIMEOUT_MS);
             ({
                 db,
                 schema,
