@@ -75,7 +75,14 @@ const mockRelatedDiseases = async ({app, mockToken, source}) => {
 };
 
 
-describe('API', () => {
+let authenticatedDescribe = describe;
+
+if (!process.env.GKB_DBS_PASS) {
+    authenticatedDescribe = describe.skip;
+    console.warn('Cannot run api integration tests when the database password is not given (GKB_DBS_PASS)');
+}
+
+authenticatedDescribe('API', () => {
     let db,
         admin,
         app,
