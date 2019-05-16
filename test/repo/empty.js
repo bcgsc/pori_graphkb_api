@@ -82,7 +82,7 @@ if (process.env.GKB_DBS_PASS) {
                     });
                     console.error(record);
                 } catch (err) {
-                    expect(err.message).toEqual(expect.arrayContaining(['missing required attribute source']));
+                    expect(err.message).toContain('missing required attribute source');
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -223,7 +223,7 @@ if (process.env.GKB_DBS_PASS) {
                     });
                 } catch (err) {
                     expect(err).toBeInstanceOf(AttributeError);
-                    expect(err.message).toEqual(expect.arrayContaining(['The out property cannot be null']));
+                    expect(err.message).toContain('The out property cannot be null');
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -241,7 +241,7 @@ if (process.env.GKB_DBS_PASS) {
                     });
                 } catch (err) {
                     expect(err).toBeInstanceOf(AttributeError);
-                    expect(err.message).toEqual(expect.arrayContaining(['The in property cannot be null']));
+                    expect(err.message).toContain('The in property cannot be null');
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -258,7 +258,7 @@ if (process.env.GKB_DBS_PASS) {
                     });
                 } catch (err) {
                     expect(err).toBeInstanceOf(AttributeError);
-                    expect(err.message).toEqual(expect.arrayContaining(['[AliasOf] missing required attribute source']));
+                    expect(err.message).toContain('[AliasOf] missing required attribute source');
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -530,7 +530,7 @@ if (process.env.GKB_DBS_PASS) {
                     });
                 } catch (err) {
                     expect(err).toBeInstanceOf(RecordExistsError);
-                    expect(err.message).toEqual(expect.arrayContaining(['already exists']));
+                    expect(err.message).toContain('already exists');
                     return;
                 }
                 expect.fail('did not throw the expected error');
