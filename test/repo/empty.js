@@ -1,10 +1,6 @@
 
 
 const {
-    expect
-} = require('chai');
-
-const {
     create,
     update,
     remove,
@@ -86,7 +82,7 @@ if (process.env.GKB_DBS_PASS) {
                     });
                     console.error(record);
                 } catch (err) {
-                    expect(err.message).to.include('missing required attribute source');
+                    expect(err.message).toEqual(expect.arrayContaining(['missing required attribute source']));
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -100,8 +96,8 @@ if (process.env.GKB_DBS_PASS) {
                     },
                     user: admin
                 });
-                expect(record).to.have.property('sourceId', 'cancer');
-                expect(record.source).to.eql(doSource['@rid']);
+                expect(record).toHaveProperty('sourceId', 'cancer');
+                expect(record.source).toEqual(doSource['@rid']);
             });
         });
         test('update vertex', async () => {
@@ -115,8 +111,8 @@ if (process.env.GKB_DBS_PASS) {
                 content,
                 user: admin
             });
-            expect(record).to.have.property('sourceId', 'cancer');
-            expect(record.source).to.eql(doSource['@rid']);
+            expect(record).toHaveProperty('sourceId', 'cancer');
+            expect(record.source).toEqual(doSource['@rid']);
             // change the name
             const updated = await update(db, {
                 schema,
@@ -128,10 +124,10 @@ if (process.env.GKB_DBS_PASS) {
                 query: Query.parseRecord(schema, schema.Disease, content)
             });
             // check that a history link has been added to the node
-            expect(updated).to.have.property('sourceId', 'new name');
-            expect(record.source).to.eql(doSource['@rid']);
+            expect(updated).toHaveProperty('sourceId', 'new name');
+            expect(record.source).toEqual(doSource['@rid']);
             // check that the 'old'/copy node has the original details
-            expect(updated['@rid']).to.eql(record['@rid']);
+            expect(updated['@rid']).toEqual(record['@rid']);
             // select the original node
             let originalNode = await select(
                 db,
@@ -146,13 +142,13 @@ if (process.env.GKB_DBS_PASS) {
                 {fetchPlan: '*:1', exactlyN: 1}
             );
             originalNode = originalNode[0];
-            expect(updated.history).to.eql(originalNode['@rid']);
-            expect(originalNode.deletedBy['@rid']).to.eql(admin['@rid']);
-            expect(updated.createdBy).to.eql(admin['@rid']);
+            expect(updated.history).toEqual(originalNode['@rid']);
+            expect(originalNode.deletedBy['@rid']).toEqual(admin['@rid']);
+            expect(updated.createdBy).toEqual(admin['@rid']);
         });
         test('get /stats group by class', async () => {
             const stats = await selectCounts(db, ['Source', 'User', 'UserGroup']);
-            expect(stats).to.eql({
+            expect(stats).toEqual({
                 Source: 2,
                 User: 1,
                 UserGroup: 3
@@ -189,10 +185,10 @@ if (process.env.GKB_DBS_PASS) {
                     },
                     user: admin
                 });
-                expect(edge).to.have.property('source');
-                expect(edge.source).to.eql(doSource['@rid']);
-                expect(edge.out).to.eql(src['@rid']);
-                expect(edge.in).to.eql(tgt['@rid']);
+                expect(edge).toHaveProperty('source');
+                expect(edge.source).toEqual(doSource['@rid']);
+                expect(edge.out).toEqual(src['@rid']);
+                expect(edge.in).toEqual(tgt['@rid']);
             });
             test('error on src = tgt', async () => {
                 try {
@@ -206,8 +202,10 @@ if (process.env.GKB_DBS_PASS) {
                         user: admin
                     });
                 } catch (err) {
-                    expect(err).to.be.an.instanceof(AttributeError);
-                    expect(err.message).to.include('an edge cannot be used to relate a node/vertex to itself');
+                    expect(err).toBeInstanceOf(AttributeError);
+                    expect(err.message).toEqual(
+                        expect.arrayContaining(['an edge cannot be used to relate a node/vertex to itself'])
+                    );
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -224,8 +222,8 @@ if (process.env.GKB_DBS_PASS) {
                         user: admin
                     });
                 } catch (err) {
-                    expect(err).to.be.an.instanceof(AttributeError);
-                    expect(err.message).to.include('The out property cannot be null');
+                    expect(err).toBeInstanceOf(AttributeError);
+                    expect(err.message).toEqual(expect.arrayContaining(['The out property cannot be null']));
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -242,8 +240,8 @@ if (process.env.GKB_DBS_PASS) {
                         user: admin
                     });
                 } catch (err) {
-                    expect(err).to.be.an.instanceof(AttributeError);
-                    expect(err.message).to.include('The in property cannot be null');
+                    expect(err).toBeInstanceOf(AttributeError);
+                    expect(err.message).toEqual(expect.arrayContaining(['The in property cannot be null']));
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -259,8 +257,8 @@ if (process.env.GKB_DBS_PASS) {
                         user: admin
                     });
                 } catch (err) {
-                    expect(err).to.be.an.instanceof(AttributeError);
-                    expect(err.message).to.include('[AliasOf] missing required attribute source');
+                    expect(err).toBeInstanceOf(AttributeError);
+                    expect(err.message).toEqual(expect.arrayContaining(['[AliasOf] missing required attribute source']));
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -285,13 +283,13 @@ if (process.env.GKB_DBS_PASS) {
                 model: schema.AliasOf,
                 schema
             });
-            expect(result).to.have.property('deletedBy');
-            expect(result.createdBy).to.eql(admin['@rid']);
-            expect(result).to.have.property('deletedAt');
-            expect(result.deletedAt).to.not.be.null;
+            expect(result).toHaveProperty('deletedBy');
+            expect(result.createdBy).toEqual(admin['@rid']);
+            expect(result).toHaveProperty('deletedAt');
+            expect(result.deletedAt).not.toBeNull();
             [otherVertex, doSource] = await db.record.get([otherVertex['@rid'], doSource['@rid']]);
-            expect(result.out).to.eql(doSource.history);
-            expect(result.in).to.eql(otherVertex.history);
+            expect(result.out).toEqual(doSource.history);
+            expect(result.in).toEqual(otherVertex.history);
         });
         test.todo('error on delete deleted vertex');
         test.todo('error on delete deleted edge');
@@ -313,12 +311,12 @@ if (process.env.GKB_DBS_PASS) {
                 model: schema.Source,
                 schema
             });
-            expect(result).to.have.property('deletedAt');
-            expect(result).to.have.property('deletedBy');
-            expect(result.deletedBy).to.eql(admin['@rid']);
+            expect(result).toHaveProperty('deletedAt');
+            expect(result).toHaveProperty('deletedBy');
+            expect(result.deletedBy).toEqual(admin['@rid']);
             const updatedEdge = await db.record.get(edge['@rid']);
-            expect(updatedEdge.in).to.not.eql(otherVertex['@rid']);
-            expect(updatedEdge.deletedBy).to.eql(admin['@rid']);
+            expect(updatedEdge.in).not.toEqual(otherVertex['@rid']);
+            expect(updatedEdge.deletedBy).toEqual(admin['@rid']);
         });
         describe('select', () => {
             let cancer,
@@ -359,7 +357,7 @@ if (process.env.GKB_DBS_PASS) {
                     }),
                     {user: admin}
                 );
-                expect(records).to.have.property('length', 2);
+                expect(records).toHaveProperty('length', 2);
             });
             test('limit 1', async () => {
                 const query = Query.parse(schema, schema.Disease, {
@@ -367,16 +365,16 @@ if (process.env.GKB_DBS_PASS) {
                     orderBy: ['createdAt']
                 });
                 const records = await select(db, query, {user: admin});
-                expect(records).to.have.property('length', 1);
-                expect(records[0]).to.have.property('sourceId', 'cancer');
+                expect(records).toHaveProperty('length', 1);
+                expect(records[0]).toHaveProperty('sourceId', 'cancer');
             });
             test('limit 1, skip 1', async () => {
                 const query = Query.parse(schema, schema.Disease, {
                     limit: 1, skip: 1, orderBy: ['createdAt']
                 });
                 const records = await select(db, query, {user: admin});
-                expect(records).to.have.property('length', 1);
-                expect(records[0]).to.have.property('sourceId', 'disease of cellular proliferation');
+                expect(records).toHaveProperty('length', 1);
+                expect(records[0]).toHaveProperty('sourceId', 'disease of cellular proliferation');
             });
         });
         describe('statements', () => {
@@ -480,7 +478,7 @@ if (process.env.GKB_DBS_PASS) {
                     db,
                     Query.parseRecord(schema, schema.Statement, {'@rid': stat['@rid']}, {activeOnly: true})
                 );
-                expect(statements).to.have.property('length', 0);
+                expect(statements).toHaveProperty('length', 0);
             });
             test('update the review status', async () => {
                 const stat = await create(db, {
@@ -504,7 +502,7 @@ if (process.env.GKB_DBS_PASS) {
                     db,
                     Query.parseRecord(schema, schema.Statement, {createdAt: stat.createdAt}, {activeOnly: true})
                 );
-                expect(statements).to.have.property('length', 0);
+                expect(statements).toHaveProperty('length', 0);
             });
             test('error on existing statement', async () => {
                 await create(db, {
@@ -531,8 +529,8 @@ if (process.env.GKB_DBS_PASS) {
                         schema
                     });
                 } catch (err) {
-                    expect(err).to.be.an.instanceof(RecordExistsError);
-                    expect(err.message).to.include('already exists');
+                    expect(err).toBeInstanceOf(RecordExistsError);
+                    expect(err.message).toEqual(expect.arrayContaining(['already exists']));
                     return;
                 }
                 expect.fail('did not throw the expected error');
@@ -573,7 +571,7 @@ if (process.env.GKB_DBS_PASS) {
                     model: schema.Statement,
                     schema
                 });
-                expect(statement).to.have.property('appliesTo', null);
+                expect(statement).toHaveProperty('appliesTo', null);
             });
             describe('query', () => {
                 let relevance3;
@@ -646,7 +644,7 @@ if (process.env.GKB_DBS_PASS) {
                         }
                     );
                     const recordList = await select(db, query);
-                    expect(recordList).to.have.property('length', 2);
+                    expect(recordList).toHaveProperty('length', 2);
                 });
                 test('select on related uni-directional edge properties', async () => {
                     const query = Query.parse(
@@ -669,7 +667,7 @@ if (process.env.GKB_DBS_PASS) {
                         }
                     );
                     const recordList = await select(db, query);
-                    expect(recordList).to.have.property('length', 2);
+                    expect(recordList).toHaveProperty('length', 2);
                 });
             });
         });

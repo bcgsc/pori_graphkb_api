@@ -1,4 +1,3 @@
-const {expect} = require('chai');
 const {types} = require('orientjs');
 
 const {
@@ -35,7 +34,7 @@ describe('splitSchemaClassLevels', () => {
         });
         schema.grandparent._subclasses = [schema.parent, schema.child];
         const levels = splitSchemaClassLevels(schema);
-        expect(levels).to.have.property('length', 3);
+        expect(levels).toHaveProperty('length', 3);
     });
 });
 
@@ -50,7 +49,7 @@ describe('SCHEMA', () => {
                     type: '#33:2',
                     createdBy: '#44:1'
                 }, {addDefaults: true});
-            }).to.throw('missing required attribute');
+            }).toThrowError('missing required attribute');
         });
         test('error on missing break1Start', () => {
             expect(() => {
@@ -61,7 +60,7 @@ describe('SCHEMA', () => {
                     createdBy: '#44:1'
                 }, {addDefaults: true});
                 console.error(formatted);
-            }).to.throw('missing required attribute');
+            }).toThrowError('missing required attribute');
         });
         test('error on position without @class attribute', () => {
             expect(() => {
@@ -72,7 +71,7 @@ describe('SCHEMA', () => {
                     createdBy: '#44:1'
                 }, {addDefaults: true});
                 console.error(formatted);
-            }).to.throw('positions must include the @class attribute');
+            }).toThrowError('positions must include the @class attribute');
         });
         test('error on break2End without break2Start', () => {
             expect(() => {
@@ -84,7 +83,7 @@ describe('SCHEMA', () => {
                     createdBy: '#44:1'
                 }, {addDefaults: true});
                 console.error(formatted);
-            }).to.throw('both start and end');
+            }).toThrowError('both start and end');
         });
         test('auto generates the breakRepr', () => {
             const formatted = SCHEMA_DEFN.PositionalVariant.formatRecord({
@@ -95,8 +94,8 @@ describe('SCHEMA', () => {
                 break2Start: {'@class': 'ExonicPosition', pos: 1},
                 break2End: {'@class': 'ExonicPosition', pos: 3}
             }, {addDefaults: true});
-            expect(formatted).to.have.property('break1Repr', 'p.A1');
-            expect(formatted).to.have.property('break2Repr', 'e.(1_3)');
+            expect(formatted).toHaveProperty('break1Repr', 'p.A1');
+            expect(formatted).toHaveProperty('break2Repr', 'e.(1_3)');
         });
         test('ignores the input breakrepr if given', () => {
             const formatted = SCHEMA_DEFN.PositionalVariant.formatRecord({
@@ -106,7 +105,7 @@ describe('SCHEMA', () => {
                 break1Start: {'@class': 'ProteinPosition', pos: 1, refAA: 'A'},
                 break1Repr: 'bad'
             }, {addDefaults: true});
-            expect(formatted).to.have.property('break1Repr', 'p.A1');
+            expect(formatted).toHaveProperty('break1Repr', 'p.A1');
         });
     });
 });
@@ -128,7 +127,7 @@ describe('ClassModel', () => {
                     properties: [{name: 'prop1', type: OJS_TYPES.string}],
                     superClass: 'Ontology'
                 }, {});
-            }).to.throw('does not match the database definition');
+            }).toThrowError('does not match the database definition');
         });
         test('error on undefined property', () => {
             expect(() => {
@@ -139,7 +138,7 @@ describe('ClassModel', () => {
                     properties: [{name: 'prop2'}],
                     superClass: 'Ontology'
                 }, {});
-            }).to.throw('failed to find the property');
+            }).toThrowError('failed to find the property');
         });
         test('error on wrong property type', () => {
             expect(() => {
@@ -150,25 +149,25 @@ describe('ClassModel', () => {
                     properties: [{name: 'prop1', type: OJS_TYPES.integer}],
                     superClass: 'Ontology'
                 }, {});
-            }).to.throw('does not match the type');
+            }).toThrowError('does not match the type');
         });
     });
     describe('routeName', () => {
         test('does not alter ary suffix', () => {
             const model = new ClassModel({name: 'vocabulary'});
-            expect(model.routeName).to.equal('/vocabulary');
+            expect(model.routeName).toBe('/vocabulary');
         });
         test('does not alter edge class names', () => {
             const model = new ClassModel({name: 'edge', isEdge: true});
-            expect(model.routeName).to.equal('/edge');
+            expect(model.routeName).toBe('/edge');
         });
         test('changes ys to ies', () => {
             const model = new ClassModel({name: 'ontology'});
-            expect(model.routeName).to.equal('/ontologies');
+            expect(model.routeName).toBe('/ontologies');
         });
         test('adds s to regular class names', () => {
             const model = new ClassModel({name: 'statement'});
-            expect(model.routeName).to.equal('/statements');
+            expect(model.routeName).toBe('/statements');
         });
     });
     describe('subclassModel', () => {
@@ -178,13 +177,13 @@ describe('ClassModel', () => {
         test('errors when the class does not exist', () => {
             expect(() => {
                 grandparent.subClassModel('badName');
-            }).to.throw('was not found as a subclass');
+            }).toThrowError('was not found as a subclass');
         });
         test('returns an immeadiate subclass', () => {
-            expect(parent.subClassModel('child')).to.eql(child);
+            expect(parent.subClassModel('child')).toEqual(child);
         });
         test('returns a subclass of a subclass recursively', () => {
-            expect(grandparent.subClassModel('child')).to.eql(child);
+            expect(grandparent.subClassModel('child')).toEqual(child);
         });
     });
     describe('queryProperties', () => {
@@ -200,12 +199,12 @@ describe('ClassModel', () => {
         });
         test('fetches grandfathered properties', () => {
             const queryProp = grandparent.queryProperties;
-            expect(queryProp).to.have.property('childProp');
-            expect(queryProp).to.have.property('grandProp');
+            expect(queryProp).toHaveProperty('childProp');
+            expect(queryProp).toHaveProperty('grandProp');
         });
         test('ok when no subclasses', () => {
             const queryProp = child.queryProperties;
-            expect(Object.keys(queryProp)).to.eql(['childProp']);
+            expect(Object.keys(queryProp)).toEqual(['childProp']);
         });
     });
     describe('inheritance', () => {
@@ -227,20 +226,20 @@ describe('ClassModel', () => {
         });
 
         test('child required returns person attr', () => {
-            expect(person.required).to.eql(['name']);
-            expect(child.required).to.eql(['mom', 'name']);
+            expect(person.required).toEqual(['name']);
+            expect(child.required).toEqual(['mom', 'name']);
         });
         test('child optional returns person attr', () => {
-            expect(person.optional).to.eql(['gender']);
-            expect(child.optional).to.eql(['age', 'gender']);
+            expect(person.optional).toEqual(['gender']);
+            expect(child.optional).toEqual(['age', 'gender']);
         });
         test('inherits to return list of strings', () => {
-            expect(person.inherits).to.eql([]);
-            expect(child.inherits).to.eql([person.name]);
+            expect(person.inherits).toEqual([]);
+            expect(child.inherits).toEqual([person.name]);
         });
         test('is not an edge', () => {
-            expect(person.isEdge).to.be.false;
-            expect(child.isEdge).to.be.true;
+            expect(person.isEdge).toBe(false);
+            expect(child.isEdge).toBe(true);
         });
     });
     describe('formatRecord', () => {
@@ -267,7 +266,7 @@ describe('ClassModel', () => {
                 model.formatRecord({
                     req1: ''
                 }, {dropExtra: false, addDefaults: true});
-            }).to.throw();
+            }).toThrowError();
         });
         test('errors on un-cast-able input', () => {
             expect(() => {
@@ -275,7 +274,7 @@ describe('ClassModel', () => {
                     req1: 2,
                     req2: 'f45'
                 }, {dropExtra: false, addDefaults: true});
-            }).to.throw();
+            }).toThrowError();
         });
         test('errors on un-expected attr', () => {
             expect(() => {
@@ -284,16 +283,16 @@ describe('ClassModel', () => {
                     req2: 1,
                     badAttr: 3
                 }, {dropExtra: false, ignoreExtra: false, addDefaults: false});
-            }).to.throw();
+            }).toThrowError();
         });
         test('adds defaults', () => {
             const record = model.formatRecord({
                 req1: 'term1'
             }, {dropExtra: false, addDefaults: true});
-            expect(record).to.have.property('req1', 'term1');
-            expect(record).to.have.property('req2', 1);
-            expect(record).to.have.property('opt2', 2);
-            expect(record).to.not.have.property('opt1');
+            expect(record).toHaveProperty('req1', 'term1');
+            expect(record).toHaveProperty('req2', 1);
+            expect(record).toHaveProperty('opt2', 2);
+            expect(record).not.toHaveProperty('opt1');
         });
         test('cast embedded types', () => {
             model = new ClassModel({
@@ -309,8 +308,8 @@ describe('ClassModel', () => {
             const record = model.formatRecord({
                 thing: ['aThinNG', 'another THING']
             }, {dropExtra: false, addDefaults: true});
-            expect(record).to.have.property('thing');
-            expect(record.thing).to.eql(['athinng', 'another thing']);
+            expect(record).toHaveProperty('thing');
+            expect(record.thing).toEqual(['athinng', 'another thing']);
         });
         test('cast inheritied embedded types', () => {
             model = new ClassModel({
@@ -330,46 +329,46 @@ describe('ClassModel', () => {
             const record = childModel.formatRecord({
                 thing: ['aThinNG', 'another THING']
             }, {dropExtra: false, addDefaults: true});
-            expect(record).to.have.property('thing');
-            expect(record.thing).to.eql(['athinng', 'another thing']);
+            expect(record).toHaveProperty('thing');
+            expect(record.thing).toEqual(['athinng', 'another thing']);
         });
         test('does not add defaults', () => {
             expect(() => {
                 model.formatRecord({
                     req1: 'term1'
                 }, {dropExtra: false, addDefaults: false});
-            }).to.throw();
+            }).toThrowError();
 
             const record = model.formatRecord({
                 req1: 'term1', req2: '4'
             }, {dropExtra: false, addDefaults: false});
-            expect(record).to.have.property('req1', 'term1');
-            expect(record).to.have.property('req2', 4);
-            expect(record).to.not.have.property('opt2');
-            expect(record).to.not.have.property('opt1');
+            expect(record).toHaveProperty('req1', 'term1');
+            expect(record).toHaveProperty('req2', 4);
+            expect(record).not.toHaveProperty('opt2');
+            expect(record).not.toHaveProperty('opt1');
         });
         test('allows optional parameters', () => {
             const record = model.formatRecord({
                 req1: 'term1', req2: '2', opt1: '2'
             }, {dropExtra: false, addDefaults: false});
-            expect(record).to.have.property('req1', 'term1');
-            expect(record).to.have.property('req2', 2);
-            expect(record).to.have.property('opt1', '2');
-            expect(record).to.not.have.property('opt2');
+            expect(record).toHaveProperty('req1', 'term1');
+            expect(record).toHaveProperty('req2', 2);
+            expect(record).toHaveProperty('opt1', '2');
+            expect(record).not.toHaveProperty('opt2');
         });
         test('error on invalid enum choice', () => {
             expect(() => {
                 model.formatRecord({
                     req1: 'term1', opt2: 4, req2: 1
                 }, {dropExtra: false, addDefaults: false});
-            }).to.throw('Violated the choices constraint of opt2');
+            }).toThrowError('Violated the choices constraint of opt2');
         });
         test('allow nullable enum', () => {
             const record = model.formatRecord({
                 req1: 'term1', opt2: null, req2: 1
             }, {dropExtra: false, addDefaults: false});
-            expect(record).to.have.property('req1', 'term1');
-            expect(record).to.have.property('opt2', null);
+            expect(record).toHaveProperty('req1', 'term1');
+            expect(record).toHaveProperty('opt2', null);
         });
     });
 });
