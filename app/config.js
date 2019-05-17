@@ -39,7 +39,6 @@ module.exports = {
     test: {
         GKB_DISABLE_AUTH: true,
         GKB_LOG_LEVEL: 'error',
-        GKB_DB_HOST: 'localhost',
-        GKB_HOST: 'localhost'
+        GKB_HOST: process.env.HOSTNAME || 'localhost'
     }
 };
