@@ -210,9 +210,7 @@ describeWithAuth('schema', () => {
                 });
             } catch (err) {
                 expect(err).toBeInstanceOf(AttributeError);
-                expect(err.message).toEqual(
-                    expect.arrayContaining(['an edge cannot be used to relate a node/vertex to itself'])
-                );
+                expect(err.message).toContain('an edge cannot be used to relate a node/vertex to itself');
                 return;
             }
             expect.fail('did not throw the expected error');
