@@ -9,7 +9,7 @@ const {
 const {generateToken} = require('./../../app/routes/auth');
 
 const REALLY_LONG_TIME = 10000000000;
-const TEST_TIMEOUT_MS = 50000;
+const TEST_TIMEOUT_MS = 500 * 1000;
 jest.setTimeout(TEST_TIMEOUT_MS);
 
 
@@ -19,51 +19,55 @@ const request = async opt => requestPromise({resolveWithFullResponse: true, json
  * Mocks a set of 3 disease records related as aliases
  */
 const mockRelatedDiseases = async ({app, mockToken, source}) => {
-    const res1 = await request({
-        uri: `${app.url}/diseases`,
-        body: {
-            sourceId: 'cancer',
-            source
-        },
-        method: 'POST',
-        headers: {
-            Authorization: mockToken
-        }
-    });
-    const res2 = await request({
-        uri: `${app.url}/diseases`,
-        body: {
-            sourceId: 'carcinoma',
-            source
-        },
-        method: 'POST',
-        headers: {
-            Authorization: mockToken
-        }
-    });
-    await request({
-        uri: `${app.url}/aliasof`,
-        body: {
-            out: res1.body.result['@rid'],
-            in: res2.body.result['@rid'],
-            source
-        },
-        method: 'POST',
-        headers: {
-            Authorization: mockToken
-        }
-    });
-    const res3 = await request({
-        uri: `${app.url}/diseases`,
-        body: {
-            sourceId: 'disease of cellular proliferation',
-            source
-        },
-        method: 'POST',
-        headers: {
-            Authorization: mockToken
-        }
-    });
+    const [res1, res2] = await Promise.all([
+        request({
+            uri: `${app.url}/diseases`,
+            body: {
+                sourceId: 'cancer',
+                source
+            },
+            method: 'POST',
+            headers: {
+                Authorization: mockToken
+            }
+        }),
+        request({
+            uri: `${app.url}/diseases`,
+            body: {
+                sourceId: 'carcinoma',
+                source
+            },
+            method: 'POST',
+            headers: {
+                Authorization: mockToken
+            }
+        })
+    ]);
+    const [, res3] = await Promise.all([
+        request({
+            uri: `${app.url}/aliasof`,
+            body: {
+                out: res1.body.result['@rid'],
+                in: res2.body.result['@rid'],
+                source
+            },
+            method: 'POST',
+            headers: {
+                Authorization: mockToken
+            }
+        }),
+        request({
+            uri: `${app.url}/diseases`,
+            body: {
+                sourceId: 'disease of cellular proliferation',
+                source
+            },
+            method: 'POST',
+            headers: {
+                Authorization: mockToken
+            }
+        })
+    ]);
     const res4 = await request({
         uri: `${app.url}/aliasof`,
         body: {
@@ -84,7 +88,7 @@ const mockRelatedDiseases = async ({app, mockToken, source}) => {
         }
     });
     await request({
-        uri: `${app.url}/diseases/${res4.body.result['@rid'].slice(1)}`,
+        uri: `${app.url}/aliasof/${res4.body.result['@rid'].slice(1)}`,
         method: 'DELETE',
         headers: {
             Authorization: mockToken
@@ -94,8 +98,15 @@ const mockRelatedDiseases = async ({app, mockToken, source}) => {
     return [res1.body.result, res2.body.result, res3.body.result];
 };
 
+const describeWithAuth = process.env.GKB_DBS_PASS
+    ? describe
+    : describe.skip;
 
-describe('API', () => {
+if (!process.env.GKB_DBS_PASS) {
+    console.warn('Cannot run API tests without database password (GKB_DBS_PASS)');
+}
+
+describeWithAuth('API', () => {
     let db,
         admin,
         app,
@@ -689,7 +700,9 @@ describe('API', () => {
                     body: {
                         sourceId: 'carcinoma',
                         source
-                    }
+                    },
+                    method: 'POST',
+                    headers: {Authorization: mockToken}
                 });
                 expect(res.statusCode).toBe(HTTP_STATUS.CREATED);
                 try {
@@ -711,7 +724,7 @@ describe('API', () => {
             let disease,
                 diseaseId;
             beforeEach(async () => {
-                const res = await request({
+                const {body: {result}} = await request({
                     uri: `${app.url}/diseases`,
                     body: {
                         sourceId: 'cancer',
@@ -720,18 +733,22 @@ describe('API', () => {
                     headers: {Authorization: mockToken},
                     method: 'POST'
                 });
-                disease = res.body.result;
-                diseaseId = res.body.result['@rid'].replace('#', '');
+                disease = result;
+                diseaseId = result['@rid'].replace('#', '');
             });
             test('OK', async () => {
-                const res = await request({uri: `${app.url}/diseases/${diseaseId}`, method: 'DELETE', headers: {Authorization: mockToken}});
+                const res = await request({
+                    uri: `${app.url}/diseases/${diseaseId}`,
+                    method: 'DELETE',
+                    headers: {Authorization: mockToken}
+                });
                 expect(res.statusCode).toBe(HTTP_STATUS.OK);
                 expect(typeof res.body.result).toBe('object');
                 expect(res.body.result).toHaveProperty('sourceId', disease.sourceId);
                 expect(res.body.result).toHaveProperty('source', disease.source);
                 expect(res.body.result).toHaveProperty('@rid', disease['@rid']);
                 expect(res.body.result).toHaveProperty('deletedAt');
-                expect(res.body.result.deletedAt).to.be.a.number;
+                expect(res.body.result.deletedAt).not.toBeNaN();
                 expect(res.body.result).toHaveProperty('deletedBy', admin['@rid'].toString());
             });
             test('NOT FOUND', async () => {
