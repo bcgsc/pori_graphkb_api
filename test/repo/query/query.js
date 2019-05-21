@@ -163,9 +163,7 @@ describe('Query Parsing', () => {
         });
     });
     describe('list attributes', () => {
-        test('uses contains if the input value is not also a list', () => {
-
-        });
+        test.todo('uses contains if the input value is not also a list');
     });
     describe('orderBy', () => {
         test('parses a single order column', () => {
