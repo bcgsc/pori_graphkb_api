@@ -6,7 +6,7 @@ const {stripSQL} = require('./util');
 
 
 describe('treeQuery', () => {
-    it('custom edges', () => {
+    test('custom edges', () => {
         const {query, params} = descendants({
             whereClause: new Comparison('name', 'blargh'),
             modelName: 'Disease',
@@ -19,7 +19,7 @@ describe('treeQuery', () => {
 
 
 describe('neighborhood', () => {
-    it('custom edges and depth', () => {
+    test('custom edges and depth', () => {
         const {query, params} = neighborhood({
             whereClause: new Comparison('name', 'blargh'),
             modelName: 'Disease',

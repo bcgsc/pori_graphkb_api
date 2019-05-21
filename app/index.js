@@ -104,6 +104,10 @@ class AppServer {
         this.app.use(this.prefix, this.router);
     }
 
+    get url() {
+        return `http://${this.host}:${this.port}${this.prefix}`;
+    }
+
     /**
      * Connect to the database, start the API server, and set dynamically built routes
      */

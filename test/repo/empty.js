@@ -23,8 +23,16 @@ const {
 
 const {createConfig} = require('./../../app');
 
+const TEST_TIMEOUT_MS = 20000;
 
-describe('schema', () => {
+let authenticatedDescribe = describe;
+
+if (!process.env.GKB_DBS_PASS) {
+    authenticatedDescribe = describe.skip;
+    console.warn('Cannot run schema tests when the database password is not given (GKB_DBS_PASS)');
+}
+
+authenticatedDescribe('schema', () => {
     let db,
         schema,
         admin,
@@ -32,7 +40,8 @@ describe('schema', () => {
         otherVertex,
         server,
         dbName;
-    before(async () => {
+    beforeAll(async () => {
+        jest.setTimeout(TEST_TIMEOUT_MS);
         ({
             db,
             schema,
@@ -40,11 +49,6 @@ describe('schema', () => {
             server,
             dbName
         } = await setUpEmptyDB(createConfig()));
-    });
-    describe('SelectionQuery', () => {
-        it('select statements related to a particular publication pmid');
-        // it('select statements related to a particular pmid', () => {
-        // select * from statement where outE('supportedBy').inV().asSet() in (select @rid from (select * from evidence where sourceId in ["23578175"]))
     });
     beforeEach(async () => {
         // create the source
@@ -63,8 +67,21 @@ describe('schema', () => {
             user: admin
         });
     });
+    afterEach(async () => {
+        // clear all V/E records
+        await db.query('delete edge e');
+        await db.query('delete vertex v');
+    });
+    afterAll(async () => {
+        if (server) {
+            if (db && dbName) {
+                await server.drop({name: dbName});
+            }
+            await server.close();
+        }
+    });
     describe('create vertex', () => {
-        it('error on source not specified', async () => {
+        test('error on source not specified', async () => {
             try {
                 const record = await create(db, {
                     model: schema.Disease,
@@ -80,7 +97,7 @@ describe('schema', () => {
             }
             expect.fail('did not throw the expected error');
         });
-        it('create a new disease with source disease ontology', async () => {
+        test('create a new disease with source disease ontology', async () => {
             const record = await create(db, {
                 model: schema.Disease,
                 content: {
@@ -93,7 +110,7 @@ describe('schema', () => {
             expect(record.source).to.eql(doSource['@rid']);
         });
     });
-    it('update vertex', async () => {
+    test('update vertex', async () => {
         // make the initial node
         const content = {
             sourceId: 'cancer',
@@ -116,7 +133,7 @@ describe('schema', () => {
             user: admin,
             query: Query.parseRecord(schema, schema.Disease, content)
         });
-        // check that a history link has been added to the node
+            // check that a history link has been added to the node
         expect(updated).to.have.property('sourceId', 'new name');
         expect(record.source).to.eql(doSource['@rid']);
         // check that the 'old'/copy node has the original details
@@ -139,7 +156,7 @@ describe('schema', () => {
         expect(originalNode.deletedBy['@rid']).to.eql(admin['@rid']);
         expect(updated.createdBy).to.eql(admin['@rid']);
     });
-    it('get /stats group by class', async () => {
+    test('get /stats group by class', async () => {
         const stats = await selectCounts(db, ['Source', 'User', 'UserGroup']);
         expect(stats).to.eql({
             Source: 2,
@@ -168,7 +185,7 @@ describe('schema', () => {
                 user: admin
             });
         });
-        it('ok', async () => {
+        test('ok', async () => {
             const edge = await create(db, {
                 model: schema.AliasOf,
                 content: {
@@ -183,7 +200,7 @@ describe('schema', () => {
             expect(edge.out).to.eql(src['@rid']);
             expect(edge.in).to.eql(tgt['@rid']);
         });
-        it('error on src = tgt', async () => {
+        test('error on src = tgt', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -201,7 +218,7 @@ describe('schema', () => {
             }
             expect.fail('did not throw the expected error');
         });
-        it('error on no src (out) vertex', async () => {
+        test('error on no src (out) vertex', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -219,7 +236,7 @@ describe('schema', () => {
             }
             expect.fail('did not throw the expected error');
         });
-        it('error on no tgt (in) vertex', async () => {
+        test('error on no tgt (in) vertex', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -237,7 +254,7 @@ describe('schema', () => {
             }
             expect.fail('did not throw the expected error');
         });
-        it('error on no source link given', async () => {
+        test('error on no source link given', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -255,7 +272,7 @@ describe('schema', () => {
             expect.fail('did not throw the expected error');
         });
     });
-    it('"delete" edge', async () => {
+    test('"delete" edge', async () => {
         // create the initial edge
         const original = await create(db, {
             model: schema.AliasOf,
@@ -267,7 +284,7 @@ describe('schema', () => {
             },
             user: admin
         });
-        // now update the edge, both src and target node should have history after
+            // now update the edge, both src and target node should have history after
         const result = await remove(db, {
             query: Query.parseRecord(schema, schema.AliasOf, {'@rid': original['@rid'].toString(), createdAt: original.createdAt}),
             user: admin,
@@ -282,9 +299,9 @@ describe('schema', () => {
         expect(result.out).to.eql(doSource.history);
         expect(result.in).to.eql(otherVertex.history);
     });
-    it('error on delete deleted vertex');
-    it('error on delete deleted edge');
-    it('"delete" vertex (and connected edges)', async () => {
+    test.todo('error on delete deleted vertex');
+    test.todo('error on delete deleted edge');
+    test('"delete" vertex (and connected edges)', async () => {
         // create an edge
         const edge = await create(db, {
             model: schema.AliasOf,
@@ -340,7 +357,7 @@ describe('schema', () => {
                 user: admin
             });
         });
-        it('get by name OR sourceId', async () => {
+        test('get by name OR sourceId', async () => {
             const records = await select(
                 db,
                 Query.parse(schema, schema.Disease, {
@@ -350,7 +367,7 @@ describe('schema', () => {
             );
             expect(records).to.have.property('length', 2);
         });
-        it('limit 1', async () => {
+        test('limit 1', async () => {
             const query = Query.parse(schema, schema.Disease, {
                 limit: 1,
                 orderBy: ['createdAt']
@@ -359,7 +376,7 @@ describe('schema', () => {
             expect(records).to.have.property('length', 1);
             expect(records[0]).to.have.property('sourceId', 'cancer');
         });
-        it('limit 1, skip 1', async () => {
+        test('limit 1, skip 1', async () => {
             const query = Query.parse(schema, schema.Disease, {
                 limit: 1, skip: 1, orderBy: ['createdAt']
             });
@@ -435,7 +452,7 @@ describe('schema', () => {
                 model: schema.Publication, schema, user: admin, content
             })));
         });
-        it('inserts related edges', async () => {
+        test('inserts related edges', async () => {
             await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -448,7 +465,7 @@ describe('schema', () => {
                 schema
             });
         });
-        it('delete a statement', async () => {
+        test('delete a statement', async () => {
             const stat = await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -471,7 +488,7 @@ describe('schema', () => {
             );
             expect(statements).to.have.property('length', 0);
         });
-        it('update the review status', async () => {
+        test('update the review status', async () => {
             const stat = await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -495,7 +512,7 @@ describe('schema', () => {
             );
             expect(statements).to.have.property('length', 0);
         });
-        it('error on existing statement', async () => {
+        test('error on existing statement', async () => {
             await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -526,7 +543,7 @@ describe('schema', () => {
             }
             expect.fail('did not throw the expected error');
         });
-        it('allows statement with only some shared edges', async () => {
+        test('allows statement with only some shared edges', async () => {
             await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -550,7 +567,7 @@ describe('schema', () => {
                 schema
             });
         });
-        it('create statment with null appliesTo', async () => {
+        test('create statment with null appliesTo', async () => {
             const statement = await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -614,7 +631,7 @@ describe('schema', () => {
                     }
                 ], async opt => create(db, Object.assign({schema, user: admin}, opt))));
             });
-            it('select on related edge properties', async () => {
+            test('select on related edge properties', async () => {
                 const query = Query.parse(
                     schema,
                     schema.Statement,
@@ -637,7 +654,7 @@ describe('schema', () => {
                 const recordList = await select(db, query);
                 expect(recordList).to.have.property('length', 2);
             });
-            it('select on related uni-directional edge properties', async () => {
+            test('select on related uni-directional edge properties', async () => {
                 const query = Query.parse(
                     schema,
                     schema.Statement,
@@ -661,18 +678,5 @@ describe('schema', () => {
                 expect(recordList).to.have.property('length', 2);
             });
         });
-    });
-    afterEach(async () => {
-        // clear all V/E records
-        await db.query('delete edge e');
-        await db.query('delete vertex v');
-    });
-    after(async () => {
-        if (server) {
-            if (db && dbName) {
-                await server.drop({name: dbName});
-            }
-            await server.close();
-        }
     });
 });

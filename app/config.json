@@ -36,6 +36,7 @@
         "GKB_LOG_MAX_FILES": 28
     },
     "test": {
-        "GKB_DISABLE_AUTH": true
+        "GKB_DISABLE_AUTH": true,
+        "GKB_LOG_LEVEL": "error"
     }
 }
