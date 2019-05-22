@@ -88,7 +88,6 @@ class AppServer {
             origin: true
         }));
 
-
         this.db = null;
         this.schema = null;
         this.server = null;
@@ -102,6 +101,12 @@ class AppServer {
         this.router = express.Router();
         this.prefix = '/api';
         this.app.use(this.prefix, this.router);
+
+        if (conf.GKB_LOG_LEVEL) {
+            logger.transports.forEach((transport) => {
+                transport.level = conf.GKB_LOG_LEVEL;
+            });
+        }
     }
 
     get url() {

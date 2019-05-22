@@ -1,7 +1,5 @@
 
 
-const {expect} = require('chai');
-
 const {
     groupRecordsBy,
     trimRecords
@@ -18,7 +16,7 @@ describe('groupRecordsBy', () => {
             {name: 'alice', city: 'van'},
             {name: 'blargh', city: 'monkeys'}
         ];
-        expect(groupRecordsBy(records, ['city'], {value: 'name'})).to.eql({
+        expect(groupRecordsBy(records, ['city'], {value: 'name'})).toEqual({
             van: ['bob', 'alice'],
             monkeys: ['blargh']
         });
@@ -31,7 +29,7 @@ describe('groupRecordsBy', () => {
         ];
         expect(() => {
             groupRecordsBy(records, ['city'], {value: 'name', aggregate: false});
-        }).to.throw('non-unique grouping');
+        }).toThrowError('non-unique grouping');
     });
     test('uses the whole record when nestedProperty is null', () => {
         const records = [
@@ -39,7 +37,7 @@ describe('groupRecordsBy', () => {
             {name: 'alice', city: 'van'},
             {name: 'blargh', city: 'monkeys'}
         ];
-        expect(groupRecordsBy(records, ['city'])).to.eql({
+        expect(groupRecordsBy(records, ['city'])).toEqual({
             van: [{name: 'bob', city: 'van'}, {name: 'alice', city: 'van'}],
             monkeys: [{name: 'blargh', city: 'monkeys'}]
         });
@@ -50,7 +48,7 @@ describe('groupRecordsBy', () => {
             {name: 'alice', city: 'van', country: 'canada'},
             {name: 'blargh', city: 'monkeys', country: 'narnia'}
         ];
-        expect(groupRecordsBy(records, ['country', 'city'], {value: 'name'})).to.eql({
+        expect(groupRecordsBy(records, ['country', 'city'], {value: 'name'})).toEqual({
             canada: {van: ['bob', 'alice']},
             narnia: {monkeys: ['blargh']}
         });
@@ -61,7 +59,7 @@ describe('groupRecordsBy', () => {
             {name: 'alice', city: 'van', country: 'mordor'},
             {name: 'blargh', city: 'monkeys', country: 'narnia'}
         ];
-        expect(groupRecordsBy(records, ['country', 'city'], {value: 'name', aggregate: false})).to.eql({
+        expect(groupRecordsBy(records, ['country', 'city'], {value: 'name', aggregate: false})).toEqual({
             canada: {van: 'bob'},
             mordor: {van: 'alice'},
             narnia: {monkeys: 'blargh'}
@@ -73,27 +71,27 @@ describe('groupRecordsBy', () => {
 describe('hasRecordAccess', () => {
     test('user with no groups', () => {
         const access = hasRecordAccess({groups: []}, {groupRestrictions: [{'@rid': '#2:0'}]});
-        expect(access).to.be.false;
+        expect(access).toBe(false);
     });
     test('record with no groups', () => {
         const access = hasRecordAccess({groups: []}, {});
-        expect(access).to.be.true;
+        expect(access).toBe(true);
     });
     test('record with no groups but admin user', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#2:0'}]}, {});
-        expect(access).to.be.true;
+        expect(access).toBe(true);
     });
     test('record with different group', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#3:0'}]}, {groupRestrictions: [{'@rid': '#4:0'}]});
-        expect(access).to.be.false;
+        expect(access).toBe(false);
     });
     test('record with different group and admin user', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#2:0'}]}, {groupRestrictions: [{'@rid': '#4:0'}]});
-        expect(access).to.be.false;
+        expect(access).toBe(false);
     });
     test('record with the correct group', () => {
         const access = hasRecordAccess({groups: [{'@rid': '#2:0'}, {'@rid': '#4:0'}]}, {groupRestrictions: [{'@rid': '#2:0'}]});
-        expect(access).to.be.true;
+        expect(access).toBe(true);
     });
 });
 
@@ -105,7 +103,7 @@ describe('trimRecords', () => {
             {name: 'alice', link: {name: 'george', '@rid': '#44:0'}}
         ];
         const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
-        expect(trimmed).to.eql(records);
+        expect(trimmed).toEqual(records);
     });
     test('removes protected records (explicit group)', () => {
         const records = [
@@ -113,7 +111,7 @@ describe('trimRecords', () => {
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ];
         const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
-        expect(trimmed).to.eql([{name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}]);
+        expect(trimmed).toEqual([{name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}]);
     });
     test('removes protected edges (default ok)', () => {
         const records = [
@@ -125,7 +123,7 @@ describe('trimRecords', () => {
             }
         ];
         const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
-        expect(trimmed).to.eql([
+        expect(trimmed).toEqual([
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ]);
@@ -136,7 +134,7 @@ describe('trimRecords', () => {
             {name: 'alice', out_link: {'@rid': '44:1', groupRestrictions: [{'@rid': '#2:0'}]}, groupRestrictions: [{'@rid': '#1:0'}]}
         ];
         const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
-        expect(trimmed).to.eql([
+        expect(trimmed).toEqual([
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ]);
@@ -147,7 +145,7 @@ describe('trimRecords', () => {
             {name: 'alice', link: {name: 'george', '@rid': '#44:1', groupRestrictions: [{'@rid': '#55:5'}]}, groupRestrictions: [{'@rid': '#2:1'}]}
         ];
         const trimmed = trimRecords(records, {user: {groups: [{'@rid': '#2:1'}]}});
-        expect(trimmed).to.eql([
+        expect(trimmed).toEqual([
             {name: 'bob'},
             {name: 'alice', groupRestrictions: [{'@rid': '#2:1'}]}
         ]);

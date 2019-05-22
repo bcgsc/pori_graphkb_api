@@ -28,6 +28,7 @@ module.exports = {
             }
         ]
     ],
+    testRunner: 'jest-circus/runner',
     testRegex: 'test/.*\\.js',
     testEnvironment: 'node',
     testPathIgnorePatterns: [

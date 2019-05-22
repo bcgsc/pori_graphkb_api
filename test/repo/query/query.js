@@ -1,5 +1,3 @@
-const {expect} = require('chai');
-
 const {
     schema: SCHEMA_DEFN,
     util: {castDecimalInteger, castToRID}
@@ -57,7 +55,7 @@ describe('Query Parsing', () => {
             ]),
             {limit: 1000, neighbors: 3}
         );
-        expect(parsed).to.eql(expected);
+        expect(parsed).toEqual(expected);
     });
     test('uses contains for an edge traversal', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.V, {
@@ -91,7 +89,7 @@ describe('Query Parsing', () => {
             ]),
             {limit: 1000, neighbors: 3}
         );
-        expect(parsed.toString()).to.eql(expected.toString());
+        expect(parsed.toString()).toEqual(expected.toString());
     });
     test('parses a simple single Comparison', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
@@ -110,7 +108,7 @@ describe('Query Parsing', () => {
                 )
             ])
         );
-        expect(expected).to.eql(parsed);
+        expect(expected).toEqual(parsed);
     });
     test('parses a simple single Comparison including history', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
@@ -130,7 +128,7 @@ describe('Query Parsing', () => {
             ]),
             {activeOnly: false}
         );
-        expect(parsed).to.eql(expected);
+        expect(parsed).toEqual(expected);
     });
     describe('nested Clause', () => {
         test('AND then OR', () => {
@@ -161,7 +159,7 @@ describe('Query Parsing', () => {
                 ]),
                 {activeOnly: false}
             );
-            expect(parsed).to.eql(expected);
+            expect(parsed).toEqual(expected);
         });
     });
     describe('list attributes', () => {
@@ -180,11 +178,11 @@ describe('Query Parsing', () => {
                 new Clause('AND', []),
                 {activeOnly: false, orderBy: ['@rid']}
             );
-            expect(parsed).to.eql(expected);
+            expect(parsed).toEqual(expected);
             const sql = 'SELECT * FROM Disease ORDER BY @rid ASC';
             const {query, params} = parsed.toString();
-            expect(params).to.eql({});
-            expect(stripSQL(query)).to.equal(stripSQL(sql));
+            expect(params).toEqual({});
+            expect(stripSQL(query)).toBe(stripSQL(sql));
         });
         test('descending order', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
@@ -199,11 +197,11 @@ describe('Query Parsing', () => {
                 new Clause('AND', []),
                 {activeOnly: false, orderBy: ['name'], orderByDirection: 'DESC'}
             );
-            expect(parsed).to.eql(expected);
+            expect(parsed).toEqual(expected);
             const sql = 'SELECT * FROM Disease ORDER BY name DESC';
             const {query, params} = parsed.toString();
-            expect(params).to.eql({});
-            expect(stripSQL(query)).to.equal(stripSQL(sql));
+            expect(params).toEqual({});
+            expect(stripSQL(query)).toBe(stripSQL(sql));
         });
         test('parses a multiple ordering columns', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
@@ -217,11 +215,11 @@ describe('Query Parsing', () => {
                 new Clause('AND', []),
                 {activeOnly: false, orderBy: ['@rid', '@class']}
             );
-            expect(parsed).to.eql(expected);
+            expect(parsed).toEqual(expected);
             const sql = 'SELECT * FROM Disease ORDER BY @rid ASC, @class ASC';
             const {query, params} = parsed.toString();
-            expect(params).to.eql({});
-            expect(stripSQL(query)).to.equal(stripSQL(sql));
+            expect(params).toEqual({});
+            expect(stripSQL(query)).toBe(stripSQL(sql));
         });
     });
     describe('subquery', () => {
@@ -259,7 +257,7 @@ describe('Query Parsing', () => {
                 ]),
                 {activeOnly: true}
             );
-            expect(parsed).to.eql(expected);
+            expect(parsed).toEqual(expected);
             const sql = stripSQL(`
                 SELECT *
                     FROM (SELECT *
@@ -269,8 +267,8 @@ describe('Query Parsing', () => {
                         )
                     WHERE deletedAt IS NULL`);
             const {query, params} = parsed.toString();
-            expect(params).to.eql({param0: 'disease-ontology'});
-            expect(query).to.equal(sql);
+            expect(params).toEqual({param0: 'disease-ontology'});
+            expect(query).toBe(sql);
         });
         test('link in neighborhood subquery', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
@@ -307,15 +305,15 @@ describe('Query Parsing', () => {
                 ]),
                 {activeOnly: false}
             );
-            expect(parsed).to.eql(expected);
+            expect(parsed).toEqual(expected);
             const sql = `SELECT * FROM Disease
                 WHERE source IN (SELECT * FROM (
                     MATCH {class: Source, WHERE: (name = :param0)}.both(
                         ${Array.from(NEIGHBORHOOD_EDGES, quoteWrap).join(', ')}
                     ){WHILE: ($depth < 3)} RETURN $pathElements))`;
             const {query, params} = parsed.toString();
-            expect(params).to.eql({param0: 'disease-ontology'});
-            expect(stripSQL(query)).to.equal(stripSQL(sql));
+            expect(params).toEqual({param0: 'disease-ontology'});
+            expect(stripSQL(query)).toBe(stripSQL(sql));
         });
         test('query by string in subset', () => {
 
@@ -329,31 +327,31 @@ describe('Comparison', () => {
         test('throws error on non-std operator', () => {
             expect(() => {
                 new Comparison('blargh', 'monkeys', 'BAD');
-            }).to.throw('Invalid operator');
+            }).toThrowError('Invalid operator');
         });
         test('throws error on AND operator', () => {
             expect(() => {
                 new Comparison('blargh', 'monkeys', 'AND');
-            }).to.throw('Invalid operator');
+            }).toThrowError('Invalid operator');
         });
         test('throws error on OR operator', () => {
             expect(() => {
                 new Comparison('blargh', 'monkeys', 'OR');
-            }).to.throw('Invalid operator');
+            }).toThrowError('Invalid operator');
         });
     });
     describe('toString', () => {
         test('wrap when negated', () => {
             const comp = new Comparison('blargh', 'monkeys', OPERATORS.EQ, true);
             const {query, params} = comp.toString();
-            expect(query).to.equal('NOT (blargh = :param0)');
-            expect(params).to.eql({param0: 'monkeys'});
+            expect(query).toBe('NOT (blargh = :param0)');
+            expect(params).toEqual({param0: 'monkeys'});
         });
         test('value is a list', () => {
             const comp = new Comparison('blargh', ['monkeys', 'monkees'], OPERATORS.EQ, true);
             const {query, params} = comp.toString();
-            expect(query).to.equal('NOT (blargh = [:param0, :param1])');
-            expect(params).to.eql({param0: 'monkeys', param1: 'monkees'});
+            expect(query).toBe('NOT (blargh = [:param0, :param1])');
+            expect(params).toEqual({param0: 'monkeys', param1: 'monkees'});
         });
     });
     describe('validate', () => {
@@ -369,9 +367,7 @@ describe('Comparison', () => {
                 '1',
                 OPERATORS.GT
             );
-            expect(comp.validate.bind(comp)).to.throw(
-                'cannot be used in conjunction with an iterable property'
-            );
+            expect(comp.validate.bind(comp)).toThrowError('cannot be used in conjunction with an iterable property');
         });
         test('casts all values in an Array individually', () => {
             const comp = new Comparison(
@@ -386,7 +382,7 @@ describe('Comparison', () => {
                 OPERATORS.IN
             );
             comp.validate();
-            expect(comp.value).to.eql([1, 2, 3]);
+            expect(comp.value).toEqual([1, 2, 3]);
         });
         test('checks values against an choices for each value in an Array', () => {
             const comp = new Comparison(
@@ -414,7 +410,7 @@ describe('Comparison', () => {
                 ['blargh', 'monkey'],
                 OPERATORS.IN
             );
-            expect(comp.validate.bind(comp)).to.throw('restricted to enum values');
+            expect(comp.validate.bind(comp)).toThrowError('restricted to enum values');
         });
         test('Error on non-terable prop = LIST', () => {
             const comp = new Comparison(
@@ -427,7 +423,7 @@ describe('Comparison', () => {
                 ['blargh', 'monkey'],
                 OPERATORS.EQ
             );
-            expect(comp.validate.bind(comp)).to.throw('Using a direct comparison');
+            expect(comp.validate.bind(comp)).toThrowError('Using a direct comparison');
         });
         test('Error on iterable prop CONTAINS LIST', () => {
             const comp = new Comparison(
@@ -440,7 +436,7 @@ describe('Comparison', () => {
                 ['blargh', 'monkey'],
                 OPERATORS.CONTAINS
             );
-            expect(comp.validate.bind(comp)).to.throw('CONTAINS should be used with non-iterable values');
+            expect(comp.validate.bind(comp)).toThrowError('CONTAINS should be used with non-iterable values');
         });
         test('Error on non-iterable prop contains', () => {
             const comp = new Comparison(
@@ -453,7 +449,7 @@ describe('Comparison', () => {
                 'monkey',
                 OPERATORS.CONTAINS
             );
-            expect(comp.validate.bind(comp)).to.throw('CONTAINS can only be used with iterable properties');
+            expect(comp.validate.bind(comp)).toThrowError('CONTAINS can only be used with iterable properties');
         });
         test('Error on iterable prop contains NULL', () => {
             const comp = new Comparison(
@@ -466,7 +462,7 @@ describe('Comparison', () => {
                 null,
                 OPERATORS.CONTAINS
             );
-            expect(comp.validate.bind(comp)).to.throw('used for NULL comparison');
+            expect(comp.validate.bind(comp)).toThrowError('used for NULL comparison');
         });
         test('Error on non-iterable value using IN', () => {
             const comp = new Comparison(
@@ -479,7 +475,7 @@ describe('Comparison', () => {
                 'blarghmonkeys',
                 OPERATORS.IN
             );
-            expect(comp.validate.bind(comp)).to.throw('IN should only be used with iterable values');
+            expect(comp.validate.bind(comp)).toThrowError('IN should only be used with iterable values');
         });
         test('Error on iterable prop = non-null, non-iterable value', () => {
             const comp = new Comparison(
@@ -492,7 +488,7 @@ describe('Comparison', () => {
                 'blarghmonkeys',
                 OPERATORS.EQ
             );
-            expect(comp.validate.bind(comp)).to.throw('must be against an iterable value');
+            expect(comp.validate.bind(comp)).toThrowError('must be against an iterable value');
         });
     });
 });

@@ -1,10 +1,6 @@
 
 
 const {
-    expect
-} = require('chai');
-
-const {
     create,
     update,
     remove,
@@ -23,16 +19,18 @@ const {
 
 const {createConfig} = require('./../../app');
 
-const TEST_TIMEOUT_MS = 20000;
+const TEST_TIMEOUT_MS = 100000;
+jest.setTimeout(TEST_TIMEOUT_MS);
 
-let authenticatedDescribe = describe;
+const describeWithAuth = process.env.GKB_DBS_PASS
+    ? describe
+    : describe.skip;
 
 if (!process.env.GKB_DBS_PASS) {
-    authenticatedDescribe = describe.skip;
-    console.warn('Cannot run schema tests when the database password is not given (GKB_DBS_PASS)');
+    console.warn('Cannot run schema tests without database password (GKB_DBS_PASS)');
 }
 
-authenticatedDescribe('schema', () => {
+describeWithAuth('schema', () => {
     let db,
         schema,
         admin,
@@ -41,7 +39,6 @@ authenticatedDescribe('schema', () => {
         server,
         dbName;
     beforeAll(async () => {
-        jest.setTimeout(TEST_TIMEOUT_MS);
         ({
             db,
             schema,
@@ -92,7 +89,7 @@ authenticatedDescribe('schema', () => {
                 });
                 console.error(record);
             } catch (err) {
-                expect(err.message).to.include('missing required attribute source');
+                expect(err.message).toContain('missing required attribute source');
                 return;
             }
             expect.fail('did not throw the expected error');
@@ -106,8 +103,8 @@ authenticatedDescribe('schema', () => {
                 },
                 user: admin
             });
-            expect(record).to.have.property('sourceId', 'cancer');
-            expect(record.source).to.eql(doSource['@rid']);
+            expect(record).toHaveProperty('sourceId', 'cancer');
+            expect(record.source).toEqual(doSource['@rid']);
         });
     });
     test('update vertex', async () => {
@@ -121,8 +118,8 @@ authenticatedDescribe('schema', () => {
             content,
             user: admin
         });
-        expect(record).to.have.property('sourceId', 'cancer');
-        expect(record.source).to.eql(doSource['@rid']);
+        expect(record).toHaveProperty('sourceId', 'cancer');
+        expect(record.source).toEqual(doSource['@rid']);
         // change the name
         const updated = await update(db, {
             schema,
@@ -133,11 +130,11 @@ authenticatedDescribe('schema', () => {
             user: admin,
             query: Query.parseRecord(schema, schema.Disease, content)
         });
-            // check that a history link has been added to the node
-        expect(updated).to.have.property('sourceId', 'new name');
-        expect(record.source).to.eql(doSource['@rid']);
+        // check that a history link has been added to the node
+        expect(updated).toHaveProperty('sourceId', 'new name');
+        expect(record.source).toEqual(doSource['@rid']);
         // check that the 'old'/copy node has the original details
-        expect(updated['@rid']).to.eql(record['@rid']);
+        expect(updated['@rid']).toEqual(record['@rid']);
         // select the original node
         let originalNode = await select(
             db,
@@ -152,13 +149,13 @@ authenticatedDescribe('schema', () => {
             {fetchPlan: '*:1', exactlyN: 1}
         );
         originalNode = originalNode[0];
-        expect(updated.history).to.eql(originalNode['@rid']);
-        expect(originalNode.deletedBy['@rid']).to.eql(admin['@rid']);
-        expect(updated.createdBy).to.eql(admin['@rid']);
+        expect(updated.history).toEqual(originalNode['@rid']);
+        expect(originalNode.deletedBy['@rid']).toEqual(admin['@rid']);
+        expect(updated.createdBy).toEqual(admin['@rid']);
     });
     test('get /stats group by class', async () => {
         const stats = await selectCounts(db, ['Source', 'User', 'UserGroup']);
-        expect(stats).to.eql({
+        expect(stats).toEqual({
             Source: 2,
             User: 1,
             UserGroup: 3
@@ -195,10 +192,10 @@ authenticatedDescribe('schema', () => {
                 },
                 user: admin
             });
-            expect(edge).to.have.property('source');
-            expect(edge.source).to.eql(doSource['@rid']);
-            expect(edge.out).to.eql(src['@rid']);
-            expect(edge.in).to.eql(tgt['@rid']);
+            expect(edge).toHaveProperty('source');
+            expect(edge.source).toEqual(doSource['@rid']);
+            expect(edge.out).toEqual(src['@rid']);
+            expect(edge.in).toEqual(tgt['@rid']);
         });
         test('error on src = tgt', async () => {
             try {
@@ -212,8 +209,8 @@ authenticatedDescribe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('an edge cannot be used to relate a node/vertex to itself');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('an edge cannot be used to relate a node/vertex to itself');
                 return;
             }
             expect.fail('did not throw the expected error');
@@ -230,8 +227,8 @@ authenticatedDescribe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('The out property cannot be null');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('The out property cannot be null');
                 return;
             }
             expect.fail('did not throw the expected error');
@@ -248,8 +245,8 @@ authenticatedDescribe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('The in property cannot be null');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('The in property cannot be null');
                 return;
             }
             expect.fail('did not throw the expected error');
@@ -265,15 +262,15 @@ authenticatedDescribe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('[AliasOf] missing required attribute source');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('[AliasOf] missing required attribute source');
                 return;
             }
             expect.fail('did not throw the expected error');
         });
     });
     test('"delete" edge', async () => {
-        // create the initial edge
+    // create the initial edge
         const original = await create(db, {
             model: schema.AliasOf,
             content: {
@@ -284,25 +281,25 @@ authenticatedDescribe('schema', () => {
             },
             user: admin
         });
-            // now update the edge, both src and target node should have history after
+        // now update the edge, both src and target node should have history after
         const result = await remove(db, {
             query: Query.parseRecord(schema, schema.AliasOf, {'@rid': original['@rid'].toString(), createdAt: original.createdAt}),
             user: admin,
             model: schema.AliasOf,
             schema
         });
-        expect(result).to.have.property('deletedBy');
-        expect(result.createdBy).to.eql(admin['@rid']);
-        expect(result).to.have.property('deletedAt');
-        expect(result.deletedAt).to.not.be.null;
+        expect(result).toHaveProperty('deletedBy');
+        expect(result.createdBy).toEqual(admin['@rid']);
+        expect(result).toHaveProperty('deletedAt');
+        expect(result.deletedAt).not.toBeNull();
         [otherVertex, doSource] = await db.record.get([otherVertex['@rid'], doSource['@rid']]);
-        expect(result.out).to.eql(doSource.history);
-        expect(result.in).to.eql(otherVertex.history);
+        expect(result.out).toEqual(doSource.history);
+        expect(result.in).toEqual(otherVertex.history);
     });
     test.todo('error on delete deleted vertex');
     test.todo('error on delete deleted edge');
     test('"delete" vertex (and connected edges)', async () => {
-        // create an edge
+    // create an edge
         const edge = await create(db, {
             model: schema.AliasOf,
             content: {
@@ -319,12 +316,12 @@ authenticatedDescribe('schema', () => {
             model: schema.Source,
             schema
         });
-        expect(result).to.have.property('deletedAt');
-        expect(result).to.have.property('deletedBy');
-        expect(result.deletedBy).to.eql(admin['@rid']);
+        expect(result).toHaveProperty('deletedAt');
+        expect(result).toHaveProperty('deletedBy');
+        expect(result.deletedBy).toEqual(admin['@rid']);
         const updatedEdge = await db.record.get(edge['@rid']);
-        expect(updatedEdge.in).to.not.eql(otherVertex['@rid']);
-        expect(updatedEdge.deletedBy).to.eql(admin['@rid']);
+        expect(updatedEdge.in).not.toEqual(otherVertex['@rid']);
+        expect(updatedEdge.deletedBy).toEqual(admin['@rid']);
     });
     describe('select', () => {
         let cancer,
@@ -365,7 +362,7 @@ authenticatedDescribe('schema', () => {
                 }),
                 {user: admin}
             );
-            expect(records).to.have.property('length', 2);
+            expect(records).toHaveProperty('length', 2);
         });
         test('limit 1', async () => {
             const query = Query.parse(schema, schema.Disease, {
@@ -373,16 +370,16 @@ authenticatedDescribe('schema', () => {
                 orderBy: ['createdAt']
             });
             const records = await select(db, query, {user: admin});
-            expect(records).to.have.property('length', 1);
-            expect(records[0]).to.have.property('sourceId', 'cancer');
+            expect(records).toHaveProperty('length', 1);
+            expect(records[0]).toHaveProperty('sourceId', 'cancer');
         });
         test('limit 1, skip 1', async () => {
             const query = Query.parse(schema, schema.Disease, {
                 limit: 1, skip: 1, orderBy: ['createdAt']
             });
             const records = await select(db, query, {user: admin});
-            expect(records).to.have.property('length', 1);
-            expect(records[0]).to.have.property('sourceId', 'disease of cellular proliferation');
+            expect(records).toHaveProperty('length', 1);
+            expect(records[0]).toHaveProperty('sourceId', 'disease of cellular proliferation');
         });
     });
     describe('statements', () => {
@@ -486,7 +483,7 @@ authenticatedDescribe('schema', () => {
                 db,
                 Query.parseRecord(schema, schema.Statement, {'@rid': stat['@rid']}, {activeOnly: true})
             );
-            expect(statements).to.have.property('length', 0);
+            expect(statements).toHaveProperty('length', 0);
         });
         test('update the review status', async () => {
             const stat = await create(db, {
@@ -510,7 +507,7 @@ authenticatedDescribe('schema', () => {
                 db,
                 Query.parseRecord(schema, schema.Statement, {createdAt: stat.createdAt}, {activeOnly: true})
             );
-            expect(statements).to.have.property('length', 0);
+            expect(statements).toHaveProperty('length', 0);
         });
         test('error on existing statement', async () => {
             await create(db, {
@@ -537,8 +534,8 @@ authenticatedDescribe('schema', () => {
                     schema
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(RecordExistsError);
-                expect(err.message).to.include('already exists');
+                expect(err).toBeInstanceOf(RecordExistsError);
+                expect(err.message).toContain('already exists');
                 return;
             }
             expect.fail('did not throw the expected error');
@@ -579,7 +576,7 @@ authenticatedDescribe('schema', () => {
                 model: schema.Statement,
                 schema
             });
-            expect(statement).to.have.property('appliesTo', null);
+            expect(statement).toHaveProperty('appliesTo', null);
         });
         describe('query', () => {
             let relevance3;
@@ -652,7 +649,7 @@ authenticatedDescribe('schema', () => {
                     }
                 );
                 const recordList = await select(db, query);
-                expect(recordList).to.have.property('length', 2);
+                expect(recordList).toHaveProperty('length', 2);
             });
             test('select on related uni-directional edge properties', async () => {
                 const query = Query.parse(
@@ -675,7 +672,7 @@ authenticatedDescribe('schema', () => {
                     }
                 );
                 const recordList = await select(db, query);
-                expect(recordList).to.have.property('length', 2);
+                expect(recordList).toHaveProperty('length', 2);
             });
         });
     });
