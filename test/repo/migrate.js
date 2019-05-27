@@ -102,7 +102,7 @@ describe('migrate', () => {
             _version.getCurrentVersion = jest.fn().mockResolvedValue('1.8.0');
             _version.getLoadVersion = jest.fn().mockReturnValue({version: '1.9.0'});
             await migrate(db);
-            expect(db.query).toHaveBeenCalledTimes(6);
+            expect(db.query).toHaveBeenCalledTimes(15);
             expect(db.class.get).toHaveBeenCalledTimes(3);
             expect(propertyMock).toHaveBeenCalledTimes(4);
             expect(modelMock).toHaveBeenCalledTimes(1);
@@ -134,7 +134,7 @@ describe('migrate', () => {
             _version.getLoadVersion = jest.fn().mockReturnValue({version: '1.9.2'});
             await migrate(db);
             expect(createRecordMock).toHaveBeenCalledTimes(4); // logged 4 times
-            expect(db.query).toHaveBeenCalledTimes(6); // 1.8 to 1.9
+            expect(db.query).toHaveBeenCalledTimes(15); // 1.8 to 1.9
             expect(db.index.create).toHaveBeenCalledTimes(3); // 1.6 to 1.7
             expect(propertyMock).toHaveBeenCalledTimes(5); // mixed
         });
