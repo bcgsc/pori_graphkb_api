@@ -67,17 +67,25 @@ const migrate17Xto18X = async (db) => {
  * @param {orientjs.Db} db the database connection
  */
 const migrate18Xto19X = async (db) => {
-    logger.info('Convert Evidence to an abstract class');
+    logger.info('Convert Evidence to an abstract class (slow, please wait)');
     await db.query('ALTER CLASS Evidence SUPERCLASS -Ontology');
+    await db.query('DROP CLASS EvidenceGroup');
+    await db.query('DROP PROPERTY Permissions.EvidenceGroup');
+
+    for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication']) {
+        logger.info(`Remove Evidence as parent from ${subclass}`);
+        await db.query(`ALTER CLASS ${subclass} SUPERCLASS -Evidence`);
+        logger.info(`Add Ontology as parent to ${subclass}`);
+        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Ontology`);
+    }
+    logger.info('make evidence abstract');
     await db.query('ALTER CLASS Evidence ABSTRACT TRUE');
 
-    logger.info('Add Evidence as parent of Source');
-    await db.query('ALTER CLASS Source SUPERCLASS +Evidence');
-
-    logger.info('Add Ontology as parent of previous Evidence children');
-    await db.query('ALTER CLASS EvidenceLevel SUPERCLASS +Ontology');
-    await db.query('ALTER CLASS ClinicalTrial SUPERCLASS +Ontology');
-    await db.query('ALTER CLASS Publication SUPERCLASS +Ontology');
+    logger.info('Re-add Evidence as abstract parent');
+    for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication', 'Source']) {
+        logger.info(`Add Evidence as parent of ${subclass} (slow, please wait)`);
+        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`);
+    }
 
     logger.info('Add actionType property to class TargetOf');
     const {actionType} = SCHEMA_DEFN.TargetOf.properties;
@@ -86,6 +94,7 @@ const migrate18Xto19X = async (db) => {
 
     logger.info('Create the CuratedContent class');
     await ClassModel.create(SCHEMA_DEFN.CuratedContent, db);
+    await db.query('CREATE PROPERTY Permissions.CuratedContent INTEGER (NOTNULL TRUE, MIN 0, MAX 15)');
 
     logger.info('Add addition Source properties');
     const source = await db.class.get(SCHEMA_DEFN.Source.name);
