@@ -35,12 +35,12 @@ const STUB = {
         '/token': {post: routes.POST_TOKEN},
         '/schema': {get: routes.GET_SCHEMA},
         '/version': {get: routes.GET_VERSION},
-        '/search': {get: routes.GET_KEYWORD},
+        '/statements/search': {get: routes.GET_STATEMENT_BY_KEYWORD},
         '/records': {get: routes.GET_RECORDS},
         '/spec': {
             get: {
                 summary: 'Returns this specification',
-                tags: ['General'],
+                tags: ['Metadata'],
                 responses: {
                     200: {}
                 }
@@ -49,7 +49,7 @@ const STUB = {
         '/spec.json': {
             get: {
                 summary: 'Returns the JSON format of this specification',
-                tags: ['General'],
+                tags: ['Metadata'],
                 responses: {
                     200: {
                         schema: {type: 'object'}
@@ -72,19 +72,24 @@ const STUB = {
             in: {
                 in: 'query',
                 name: 'in',
-                schema: {$ref: `${SCHEMA_PREFIX}/RID`},
+                schema: {$ref: `${SCHEMA_PREFIX}/RecordLink`},
                 description: 'The record ID of the vertex the edge goes into, the target/destination vertex'
             },
             out: {
                 in: 'query',
                 name: 'out',
-                schema: {$ref: `${SCHEMA_PREFIX}/RID`},
+                schema: {$ref: `${SCHEMA_PREFIX}/RecordLink`},
                 description: 'The record ID of the vertex the edge comes from, the source vertex'
             }
         },
         responses
     },
-    tags: []
+    tags: [{
+        name: 'Metadata', description: 'routes dealing with app metadata'
+    },
+    {
+        name: 'General', description: 'non-class specific routes'
+    }]
 };
 
 
@@ -98,8 +103,7 @@ const STUB = {
  */
 const linkOrModel = (model, nullable = false) => {
     const param = {
-        type: 'object',
-        oneOf: [
+        anyOf: [
             {
                 $ref: `${SCHEMA_PREFIX}/@rid`
             },
@@ -316,7 +320,7 @@ const describeGet = (model) => {
  */
 const describeOperationByID = (model, operation = 'delete') => {
     const description = {
-        summary: `${operation} an existing ${model.name} record`,
+        summary: `${operation} ${model.name} record by ID`,
         tags: [model.name],
         parameters: _.concat(Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({$ref: `#/components/parameters/${p.name}`})),
             [{
@@ -365,20 +369,15 @@ const describePostSearch = (model) => {
     const body = {
         type: 'object',
         properties: {
-            skip: {nullable: true, type: 'integer', min: 0},
-            activeOnly: {type: 'boolean', default: true},
+            skip: {$ref: '#/components/schemas/skip'},
+            activeOnly: {$ref: '#/components/schemas/activeOnly'},
             where: {type: 'array', items: {$ref: `${SCHEMA_PREFIX}/Comparison`}},
-            returnProperties: {type: 'array', items: {type: 'string'}},
-            limit: {type: 'integer', min: 1, max: MAX_QUERY_LIMIT},
-            neighbors: {
-                type: 'integer',
-                min: 0,
-                max: MAX_JUMPS,
-                description: 'For the final query result, fetch records up to this many links away (warning: may significantly increase query time)'
-            },
-            count: {type: 'boolean', default: 'false', description: 'return a count of the resulting records instead of the records themselves'},
-            orderBy: {type: 'string', description: 'CSV delimited list of property names (traversals) to sort the results by'},
-            orderByDirection: {type: 'string', enum: ['ASC', 'DESC'], description: 'When orderBy is given, this is used to determine the ordering direction'}
+            returnProperties: {$ref: '#/components/schemas/returnProperties'},
+            limit: {$ref: '#/components/schemas/limit'},
+            neighbors: {$ref: '#/components/schemas/neighbors'},
+            count: {$ref: '#/components/schemas/count'},
+            orderBy: {$ref: '#/components/schemas/orderBy'},
+            orderByDirection: {$ref: '#/components/schemas/orderByDirection'}
         }
     };
     const description = {
@@ -472,7 +471,7 @@ const generateSwaggerSpec = (schema, metadata) => {
         };
 
         if (Object.values(model.expose).some(x => x) && docs.paths[model.routeName] === undefined) {
-            docs.paths[model.routeName] = {};
+            docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
         if (model.expose.QUERY && !docs.paths[model.routeName].get) {
             docs.paths[model.routeName].get = describeGet(model);
@@ -497,8 +496,8 @@ const generateSwaggerSpec = (schema, metadata) => {
         }
         if (model.isAbstract) {
             // should inherit from its concrete subclasses instead
-            const oneOf = model.subclasses.map(m => ({$ref: `#/components/schemas/${m.name}`}));
-            docs.components.schemas[model.name].oneOf = oneOf;
+            const anyOf = model.subclasses.map(m => ({$ref: `#/components/schemas/${m.name}`}));
+            docs.components.schemas[model.name].anyOf = anyOf;
             continue;
         }
         // for all model properties add a query parameter to the main GET request. Also add to the model components spec

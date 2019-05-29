@@ -13,6 +13,9 @@ const {
         TRAVERSAL_TYPE, DIRECTIONS, NEIGHBORHOOD_EDGES, OPERATORS
     }
 } = require('./../../repo/query');
+const {
+    MAX_QUERY_LIMIT, MAX_JUMPS
+} = require('./constants');
 
 const PREFIX = '#/components/schemas';
 
@@ -47,7 +50,7 @@ const source = {
 
 const SourceLink = {
     description: 'A direct link to source record. Can be the record ID of the linked source record in the form of a string or the record itself',
-    oneOf: [
+    anyOf: [
         {
             $ref: `${PREFIX}/@rid`
         },
@@ -64,7 +67,7 @@ const EdgeList = {
 
 const RecordLink = {
     description: 'A direct link to another record. Can be the record ID of the linked record in the form of a string or the record itself',
-    oneOf: [
+    anyOf: [
         {
             $ref: `${PREFIX}/@rid`
         },
@@ -78,7 +81,7 @@ const RecordLink = {
 
 const UserLink = {
     description: 'A direct link to user record. Can be the record ID of the linked user record in the form of a string or the record itself',
-    oneOf: [
+    anyOf: [
         {
             $ref: `${PREFIX}/@rid`
         },
@@ -90,7 +93,7 @@ const UserLink = {
 
 const OntologyLink = {
     description: 'A direct link to ontology term record. Can be the record ID of the linked ontology record in the form of a string or the record itself',
-    oneOf: [
+    anyOf: [
         {
             $ref: `${PREFIX}/@rid`
         },
@@ -102,19 +105,19 @@ const OntologyLink = {
 
 const VocabularyLink = {
     description: 'A direct link to vocabulary term record. Can be the record ID of the linked vocabulary record in the form of a string or the record itself',
-    oneOf: [
+    anyOf: [
         {
             $ref: `${PREFIX}/@rid`
         },
         {
-            $ref: `${PREFIX}/vocabulary`
+            $ref: `${PREFIX}/Vocabulary`
         }
     ]
 };
 
 const FeatureLink = {
     description: 'A direct link to feature record. Can be the record ID of the linked feature record in the form of a string or the record itself',
-    oneOf: [
+    anyOf: [
         {
             $ref: `${PREFIX}/@rid`
         },
@@ -152,7 +155,7 @@ const Traversal = {
             type: 'string', description: 'traversal type', enum: Object.values(TRAVERSAL_TYPE), nullable: true
         },
         child: {
-            oneOf: [
+            anyOf: [
                 {type: 'string'},
                 {type: 'object', $ref: `${PREFIX}/Traversal`}
             ],
@@ -229,7 +232,7 @@ const NeighborhoodQuery = {
 
 
 const Query = {
-    oneOf: [
+    anyOf: [
         {$ref: `${PREFIX}/BasicQuery`},
         {$ref: `${PREFIX}/NeighborhoodQuery`},
         {$ref: `${PREFIX}/TreeQuery`}
@@ -246,7 +249,7 @@ const Clause = {
             type: 'array',
             items: {
                 type: 'object',
-                oneOf: [
+                anyOf: [
                     {$ref: `${PREFIX}/Clause`},
                     {$ref: `${PREFIX}/Comparison`}
                 ]
@@ -259,9 +262,9 @@ const Comparison = {
     type: 'object',
     required: ['attr', 'value'],
     properties: {
-        attr: {oneOf: [{type: 'string'}, {$ref: `${PREFIX}/Traversal`}]},
+        attr: {anyOf: [{type: 'string'}, {$ref: `${PREFIX}/Traversal`}]},
         value: {
-            oneOf: [
+            anyOf: [
                 {type: 'AnyValue'},
                 {$ref: `${PREFIX}/Query`}
             ],
@@ -294,5 +297,22 @@ module.exports = {
     Comparison,
     TreeQuery,
     BasicQuery,
-    NeighborhoodQuery
+    NeighborhoodQuery,
+    skip: {
+        nullable: true, type: 'integer', min: 0, description: 'The number of records to skip. Used in combination with limit for paginating queries.'
+    },
+    activeOnly: {type: 'boolean', default: true},
+    returnProperties: {type: 'array', items: {type: 'string'}, description: 'array of property names to return (defaults to all)'},
+    limit: {
+        type: 'integer', min: 1, max: MAX_QUERY_LIMIT, description: 'maximum number of records to return'
+    },
+    neighbors: {
+        type: 'integer',
+        min: 0,
+        max: MAX_JUMPS,
+        description: 'For the final query result, fetch records up to this many links away (warning: may significantly increase query time)'
+    },
+    count: {type: 'boolean', default: 'false', description: 'return a count of the resulting records instead of the records themselves'},
+    orderBy: {type: 'string', description: 'CSV delimited list of property names (traversals) to sort the results by'},
+    orderByDirection: {type: 'string', enum: ['ASC', 'DESC'], description: 'When orderBy is given, this is used to determine the ordering direction'}
 };

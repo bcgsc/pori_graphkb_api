@@ -1,10 +1,9 @@
 /**
  * Route definition components (components/routes) that cannot be auto generated only from the schema
+ * @module app/routes/openapi/routes
  */
-/**
- * @constant
- * @ignore
- */
+
+
 const POST_STATEMENT = {
     summary: 'Add a new statement',
     tags: ['Statement'],
@@ -88,8 +87,7 @@ const POST_TOKEN = {
         content: {
             'application/json': {
                 schema: {
-                    type: 'object',
-                    oneOf: [
+                    anyOf: [
                         {
                             type: 'object',
                             properties: {
@@ -140,7 +138,7 @@ const POST_TOKEN = {
 
 const GET_SCHEMA = {
     summary: 'Returns a JSON representation of the current database schema',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'}
     ],
@@ -154,7 +152,7 @@ const GET_SCHEMA = {
 
 const GET_VERSION = {
     summary: 'Returns the version information for the API and database',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'}
     ],
@@ -175,9 +173,9 @@ const GET_VERSION = {
     }
 };
 
-const GET_KEYWORD = {
+const GET_STATMENT_BY_KEYWORD = {
     summary: 'Search statement records by a single keyword',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {
@@ -255,7 +253,7 @@ const GET_RECORDS = {
 
 const GET_STATS = {
     summary: 'Returns counts for all non-abstract database classes',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {$ref: '#/components/parameters/Authorization'},
@@ -329,5 +327,11 @@ const GET_STATS = {
 };
 
 module.exports = {
-    POST_STATEMENT, POST_TOKEN, GET_SCHEMA, GET_STATS, GET_VERSION, GET_KEYWORD, GET_RECORDS
+    POST_STATEMENT,
+    POST_TOKEN,
+    GET_SCHEMA,
+    GET_STATS,
+    GET_VERSION,
+    GET_STATMENT_BY_KEYWORD,
+    GET_RECORDS
 };

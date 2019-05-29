@@ -16,7 +16,7 @@ const GENERAL_QUERY_PARAMS = {
             minimum: 0,
             maximum: MAX_JUMPS
         },
-        description: 'Return neighbors of the selected node(s) up to \'n\' edges away. If this is set to 0, no neighbors will be returned. To collect all immediate neighbors this must be set to 2.'
+        description: 'Return neighbors of the selected record(s) up to \'n\' edges away. If this is set to 0, no neighbors will be returned. To collect all immediate neighbors this must be set to 2.'
     },
     activeOnly: {
         in: 'query',
