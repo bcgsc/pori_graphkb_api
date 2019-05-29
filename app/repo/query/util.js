@@ -85,4 +85,15 @@ const castBoolean = (value) => {
 };
 
 
-module.exports = {parseCompoundAttr, castRangeInt, castBoolean};
+const generateSqlParams = (items, paramStart) => {
+    const params = {};
+    for (let i = 0; i < items.length; i++) {
+        const paramName = `param${paramStart + Object.keys(params).length}`;
+        params[paramName] = items[i];
+    }
+    return params;
+};
+
+module.exports = {
+    parseCompoundAttr, castRangeInt, castBoolean, generateSqlParams
+};
