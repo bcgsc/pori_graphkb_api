@@ -41,6 +41,14 @@ const STUB = {
             get: {
                 summary: 'Returns this specification',
                 tags: ['Metadata'],
+                parameters: [
+                    {
+                        in: 'query',
+                        schema: {type: 'string', enum: ['swagger', 'redoc']},
+                        description: 'rendering style to apply to the spec',
+                        name: 'display'
+                    }
+                ],
                 responses: {
                     200: {}
                 }
@@ -615,9 +623,24 @@ const registerSpecEndpoints = (router, spec) => {
     router.get('/spec.json', (req, res) => {
         res.status(HTTP_STATUS.OK).json(spec);
     });
+    // set up the swagger-ui docs
+    router.use('/spec/swagger', swaggerUi.serve, swaggerUi.setup(spec, {
+        swaggerOptions: {
+            deepLinking: true,
+            displayOperationId: true,
+            defaultModelRendering: 'model',
+            operationsSorter: 'alpha',
+            tagsSorter,
+            docExpansion: 'none'
+        },
+        customCss: '.swagger-ui .info pre > code { display: block; color: #373939}'
+    }));
 
     // serve with re-doc
-    router.get('/spec/redoc', (req, res) => {
+    router.get('/spec', (req, res) => {
+        if (req.query.display && req.query.display === 'swagger') {
+            return res.redirect('/api/spec/swagger');
+        }
         const content = `<!DOCTYPE html>
         <html>
           <head>
@@ -634,33 +657,13 @@ const registerSpecEndpoints = (router, spec) => {
             </style>
           </head>
           <body>
-            <div id="redoc-container"/>
+            <redoc require-props-first="true" sort-props-alphabetically="true" spec-url="${req.baseUrl}/spec.json"></redoc>
             <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
-            <script>
-                var spec = ${JSON.stringify(spec)};
-                Redoc.init(spec, {
-                    requiredPropsFirst: true,
-                    sortPropsAlphabetically: true
-                }, document.getElementById('redoc-container'))
-            </script>
           </body>
         </html>`;
         res.set('Content-Type', 'text/html');
-        res.status(HTTP_STATUS.OK).send(content);
+        return res.status(HTTP_STATUS.OK).send(content);
     });
-
-    // set up the swagger-ui docs
-    router.use('/spec', swaggerUi.serve, swaggerUi.setup(spec, {
-        swaggerOptions: {
-            deepLinking: true,
-            displayOperationId: true,
-            defaultModelRendering: 'model',
-            operationsSorter: 'alpha',
-            tagsSorter,
-            docExpansion: 'none'
-        },
-        customCss: '.swagger-ui .info pre > code { display: block; color: #373939}'
-    }));
 };
 
 module.exports = {generateSwaggerSpec, registerSpecEndpoints};
