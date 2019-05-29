@@ -8,7 +8,6 @@ const http = require('http');
 const jc = require('json-cycle');
 const cors = require('cors');
 const HTTP_STATUS = require('http-status-codes');
-const swaggerUi = require('swagger-ui-express');
 const {getPortPromise} = require('portfinder');
 
 const {logger} = require('./repo/logging');
@@ -20,7 +19,7 @@ const {
 
 const {connectDB} = require('./repo');
 
-const {generateSwaggerSpec} = require('./routes/openapi');
+const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
 const {addResourceRoutes} = require('./routes/util');
 const {addPostToken} = require('./routes/auth');
 const {addKeywordSearchRoute, addGetRecordsByList} = require('./routes');
@@ -132,29 +131,8 @@ class AppServer {
         this.db = db;
         this.schema = schema;
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(schema, {port: this.port});
-        this.router.use('/spec', swaggerUi.serve, swaggerUi.setup(this.spec, {
-            swaggerOptions: {
-                deepLinking: true,
-                displayOperationId: true,
-                defaultModelRendering: 'model',
-                operationsSorter: 'alpha',
-                tagsSorter: (tag1, tag2) => {
-                    // show the 'default' group at the top
-                    if (tag1 === 'General') {
-                        return -1;
-                    } if (tag2 === 'General') {
-                        return 1;
-                    }
-                    return tag1.localeCompare(tag2);
-                },
-                docExpansion: 'none'
-            },
-            customCss: '.swagger-ui .info pre > code { display: block; color: #373939}'
-        }));
-        this.router.get('/spec.json', (req, res) => {
-            res.status(HTTP_STATUS.OK).json(this.spec);
-        });
+        this.spec = generateSwaggerSpec(schema, {port: this.port, host: this.host});
+        registerSpecEndpoints(this.router, this.spec);
 
         this.router.get('/schema', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({schema: jc.decycle(schema)});

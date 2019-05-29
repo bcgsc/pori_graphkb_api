@@ -8,12 +8,16 @@
  */
 const _ = require('lodash');
 const fs = require('fs');
+const HTTP_STATUS = require('http-status-codes');
+const swaggerUi = require('swagger-ui-express');
+
+
 const routes = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
 const {GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS} = require('./params');
 const {
-    MAX_QUERY_LIMIT, MAX_JUMPS, ABOUT_FILE, SEARCH_ABOUT, QUERY_ABOUT
+    ABOUT_FILE, SEARCH_ABOUT, QUERY_ABOUT
 } = require('./constants');
 
 
@@ -410,6 +414,22 @@ const describePostSearch = (model) => {
 };
 
 
+const tagsSorter = (tag1, tag2) => {
+    const starterTags = ['Metadata', 'General', 'Statement'];
+    tag1 = tag1.name || tag1;
+    tag2 = tag2.name || tag2;
+    // show the 'default' group at the top
+    if (starterTags.includes(tag1) && starterTags.includes(tag2)) {
+        return starterTags.indexOf(tag1) - starterTags.indexOf(tag2);
+    } if (starterTags.includes(tag1)) {
+        return -1;
+    } if (starterTags.includes(tag2)) {
+        return 1;
+    }
+    return tag1.localeCompare(tag2);
+};
+
+
 /**
  * Generates the JSON object that represents the openapi specification for this API
  *
@@ -559,7 +579,89 @@ const generateSwaggerSpec = (schema, metadata) => {
             });
         }
     }
+
+    docs.tags.sort(tagsSorter);
+
+    const vertexTags = Object.values(schema)
+        .filter(model => !model.isEdge && model.name !== 'Statement')
+        .map(model => model.name);
+
+    const edgeTags = Object.values(schema)
+        .filter(model => model.isEdge)
+        .map(model => model.name);
+
+    docs['x-tagGroups'] = [
+        {
+            name: 'Frequently Used',
+            tags: ['Metadata', 'General', 'Statement']
+        },
+        {
+            name: 'Vertex Class Routes',
+            tags: vertexTags
+        },
+        {
+            name: 'Relationship Class Routes',
+            tags: edgeTags
+        }
+    ];
     return docs;
 };
 
-module.exports = {generateSwaggerSpec};
+
+/**
+ * Add the /spec.json, /spec, and /spec/redoc endpoints to a router
+ */
+const registerSpecEndpoints = (router, spec) => {
+    // serve the spec as plain json
+    router.get('/spec.json', (req, res) => {
+        res.status(HTTP_STATUS.OK).json(spec);
+    });
+
+    // serve with re-doc
+    router.get('/spec/redoc', (req, res) => {
+        const content = `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>GraphKB API Spec</title>
+            <!-- needed for adaptive design -->
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div id="redoc-container"/>
+            <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
+            <script>
+                var spec = ${JSON.stringify(spec)};
+                Redoc.init(spec, {
+                    requiredPropsFirst: true,
+                    sortPropsAlphabetically: true
+                }, document.getElementById('redoc-container'))
+            </script>
+          </body>
+        </html>`;
+        res.set('Content-Type', 'text/html');
+        res.status(HTTP_STATUS.OK).send(content);
+    });
+
+    // set up the swagger-ui docs
+    router.use('/spec', swaggerUi.serve, swaggerUi.setup(spec, {
+        swaggerOptions: {
+            deepLinking: true,
+            displayOperationId: true,
+            defaultModelRendering: 'model',
+            operationsSorter: 'alpha',
+            tagsSorter,
+            docExpansion: 'none'
+        },
+        customCss: '.swagger-ui .info pre > code { display: block; color: #373939}'
+    }));
+};
+
+module.exports = {generateSwaggerSpec, registerSpecEndpoints};
