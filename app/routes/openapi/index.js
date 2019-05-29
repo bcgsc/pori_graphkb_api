@@ -36,6 +36,7 @@ const STUB = {
         '/schema': {get: routes.GET_SCHEMA},
         '/version': {get: routes.GET_VERSION},
         '/statements/search': {get: routes.GET_STATEMENT_BY_KEYWORD},
+        '/statements/search-links': {post: routes.SEARCH_STATEMENT_BY_LINKS},
         '/records': {get: routes.GET_RECORDS},
         '/spec': {
             get: {
