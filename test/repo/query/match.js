@@ -11,7 +11,7 @@ describe('treeQuery', () => {
             edges: ['AliasOf']
         });
         expect(stripSQL(query)).toBe(
-            'SELECT * FROM (MATCH {class: Disease, WHERE: (name = :param0)}.out(\'AliasOf\'){WHILE: (out(\'AliasOf\').size() > 0 AND $depth < 50)} RETURN $pathElements)'
+            'TRAVERSE out(\'AliasOf\') FROM (SELECT * FROM Disease WHERE name = :param0) MAXDEPTH 50'
         );
         expect(params).toEqual({param0: 'blargh'});
     });
