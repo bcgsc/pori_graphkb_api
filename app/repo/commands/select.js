@@ -10,7 +10,7 @@ const {error: {AttributeError}, util: {castToRID}} = require('@bcgsc/knowledgeba
 
 const {logger} = require('../logging');
 const {
-    Query, generalKeywordSearch
+    Query, generalKeywordSearch, searchByLinkedRecords
 } = require('../query');
 const {
     MultipleRecordsFoundError,
@@ -197,6 +197,20 @@ const selectByKeyword = async (db, keywords, opt) => {
 
 /**
  * @param {orientjs.Db} db Database connection from orientjs
+ * @param {Object} opt Selection options
+ */
+const selectStatementByLinks = async (db, opt) => {
+    const queryObj = Object.assign({
+        toString: () => searchByLinkedRecords(opt),
+        activeOnly: true
+    }, opt);
+    queryObj.displayString = () => Query.displayString(queryObj);
+    return select(db, queryObj);
+};
+
+
+/**
+ * @param {orientjs.Db} db Database connection from orientjs
  * @param {Array.<string|RID>} recordList array of record IDs to select from
  * @param {Object} opt Selection options
  * @param {?Number} opt.neighbors number of related records to fetch
@@ -235,5 +249,6 @@ module.exports = {
     select,
     selectCounts,
     selectByKeyword,
-    selectFromList
+    selectFromList,
+    selectStatementByLinks
 };
