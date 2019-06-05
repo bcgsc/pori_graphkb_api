@@ -1,17 +1,18 @@
 
 const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
+const _ = require('lodash');
 
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
 const openapi = require('./openapi');
 const util = require('./util');
 const {logger} = require('./../repo/logging');
-const {constants: {MAX_LIMIT, MAX_NEIGHBORS}, util: {castRangeInt, castBoolean}} = require('./../repo/query');
+const {constants: {MAX_NEIGHBORS}, util: {castRangeInt, castBoolean}} = require('./../repo/query');
 const {
     MIN_WORD_SIZE
 } = require('./query');
-const {selectByKeyword, selectFromList} = require('../repo/commands');
+const {selectByKeyword, selectFromList, selectStatementByLinks} = require('../repo/commands');
 const {NoRecordFoundError} = require('../repo/error');
 
 
@@ -19,41 +20,22 @@ const addKeywordSearchRoute = (opt) => {
     const {
         router, db
     } = opt;
-    logger.log('verbose', 'NEW ROUTE [GET] /search');
+    logger.log('verbose', 'NEW ROUTE [GET] /statements/search');
 
-    router.get('/search',
+    router.get(['/statements/search', '/search'],
         async (req, res) => {
             const {
-                keyword, neighbors, limit, skip, orderBy, orderByDirection, count, ...other
+                keyword
             } = req.query;
 
             const options = {user: req.user};
             try {
-                if (limit !== undefined) {
-                    options.limit = castRangeInt(limit, 1, MAX_LIMIT);
-                }
-                if (neighbors !== undefined) {
-                    options.neighbors = castRangeInt(neighbors, 0, MAX_NEIGHBORS);
-                }
-                if (skip !== undefined) {
-                    options.skip = castRangeInt(skip, 0);
-                }
-                if (orderBy) {
-                    options.orderBy = orderBy.split(',').map(prop => prop.trim());
-                }
-                if (orderByDirection) {
-                    options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
-                    if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
-                        throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
-                    }
-                }
-                if (count) {
-                    options.count = castBoolean(count);
-                }
+                Object.assign(options, util.checkStandardOptions(req.query));
             } catch (err) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
             }
 
+            const other = _.omit(req.body, ['keyword', ...Object.keys(options)]);
             if (Object.keys(other).length) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json({
                     message: 'Invalid query parameter',
@@ -76,6 +58,36 @@ const addKeywordSearchRoute = (opt) => {
             }
             try {
                 const result = await selectByKeyword(db, wordList, options);
+                return res.json(jc.decycle({result}));
+            } catch (err) {
+                if (err instanceof AttributeError) {
+                    logger.log('debug', err);
+                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                }
+                logger.log('error', err);
+                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+            }
+        });
+};
+
+
+const addSearchStatementByLinked = (opt) => {
+    const {
+        router, db
+    } = opt;
+    logger.log('verbose', 'NEW ROUTE [GET] /statements/search-links');
+
+    router.post('/statements/search-links',
+        async (req, res) => {
+            const options = {...req.body};
+            try {
+                Object.assign(options, util.checkStandardOptions(options));
+            } catch (err) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+            }
+
+            try {
+                const result = await selectStatementByLinks(db, options);
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof AttributeError) {
@@ -133,5 +145,5 @@ const addGetRecordsByList = ({router, db}) => {
 };
 
 module.exports = {
-    openapi, util, addKeywordSearchRoute, addGetRecordsByList
+    openapi, util, addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked
 };

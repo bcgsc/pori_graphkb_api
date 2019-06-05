@@ -4,7 +4,6 @@ const _ = require('lodash');
 
 const {util: {looksLikeRID, castToRID}, error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
-
 const {
     NoRecordFoundError, RecordExistsError
 } = require('./../repo/error');
@@ -14,7 +13,8 @@ const {
 } = require('./../repo/commands');
 const {checkClassPermissions} = require('./../middleware/auth');
 const {
-    Query
+    Query,
+    constants: {MAX_LIMIT, MAX_NEIGHBORS}, util: {castRangeInt, castBoolean}
 } = require('./../repo/query');
 
 const {parse: parseQueryLanguage} = require('./query');
@@ -319,6 +319,44 @@ const deleteRoute = (opt) => {
         });
 };
 
+/**
+ * @param {object} opt the query options
+ * @param {Number} opt.skip the number of records to skip (for paginating)
+ * @param {Array.<string>} opt.orderBy the properties used to determine the sort order of the results
+ * @param {string} opt.orderByDirection the direction to order (ASC or DESC)
+ * @param {boolean} opt.count count the records instead of returning them
+ * @param {Number} opt.neighbors the number of neighboring record levels to fetch
+ */
+const checkStandardOptions = (opt) => {
+    const {
+        limit, neighbors, skip, orderBy, orderByDirection, count
+    } = opt;
+
+    const options = {};
+    if (limit !== undefined) {
+        options.limit = castRangeInt(limit, 1, MAX_LIMIT);
+    }
+    if (neighbors !== undefined) {
+        options.neighbors = castRangeInt(neighbors, 0, MAX_NEIGHBORS);
+    }
+    if (skip !== undefined) {
+        options.skip = castRangeInt(skip, 0);
+    }
+    if (orderBy) {
+        options.orderBy = orderBy.split(',').map(prop => prop.trim());
+    }
+    if (orderByDirection) {
+        options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
+        if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
+            throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
+        }
+    }
+    if (count) {
+        options.count = castBoolean(count);
+    }
+    return options;
+};
+
 
 /*
  * add basic CRUD methods for any standard db class
@@ -360,5 +398,5 @@ const addResourceRoutes = (opt) => {
 
 
 module.exports = {
-    addResourceRoutes
+    addResourceRoutes, checkStandardOptions
 };

@@ -1,10 +1,9 @@
 /**
  * Route definition components (components/routes) that cannot be auto generated only from the schema
+ * @module app/routes/openapi/routes
  */
-/**
- * @constant
- * @ignore
- */
+
+
 const POST_STATEMENT = {
     summary: 'Add a new statement',
     tags: ['Statement'],
@@ -88,8 +87,7 @@ const POST_TOKEN = {
         content: {
             'application/json': {
                 schema: {
-                    type: 'object',
-                    oneOf: [
+                    anyOf: [
                         {
                             type: 'object',
                             properties: {
@@ -140,7 +138,7 @@ const POST_TOKEN = {
 
 const GET_SCHEMA = {
     summary: 'Returns a JSON representation of the current database schema',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'}
     ],
@@ -154,7 +152,7 @@ const GET_SCHEMA = {
 
 const GET_VERSION = {
     summary: 'Returns the version information for the API and database',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'}
     ],
@@ -175,9 +173,9 @@ const GET_VERSION = {
     }
 };
 
-const GET_KEYWORD = {
+const GET_STATMENT_BY_KEYWORD = {
     summary: 'Search statement records by a single keyword',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {
@@ -213,6 +211,102 @@ const GET_KEYWORD = {
         401: {$ref: '#/components/responses/NotAuthorized'},
         403: {$ref: '#/components/responses/Forbidden'},
         400: {$ref: '#/components/responses/BadInput'}
+    }
+};
+
+
+const SEARCH_STATEMENT_BY_LINKS = {
+    summary: 'Search for statements by their related records',
+    tags: ['Statement'],
+    parameters: [
+        {$ref: '#/components/parameters/Content-Type'},
+        {$ref: '#/components/parameters/Accept'},
+        {$ref: '#/components/parameters/Authorization'}
+    ],
+    requestBody: {
+        required: true,
+        content: {
+            'application/json': {
+                schema: {
+                    type: 'object',
+                    properties: {
+                        impliedBy: {
+                            allOf: [{$ref: '#/components/schemas/RecordList'}],
+                            description: 'search for statements implied by any of these (or related) records'
+                        },
+                        relevance: {
+                            allOf: [{$ref: '#/components/schemas/RecordList'}],
+                            description: 'search for statements where the relevance is one of these (or related) records'
+                        },
+                        appliesTo: {
+                            allOf: [{$ref: '#/components/schemas/RecordList'}],
+                            description: 'search for statements that apply to one of these (or related) records'
+                        },
+                        createdBy: {
+                            allOf: [{$ref: '#/components/schemas/RecordList'}],
+                            description: 'search for statements created by any of these users'
+                        },
+                        reviewedBy: {
+                            allOf: [{$ref: '#/components/schemas/RecordList'}],
+                            description: 'search for statements reviewed by any of these users'
+                        },
+                        source: {
+                            allOf: [{$ref: '#/components/schemas/RecordList'}],
+                            description: 'search for statements with any of these sources'
+                        },
+                        evidenceLevel: {
+                            allOf: [{$ref: '#/components/schemas/RecordList'}],
+                            description: 'search for statements with any of these evidence levels'
+                        },
+                        skip: {$ref: '#/components/schemas/skip'},
+                        returnProperties: {$ref: '#/components/schemas/returnProperties'},
+                        limit: {$ref: '#/components/schemas/limit'},
+                        neighbors: {$ref: '#/components/schemas/neighbors'},
+                        count: {$ref: '#/components/schemas/count'},
+                        orderBy: {$ref: '#/components/schemas/orderBy'},
+                        orderByDirection: {$ref: '#/components/schemas/orderByDirection'}
+                    }
+                }
+            }
+        }
+    },
+    responses: {
+        200: {
+            description: 'list of retrieved statements',
+            content: {
+                'application/json': {
+                    schema: {
+                        type: 'object',
+                        properties: {
+                            result: {
+                                type: 'array',
+                                items: {$ref: '#/components/schemas/Statement'}
+                            }
+                        }
+                    }
+                }
+            },
+            links: {
+                getById: {
+                    parameters: {rid: '$response.body#/result[].@rid'},
+                    operationId: 'get_statements__rid_',
+                    description: 'The `@rid` value returned in the response can be used as the `rid` parameter in [GET `/statements/{rid}`](.#/Statement/get_statements__rid_) requests'
+                },
+                patchById: {
+                    parameters: {rid: '$response.body#/result[].@rid'},
+                    operationId: 'patch_statements__rid_',
+                    description: 'The `@rid` value returned in the resnse can be used as the `rid` parameter in [PATCH `/statements/{rid}`](.#/Statement/patch_statements__rid_) requests'
+                },
+                deleteById: {
+                    parameters: {rid: '$response.body#/result[].@rid'},
+                    operationId: 'delete_statements__rid_',
+                    description: 'The `@rid` value returned in the response can be used as the `rid` parameter in [DELETE `/statements/{rid}`](.#/Statement/delete_statements__rid_) requests'
+                }
+            }
+        },
+        401: {$ref: '#/components/responses/NotAuthorized'},
+        400: {$ref: '#/components/responses/BadInput'},
+        403: {$ref: '#/components/responses/Forbidden'}
     }
 };
 
@@ -255,7 +349,7 @@ const GET_RECORDS = {
 
 const GET_STATS = {
     summary: 'Returns counts for all non-abstract database classes',
-    tags: ['General'],
+    tags: ['Metadata'],
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {$ref: '#/components/parameters/Authorization'},
@@ -329,5 +423,12 @@ const GET_STATS = {
 };
 
 module.exports = {
-    POST_STATEMENT, POST_TOKEN, GET_SCHEMA, GET_STATS, GET_VERSION, GET_KEYWORD, GET_RECORDS
+    POST_STATEMENT,
+    POST_TOKEN,
+    GET_SCHEMA,
+    GET_STATS,
+    GET_VERSION,
+    GET_STATMENT_BY_KEYWORD,
+    GET_RECORDS,
+    SEARCH_STATEMENT_BY_LINKS
 };
