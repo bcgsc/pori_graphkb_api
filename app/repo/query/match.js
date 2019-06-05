@@ -36,10 +36,9 @@ const treeQuery = (opt) => {
 
     const {query, params} = whereClause.toString(paramIndex);
     const edgeList = Array.from(edges, quoteWrap).join(', ');
-    const statement = `SELECT * FROM (MATCH
-    {class: ${modelName}, WHERE: (${query})}
-        .${direction}(${edgeList}){WHILE: (${direction}(${edgeList}).size() > 0 AND $depth < ${depth})}
-RETURN $pathElements)`;
+    const statement = `TRAVERSE ${direction}(${edgeList}) FROM (
+        SELECT * FROM ${modelName} WHERE ${query}
+    ) MAXDEPTH ${depth}`;
     return {query: statement, params};
 };
 
@@ -97,4 +96,6 @@ const descendants = (opt) => {
 };
 
 
-module.exports = {neighborhood, ancestors, descendants};
+module.exports = {
+    neighborhood, ancestors, descendants
+};

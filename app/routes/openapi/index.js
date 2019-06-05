@@ -8,12 +8,16 @@
  */
 const _ = require('lodash');
 const fs = require('fs');
+const HTTP_STATUS = require('http-status-codes');
+const swaggerUi = require('swagger-ui-express');
+
+
 const routes = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
 const {GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS} = require('./params');
 const {
-    MAX_QUERY_LIMIT, MAX_JUMPS, ABOUT_FILE, SEARCH_ABOUT, QUERY_ABOUT
+    ABOUT_FILE, SEARCH_ABOUT, QUERY_ABOUT
 } = require('./constants');
 
 
@@ -31,12 +35,21 @@ const STUB = {
         '/token': {post: routes.POST_TOKEN},
         '/schema': {get: routes.GET_SCHEMA},
         '/version': {get: routes.GET_VERSION},
-        '/search': {get: routes.GET_KEYWORD},
+        '/statements/search': {get: routes.GET_STATEMENT_BY_KEYWORD},
+        '/statements/search-links': {post: routes.SEARCH_STATEMENT_BY_LINKS},
         '/records': {get: routes.GET_RECORDS},
         '/spec': {
             get: {
                 summary: 'Returns this specification',
-                tags: ['General'],
+                tags: ['Metadata'],
+                parameters: [
+                    {
+                        in: 'query',
+                        schema: {type: 'string', enum: ['swagger', 'redoc']},
+                        description: 'rendering style to apply to the spec',
+                        name: 'display'
+                    }
+                ],
                 responses: {
                     200: {}
                 }
@@ -45,7 +58,7 @@ const STUB = {
         '/spec.json': {
             get: {
                 summary: 'Returns the JSON format of this specification',
-                tags: ['General'],
+                tags: ['Metadata'],
                 responses: {
                     200: {
                         schema: {type: 'object'}
@@ -68,19 +81,24 @@ const STUB = {
             in: {
                 in: 'query',
                 name: 'in',
-                schema: {$ref: `${SCHEMA_PREFIX}/RID`},
+                schema: {$ref: `${SCHEMA_PREFIX}/RecordLink`},
                 description: 'The record ID of the vertex the edge goes into, the target/destination vertex'
             },
             out: {
                 in: 'query',
                 name: 'out',
-                schema: {$ref: `${SCHEMA_PREFIX}/RID`},
+                schema: {$ref: `${SCHEMA_PREFIX}/RecordLink`},
                 description: 'The record ID of the vertex the edge comes from, the source vertex'
             }
         },
         responses
     },
-    tags: []
+    tags: [{
+        name: 'Metadata', description: 'routes dealing with app metadata'
+    },
+    {
+        name: 'General', description: 'non-class specific routes'
+    }]
 };
 
 
@@ -94,8 +112,7 @@ const STUB = {
  */
 const linkOrModel = (model, nullable = false) => {
     const param = {
-        type: 'object',
-        oneOf: [
+        anyOf: [
             {
                 $ref: `${SCHEMA_PREFIX}/@rid`
             },
@@ -312,7 +329,7 @@ const describeGet = (model) => {
  */
 const describeOperationByID = (model, operation = 'delete') => {
     const description = {
-        summary: `${operation} an existing ${model.name} record`,
+        summary: `${operation} ${model.name} record by ID`,
         tags: [model.name],
         parameters: _.concat(Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({$ref: `#/components/parameters/${p.name}`})),
             [{
@@ -361,20 +378,15 @@ const describePostSearch = (model) => {
     const body = {
         type: 'object',
         properties: {
-            skip: {nullable: true, type: 'integer', min: 0},
-            activeOnly: {type: 'boolean', default: true},
+            skip: {$ref: '#/components/schemas/skip'},
+            activeOnly: {$ref: '#/components/schemas/activeOnly'},
             where: {type: 'array', items: {$ref: `${SCHEMA_PREFIX}/Comparison`}},
-            returnProperties: {type: 'array', items: {type: 'string'}},
-            limit: {type: 'integer', min: 1, max: MAX_QUERY_LIMIT},
-            neighbors: {
-                type: 'integer',
-                min: 0,
-                max: MAX_JUMPS,
-                description: 'For the final query result, fetch records up to this many links away (warning: may significantly increase query time)'
-            },
-            count: {type: 'boolean', default: 'false', description: 'return a count of the resulting records instead of the records themselves'},
-            orderBy: {type: 'string', description: 'CSV delimited list of property names (traversals) to sort the results by'},
-            orderByDirection: {type: 'string', enum: ['ASC', 'DESC'], description: 'When orderBy is given, this is used to determine the ordering direction'}
+            returnProperties: {$ref: '#/components/schemas/returnProperties'},
+            limit: {$ref: '#/components/schemas/limit'},
+            neighbors: {$ref: '#/components/schemas/neighbors'},
+            count: {$ref: '#/components/schemas/count'},
+            orderBy: {$ref: '#/components/schemas/orderBy'},
+            orderByDirection: {$ref: '#/components/schemas/orderByDirection'}
         }
     };
     const description = {
@@ -407,6 +419,22 @@ const describePostSearch = (model) => {
         }
     };
     return description;
+};
+
+
+const tagsSorter = (tag1, tag2) => {
+    const starterTags = ['Metadata', 'General', 'Statement'];
+    tag1 = tag1.name || tag1;
+    tag2 = tag2.name || tag2;
+    // show the 'default' group at the top
+    if (starterTags.includes(tag1) && starterTags.includes(tag2)) {
+        return starterTags.indexOf(tag1) - starterTags.indexOf(tag2);
+    } if (starterTags.includes(tag1)) {
+        return -1;
+    } if (starterTags.includes(tag2)) {
+        return 1;
+    }
+    return tag1.localeCompare(tag2);
 };
 
 
@@ -452,7 +480,7 @@ const generateSwaggerSpec = (schema, metadata) => {
         };
 
         if (Object.values(model.expose).some(x => x) && docs.paths[model.routeName] === undefined) {
-            docs.paths[model.routeName] = {};
+            docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
         if (model.expose.QUERY && !docs.paths[model.routeName].get) {
             docs.paths[model.routeName].get = describeGet(model);
@@ -477,8 +505,8 @@ const generateSwaggerSpec = (schema, metadata) => {
         }
         if (model.isAbstract) {
             // should inherit from its concrete subclasses instead
-            const oneOf = model.subclasses.map(m => ({$ref: `#/components/schemas/${m.name}`}));
-            docs.components.schemas[model.name].oneOf = oneOf;
+            const anyOf = model.subclasses.map(m => ({$ref: `#/components/schemas/${m.name}`}));
+            docs.components.schemas[model.name].anyOf = anyOf;
             continue;
         }
         // for all model properties add a query parameter to the main GET request. Also add to the model components spec
@@ -559,7 +587,84 @@ const generateSwaggerSpec = (schema, metadata) => {
             });
         }
     }
+
+    docs.tags.sort(tagsSorter);
+
+    const vertexTags = Object.values(schema)
+        .filter(model => !model.isEdge && model.name !== 'Statement')
+        .map(model => model.name);
+
+    const edgeTags = Object.values(schema)
+        .filter(model => model.isEdge)
+        .map(model => model.name);
+
+    docs['x-tagGroups'] = [
+        {
+            name: 'Frequently Used',
+            tags: ['Metadata', 'General', 'Statement']
+        },
+        {
+            name: 'Vertex Class Routes',
+            tags: vertexTags
+        },
+        {
+            name: 'Relationship Class Routes',
+            tags: edgeTags
+        }
+    ];
     return docs;
 };
 
-module.exports = {generateSwaggerSpec};
+
+/**
+ * Add the /spec.json, /spec, and /spec/redoc endpoints to a router
+ */
+const registerSpecEndpoints = (router, spec) => {
+    // serve the spec as plain json
+    router.get('/spec.json', (req, res) => {
+        res.status(HTTP_STATUS.OK).json(spec);
+    });
+    // set up the swagger-ui docs
+    router.use('/spec/swagger', swaggerUi.serve, swaggerUi.setup(spec, {
+        swaggerOptions: {
+            deepLinking: true,
+            displayOperationId: true,
+            defaultModelRendering: 'model',
+            operationsSorter: 'alpha',
+            tagsSorter,
+            docExpansion: 'none'
+        },
+        customCss: '.swagger-ui .info pre > code { display: block; color: #373939}'
+    }));
+
+    // serve with re-doc
+    router.get('/spec', (req, res) => {
+        if (req.query.display && req.query.display === 'swagger') {
+            return res.redirect('/api/spec/swagger');
+        }
+        const content = `<!DOCTYPE html>
+        <html>
+          <head>
+            <title>GraphKB API Spec</title>
+            <!-- needed for adaptive design -->
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+              }
+            </style>
+          </head>
+          <body>
+            <redoc require-props-first="true" sort-props-alphabetically="true" spec-url="${req.baseUrl}/spec.json"></redoc>
+            <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
+          </body>
+        </html>`;
+        res.set('Content-Type', 'text/html');
+        return res.status(HTTP_STATUS.OK).send(content);
+    });
+};
+
+module.exports = {generateSwaggerSpec, registerSpecEndpoints};
