@@ -17,7 +17,7 @@ module.exports = {
         GKB_LOG_LEVEL: 'debug',
         GKB_PORT: 8080,
         GKB_USER_CREATE: true,
-        GKB_HOST: process.env.HOSTNAME || 'localhost'
+        GKB_HOST: process.env.HOSTNAME
     },
     development: {
         GKB_DB_CREATE: false,
