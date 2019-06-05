@@ -4,39 +4,15 @@
 
 const {RID} = require('orientjs');
 const semver = require('semver');
-const path = require('path');
 
 const {constants, schema: SCHEMA_DEFN, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
 const {logger} = require('./../logging');
-const {Property} = require('../model');
+const {Property, ClassModel} = require('../model');
 
-/**
- * Get the current schema version to detect if a migration is required
- *
- * @param {orientjs.Db} db the database connection
- */
-const getCurrentVersion = async (db) => {
-    const [{version}] = await db.query('SELECT * FROM SchemaHistory ORDER BY createdAt DESC', {limit: 1});
-    return version;
-};
-
-/**
- * Gets the current version with respect to the node modules installed
- *
- * @returns {object} metadata about the installed schema package
- */
-const getLoadVersion = () => {
-    const pathToVersionInfo = path.join(
-        path.dirname(require.resolve('@bcgsc/knowledgebase-schema')),
-        '../package.json'
-    );
-    // must be a global require, currently no other way to obtain dependency package version info of the actual install
-    const {version, name, _resolved} = require(pathToVersionInfo); // eslint-disable-line
-    return {version, name, url: _resolved};
-};
+const _version = require('./version');
 
 /**
  * Checks if the current version is more than a patch change
@@ -86,15 +62,67 @@ const migrate17Xto18X = async (db) => {
 
 
 /**
+ * Migrate any 1.8.X database to any 1.9.X database
+ *
+ * @param {orientjs.Db} db the database connection
+ */
+const migrate18Xto19X = async (db) => {
+    logger.info('Convert Evidence to an abstract class (slow, please wait)');
+    await db.query('ALTER CLASS Evidence SUPERCLASS -Ontology');
+    await db.query('DROP CLASS EvidenceGroup');
+    await db.query('DROP PROPERTY Permissions.EvidenceGroup');
+
+    for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication']) {
+        logger.info(`Remove Evidence as parent from ${subclass}`);
+        await db.query(`ALTER CLASS ${subclass} SUPERCLASS -Evidence`);
+        logger.info(`Add Ontology as parent to ${subclass}`);
+        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Ontology`);
+    }
+    logger.info('make evidence abstract');
+    await db.query('ALTER CLASS Evidence ABSTRACT TRUE');
+
+    logger.info('Re-add Evidence as abstract parent');
+    for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication', 'Source']) {
+        logger.info(`Add Evidence as parent of ${subclass} (slow, please wait)`);
+        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`);
+    }
+
+    logger.info('Add actionType property to class TargetOf');
+    const {actionType} = SCHEMA_DEFN.TargetOf.properties;
+    const targetof = await db.class.get(SCHEMA_DEFN.TargetOf.name);
+    await Property.create(actionType, targetof);
+
+    logger.info('Create the CuratedContent class');
+    await ClassModel.create(SCHEMA_DEFN.CuratedContent, db);
+    await db.query('CREATE PROPERTY Permissions.CuratedContent INTEGER (NOTNULL TRUE, MIN 0, MAX 15)');
+
+    logger.info('Add addition Source properties');
+    const source = await db.class.get(SCHEMA_DEFN.Source.name);
+    const {license, licenseType, citation} = SCHEMA_DEFN.Source.properties;
+    await Promise.all([license, licenseType, citation].map(prop => Property.create(prop, source)));
+};
+
+const logMigration = async (db, name, url, version) => {
+    const schemaHistory = await db.class.get('SchemaHistory');
+    await schemaHistory.create({
+        version,
+        name,
+        url,
+        createdAt: timeStampNow()
+    });
+    return version;
+};
+
+/**
  * Detects the current version of the db, the version of the node module and attempts
  * to migrate from one to the other
  *
  * @param {orientjs.Db} db the database connection
  */
-const migrate = async (db, opt) => {
+const migrate = async (db, opt = {}) => {
     const {checkOnly = false} = opt;
-    const currentVersion = await getCurrentVersion(db);
-    const {version: targetVersion, name, url} = getLoadVersion();
+    const currentVersion = await _version.getCurrentVersion(db);
+    const {version: targetVersion, name, url} = _version.getLoadVersion();
 
     if (!requiresMigration(currentVersion, targetVersion)) {
         logger.info(`Versions (${currentVersion}, ${targetVersion}) are compatible and do not require migration`);
@@ -103,44 +131,32 @@ const migrate = async (db, opt) => {
         throw new Error(`Versions (${currentVersion}, ${targetVersion}) are not compatible and require migration`);
     }
 
-    let migrationResolved = false;
+    let migratedVersion = currentVersion;
 
-    if (semver.satisfies(currentVersion, '>=1.6.2 <1.7.0')) {
-        if (semver.satisfies(targetVersion, '>=1.7.0 <1.8.0')) {
-            // 1.6.X to 1.7.X
+    while (requiresMigration(migratedVersion, targetVersion)) {
+        if (semver.satisfies(migratedVersion, '>=1.6.2 <1.7.0')) {
             logger.info(`Migrating from 1.6.X series (${currentVersion}) to v1.7.X series (${targetVersion})`);
             await migrate16Xto17X(db);
-            migrationResolved = true;
-        } else if (semver.satisfies(targetVersion, '>=1.8.0 <1.9.0')) {
-            // 1.6.X to 1.8.X
-            logger.info(`Migrating from 1.6.X series (${currentVersion}) to v1.8.X series (${targetVersion})`);
-            await migrate16Xto17X(db);
-            await migrate17Xto18X(db);
-            migrationResolved = true;
-        }
-    } else if (semver.satisfies(currentVersion, '>=1.7.0 <1.8.0')) {
-        if (semver.satisfies(targetVersion, '>=1.8.0 <1.9.0')) {
-            // 1.7.X to 1.8.X
+            migratedVersion = await logMigration(db, name, url, '1.7.0');
+        } else if (semver.satisfies(migratedVersion, '>=1.7.0 <1.8.0')) {
             logger.info(`Migrating from 1.7.X series (${currentVersion}) to v1.8.X series (${targetVersion})`);
             await migrate17Xto18X(db);
-            migrationResolved = true;
+            migratedVersion = await logMigration(db, name, url, '1.8.0');
+        } else if (semver.satisfies(migratedVersion, '>=1.8.0 <1.9.0')) {
+            logger.info(`Migrating from 1.8.X series (${currentVersion}) to v1.9.X series (${targetVersion})`);
+            await migrate18Xto19X(db);
+            migratedVersion = await logMigration(db, name, url, '1.9.0');
+        } else {
+            throw new Error(`Unable to find migration scripts from ${migratedVersion} to ${targetVersion}`);
         }
     }
 
-    if (migrationResolved) {
-        // update the schema history table
-        const schemaHistory = await db.class.get('SchemaHistory');
-        await schemaHistory.create({
-            version: targetVersion,
-            name,
-            url,
-            createdAt: timeStampNow()
-        });
-    } else {
-        throw new Error(`Unable to find migration scripts from ${currentVersion} to ${targetVersion}`);
+    // update the schema history table
+    if (targetVersion !== migratedVersion) {
+        await logMigration(db, name, url, targetVersion);
     }
 };
 
 module.exports = {
-    migrate, getLoadVersion, getCurrentVersion
+    migrate, requiresMigration
 };

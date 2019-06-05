@@ -1,5 +1,3 @@
-const {expect} = require('chai');
-
 const {
     util: {
         castDecimalInteger, castToRID
@@ -15,30 +13,30 @@ const EVIDENCE_LEVEL = SCHEMA_DEFN.EvidenceLevel.queryProperties;
 
 describe('Traversal', () => {
     describe('parse & toString', () => {
-        it('direct', () => {
+        test('direct', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, 'name');
             const exp = new Traversal({attr: 'name', property: DISEASE_PROPS.name});
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('name');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('name');
         });
-        it('link', () => {
+        test('link', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.LINK,
                 attr: 'name'
             });
             const exp = new Traversal({type: TRAVERSAL_TYPE.DIRECT, attr: 'name', property: DISEASE_PROPS.name});
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('name');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('name');
         });
-        it('edge', () => {
+        test('edge', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE
             });
             const exp = new Traversal({type: TRAVERSAL_TYPE.EDGE, cast: castToRID});
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('bothE()');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('bothE()');
         });
-        it('edge with classes', () => {
+        test('edge with classes', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 edges: ['ImpliedBy', 'SupportedBy']
@@ -48,10 +46,10 @@ describe('Traversal', () => {
                 cast: castToRID,
                 edges: ['ImpliedBy', 'SupportedBy']
             });
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('bothE(\'ImpliedBy\', \'SupportedBy\')');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('bothE(\'ImpliedBy\', \'SupportedBy\')');
         });
-        it('edge with classes and direction', () => {
+        test('edge with classes and direction', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 edges: ['ImpliedBy', 'SupportedBy'],
@@ -63,10 +61,10 @@ describe('Traversal', () => {
                 edges: ['ImpliedBy', 'SupportedBy'],
                 direction: 'out'
             });
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('outE(\'ImpliedBy\', \'SupportedBy\')');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('outE(\'ImpliedBy\', \'SupportedBy\')');
         });
-        it('edge with direction', () => {
+        test('edge with direction', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 direction: 'in'
@@ -76,10 +74,10 @@ describe('Traversal', () => {
                 cast: castToRID,
                 direction: 'in'
             });
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('inE()');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('inE()');
         });
-        it('edge.direct', () => {
+        test('edge.direct', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 direction: 'in',
@@ -90,10 +88,10 @@ describe('Traversal', () => {
                 direction: 'in',
                 child: new Traversal({attr: 'name', property: ALL_PROPS.name})
             });
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('inE().name');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('inE().name');
         });
-        it('edge.link.direct', () => {
+        test('edge.link.direct', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 direction: 'in',
@@ -114,10 +112,10 @@ describe('Traversal', () => {
                     child: new Traversal({attr: 'name', property: EVIDENCE_LEVEL.name})
                 })
             });
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('inE().level.name');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('inE().level.name');
         });
-        it('edge.outV.direct', () => {
+        test('edge.outV.direct', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 direction: 'in',
@@ -138,10 +136,10 @@ describe('Traversal', () => {
                 })
             });
 
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('inE().outV().name');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('inE().outV().name');
         });
-        it('edge.size()', () => {
+        test('edge.size()', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 direction: 'in',
@@ -156,10 +154,10 @@ describe('Traversal', () => {
                 })
             });
 
-            expect(parsed).to.eql(exp);
-            expect(parsed.toString()).to.equal('inE().size()');
+            expect(parsed).toEqual(exp);
+            expect(parsed.toString()).toBe('inE().size()');
         });
-        it('attributes post edges', () => {
+        test('attributes post edges', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
                 edges: ['ImpliedBy'],
@@ -185,63 +183,63 @@ describe('Traversal', () => {
                     })
                 })
             });
-            expect(parsed.toString()).to.eql(exp.toString());
-            expect(parsed.toString()).to.equal('outE(\'ImpliedBy\').inV().reference1.name');
+            expect(parsed.toString()).toEqual(exp.toString());
+            expect(parsed.toString()).toBe('outE(\'ImpliedBy\').inV().reference1.name');
         });
-        it('error on attr for edge', () => {
+        test('error on attr for edge', () => {
             expect(() => {
                 Traversal.parse(SCHEMA_DEFN, null, {attr: 'edge', type: TRAVERSAL_TYPE.EDGE, child: null});
-            }).to.throw('do not require the attr');
+            }).toThrowError('do not require the attr');
         });
-        it('error on invalid edge name', () => {
+        test('error on invalid edge name', () => {
             expect(() => {
                 Traversal.parse(SCHEMA_DEFN, null, {type: TRAVERSAL_TYPE.EDGE, edges: ['blarghHasMonkey']});
-            }).to.throw('Invalid Edge');
+            }).toThrowError('Invalid Edge');
         });
-        it('error on invalid direction', () => {
+        test('error on invalid direction', () => {
             expect(() => {
                 Traversal.parse(SCHEMA_DEFN, null, {type: TRAVERSAL_TYPE.EDGE, direction: 'blargh'});
-            }).to.throw('Invalid direction');
+            }).toThrowError('Invalid direction');
         });
-        it('error on link missing attr', () => {
+        test('error on link missing attr', () => {
             expect(() => {
                 Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {type: TRAVERSAL_TYPE.LINK, child: {}});
-            }).to.throw('attr is a required property');
+            }).toThrowError('attr is a required property');
         });
-        it('error on link bad traversal', () => {
+        test('error on link bad traversal', () => {
             expect(() => {
                 Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {type: TRAVERSAL_TYPE.LINK, attr: 'name', child: {}});
-            }).to.throw('does not have a linkedClass');
+            }).toThrowError('does not have a linkedClass');
         });
-        it('bad property link', () => {
+        test('bad property link', () => {
             expect(() => {
                 Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {type: TRAVERSAL_TYPE.LINK, attr: 'blargh', child: {}});
-            }).to.throw('has no definition');
+            }).toThrowError('has no definition');
         });
-        it('bad direct property', () => {
+        test('bad direct property', () => {
             expect(() => {
                 Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {attr: 'blargh'});
-            }).to.throw('has no property');
+            }).toThrowError('has no property');
         });
     });
     describe('terminalProperty', () => {
-        it('returns the current property for barren traversal', () => {
+        test('returns the current property for barren traversal', () => {
             const traversal = new Traversal({attr: 'name', property: 'thing'});
-            expect(traversal.terminalProperty()).to.equal('thing');
+            expect(traversal.terminalProperty()).toBe('thing');
         });
-        it('returns the nested property', () => {
+        test('returns the nested property', () => {
             const traversal = new Traversal({attr: 'name', property: 'thing', child: new Traversal({property: 'thing2', child: 'thing3'})});
-            expect(traversal.terminalProperty()).to.equal(null);
+            expect(traversal.terminalProperty()).toBeNull();
         });
     });
     describe('terminalCast', () => {
-        it('returns the current property for barren traversal', () => {
+        test('returns the current property for barren traversal', () => {
             const traversal = new Traversal({attr: 'name', cast: 'thing'});
-            expect(traversal.terminalCast()).to.equal('thing');
+            expect(traversal.terminalCast()).toBe('thing');
         });
-        it('returns the nested property', () => {
+        test('returns the nested property', () => {
             const traversal = new Traversal({attr: 'name', cast: 'thing', child: new Traversal({cast: 'thing2', child: 'thing3'})});
-            expect(traversal.terminalCast()).to.equal(null);
+            expect(traversal.terminalCast()).toBeNull();
         });
     });
 });
