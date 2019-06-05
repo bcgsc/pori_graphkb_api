@@ -17,7 +17,7 @@ module.exports = {
         GKB_LOG_LEVEL: 'debug',
         GKB_PORT: 8080,
         GKB_USER_CREATE: true,
-        GKB_HOST: process.env.HOSTNAME || 'localhost'
+        GKB_HOST: process.env.HOSTNAME
     },
     development: {
         GKB_DB_CREATE: false,
@@ -32,7 +32,7 @@ module.exports = {
         GKB_DB_NAME: 'production',
         GKB_DB_PORT: 2426,
         GKB_KEYCLOAK_KEY_FILE: 'keycloak.id_rsa.pub',
-        GKB_KEYCLOAK_URI: 'https: //sso.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
+        GKB_KEYCLOAK_URI: 'https://sso.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
         GKB_LOG_LEVEL: 'info',
         GKB_LOG_MAX_FILES: 28
     },
