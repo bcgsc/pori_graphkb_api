@@ -1,10 +1,6 @@
 
 
 const {
-    expect
-} = require('chai');
-
-const {
     create,
     update,
     remove,
@@ -23,8 +19,18 @@ const {
 
 const {createConfig} = require('./../../app');
 
+const TEST_TIMEOUT_MS = 100000;
+jest.setTimeout(TEST_TIMEOUT_MS);
 
-describe('schema', () => {
+const describeWithAuth = process.env.GKB_DBS_PASS
+    ? describe
+    : describe.skip;
+
+if (!process.env.GKB_DBS_PASS) {
+    console.warn('Cannot run schema tests without database password (GKB_DBS_PASS)');
+}
+
+describeWithAuth('schema', () => {
     let db,
         schema,
         admin,
@@ -32,7 +38,7 @@ describe('schema', () => {
         otherVertex,
         server,
         dbName;
-    before(async () => {
+    beforeAll(async () => {
         ({
             db,
             schema,
@@ -40,11 +46,6 @@ describe('schema', () => {
             server,
             dbName
         } = await setUpEmptyDB(createConfig()));
-    });
-    describe('SelectionQuery', () => {
-        it('select statements related to a particular publication pmid');
-        // it('select statements related to a particular pmid', () => {
-        // select * from statement where outE('supportedBy').inV().asSet() in (select @rid from (select * from evidence where sourceId in ["23578175"]))
     });
     beforeEach(async () => {
         // create the source
@@ -63,8 +64,21 @@ describe('schema', () => {
             user: admin
         });
     });
+    afterEach(async () => {
+        // clear all V/E records
+        await db.query('delete edge e');
+        await db.query('delete vertex v');
+    });
+    afterAll(async () => {
+        if (server) {
+            if (db && dbName) {
+                await server.drop({name: dbName});
+            }
+            await server.close();
+        }
+    });
     describe('create vertex', () => {
-        it('error on source not specified', async () => {
+        test('error on source not specified', async () => {
             try {
                 const record = await create(db, {
                     model: schema.Disease,
@@ -75,12 +89,12 @@ describe('schema', () => {
                 });
                 console.error(record);
             } catch (err) {
-                expect(err.message).to.include('missing required attribute source');
+                expect(err.message).toContain('missing required attribute source');
                 return;
             }
             expect.fail('did not throw the expected error');
         });
-        it('create a new disease with source disease ontology', async () => {
+        test('create a new disease with source disease ontology', async () => {
             const record = await create(db, {
                 model: schema.Disease,
                 content: {
@@ -89,11 +103,11 @@ describe('schema', () => {
                 },
                 user: admin
             });
-            expect(record).to.have.property('sourceId', 'cancer');
-            expect(record.source).to.eql(doSource['@rid']);
+            expect(record).toHaveProperty('sourceId', 'cancer');
+            expect(record.source).toEqual(doSource['@rid']);
         });
     });
-    it('update vertex', async () => {
+    test('update vertex', async () => {
         // make the initial node
         const content = {
             sourceId: 'cancer',
@@ -104,8 +118,8 @@ describe('schema', () => {
             content,
             user: admin
         });
-        expect(record).to.have.property('sourceId', 'cancer');
-        expect(record.source).to.eql(doSource['@rid']);
+        expect(record).toHaveProperty('sourceId', 'cancer');
+        expect(record.source).toEqual(doSource['@rid']);
         // change the name
         const updated = await update(db, {
             schema,
@@ -117,10 +131,10 @@ describe('schema', () => {
             query: Query.parseRecord(schema, schema.Disease, content)
         });
         // check that a history link has been added to the node
-        expect(updated).to.have.property('sourceId', 'new name');
-        expect(record.source).to.eql(doSource['@rid']);
+        expect(updated).toHaveProperty('sourceId', 'new name');
+        expect(record.source).toEqual(doSource['@rid']);
         // check that the 'old'/copy node has the original details
-        expect(updated['@rid']).to.eql(record['@rid']);
+        expect(updated['@rid']).toEqual(record['@rid']);
         // select the original node
         let originalNode = await select(
             db,
@@ -135,13 +149,13 @@ describe('schema', () => {
             {fetchPlan: '*:1', exactlyN: 1}
         );
         originalNode = originalNode[0];
-        expect(updated.history).to.eql(originalNode['@rid']);
-        expect(originalNode.deletedBy['@rid']).to.eql(admin['@rid']);
-        expect(updated.createdBy).to.eql(admin['@rid']);
+        expect(updated.history).toEqual(originalNode['@rid']);
+        expect(originalNode.deletedBy['@rid']).toEqual(admin['@rid']);
+        expect(updated.createdBy).toEqual(admin['@rid']);
     });
-    it('get /stats group by class', async () => {
+    test('get /stats group by class', async () => {
         const stats = await selectCounts(db, ['Source', 'User', 'UserGroup']);
-        expect(stats).to.eql({
+        expect(stats).toEqual({
             Source: 2,
             User: 1,
             UserGroup: 3
@@ -168,7 +182,7 @@ describe('schema', () => {
                 user: admin
             });
         });
-        it('ok', async () => {
+        test('ok', async () => {
             const edge = await create(db, {
                 model: schema.AliasOf,
                 content: {
@@ -178,12 +192,12 @@ describe('schema', () => {
                 },
                 user: admin
             });
-            expect(edge).to.have.property('source');
-            expect(edge.source).to.eql(doSource['@rid']);
-            expect(edge.out).to.eql(src['@rid']);
-            expect(edge.in).to.eql(tgt['@rid']);
+            expect(edge).toHaveProperty('source');
+            expect(edge.source).toEqual(doSource['@rid']);
+            expect(edge.out).toEqual(src['@rid']);
+            expect(edge.in).toEqual(tgt['@rid']);
         });
-        it('error on src = tgt', async () => {
+        test('error on src = tgt', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -195,13 +209,13 @@ describe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('an edge cannot be used to relate a node/vertex to itself');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('an edge cannot be used to relate a node/vertex to itself');
                 return;
             }
             expect.fail('did not throw the expected error');
         });
-        it('error on no src (out) vertex', async () => {
+        test('error on no src (out) vertex', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -213,13 +227,13 @@ describe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('The out property cannot be null');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('The out property cannot be null');
                 return;
             }
             expect.fail('did not throw the expected error');
         });
-        it('error on no tgt (in) vertex', async () => {
+        test('error on no tgt (in) vertex', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -231,13 +245,13 @@ describe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('The in property cannot be null');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('The in property cannot be null');
                 return;
             }
             expect.fail('did not throw the expected error');
         });
-        it('error on no source link given', async () => {
+        test('error on no source link given', async () => {
             try {
                 await create(db, {
                     model: schema.AliasOf,
@@ -248,15 +262,15 @@ describe('schema', () => {
                     user: admin
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(AttributeError);
-                expect(err.message).to.include('[AliasOf] missing required attribute source');
+                expect(err).toBeInstanceOf(AttributeError);
+                expect(err.message).toContain('[AliasOf] missing required attribute source');
                 return;
             }
             expect.fail('did not throw the expected error');
         });
     });
-    it('"delete" edge', async () => {
-        // create the initial edge
+    test('"delete" edge', async () => {
+    // create the initial edge
         const original = await create(db, {
             model: schema.AliasOf,
             content: {
@@ -274,18 +288,18 @@ describe('schema', () => {
             model: schema.AliasOf,
             schema
         });
-        expect(result).to.have.property('deletedBy');
-        expect(result.createdBy).to.eql(admin['@rid']);
-        expect(result).to.have.property('deletedAt');
-        expect(result.deletedAt).to.not.be.null;
+        expect(result).toHaveProperty('deletedBy');
+        expect(result.createdBy).toEqual(admin['@rid']);
+        expect(result).toHaveProperty('deletedAt');
+        expect(result.deletedAt).not.toBeNull();
         [otherVertex, doSource] = await db.record.get([otherVertex['@rid'], doSource['@rid']]);
-        expect(result.out).to.eql(doSource.history);
-        expect(result.in).to.eql(otherVertex.history);
+        expect(result.out).toEqual(doSource.history);
+        expect(result.in).toEqual(otherVertex.history);
     });
-    it('error on delete deleted vertex');
-    it('error on delete deleted edge');
-    it('"delete" vertex (and connected edges)', async () => {
-        // create an edge
+    test.todo('error on delete deleted vertex');
+    test.todo('error on delete deleted edge');
+    test('"delete" vertex (and connected edges)', async () => {
+    // create an edge
         const edge = await create(db, {
             model: schema.AliasOf,
             content: {
@@ -302,12 +316,12 @@ describe('schema', () => {
             model: schema.Source,
             schema
         });
-        expect(result).to.have.property('deletedAt');
-        expect(result).to.have.property('deletedBy');
-        expect(result.deletedBy).to.eql(admin['@rid']);
+        expect(result).toHaveProperty('deletedAt');
+        expect(result).toHaveProperty('deletedBy');
+        expect(result.deletedBy).toEqual(admin['@rid']);
         const updatedEdge = await db.record.get(edge['@rid']);
-        expect(updatedEdge.in).to.not.eql(otherVertex['@rid']);
-        expect(updatedEdge.deletedBy).to.eql(admin['@rid']);
+        expect(updatedEdge.in).not.toEqual(otherVertex['@rid']);
+        expect(updatedEdge.deletedBy).toEqual(admin['@rid']);
     });
     describe('select', () => {
         let cancer,
@@ -340,7 +354,7 @@ describe('schema', () => {
                 user: admin
             });
         });
-        it('get by name OR sourceId', async () => {
+        test('get by name OR sourceId', async () => {
             const records = await select(
                 db,
                 Query.parse(schema, schema.Disease, {
@@ -348,24 +362,24 @@ describe('schema', () => {
                 }),
                 {user: admin}
             );
-            expect(records).to.have.property('length', 2);
+            expect(records).toHaveProperty('length', 2);
         });
-        it('limit 1', async () => {
+        test('limit 1', async () => {
             const query = Query.parse(schema, schema.Disease, {
                 limit: 1,
                 orderBy: ['createdAt']
             });
             const records = await select(db, query, {user: admin});
-            expect(records).to.have.property('length', 1);
-            expect(records[0]).to.have.property('sourceId', 'cancer');
+            expect(records).toHaveProperty('length', 1);
+            expect(records[0]).toHaveProperty('sourceId', 'cancer');
         });
-        it('limit 1, skip 1', async () => {
+        test('limit 1, skip 1', async () => {
             const query = Query.parse(schema, schema.Disease, {
                 limit: 1, skip: 1, orderBy: ['createdAt']
             });
             const records = await select(db, query, {user: admin});
-            expect(records).to.have.property('length', 1);
-            expect(records[0]).to.have.property('sourceId', 'disease of cellular proliferation');
+            expect(records).toHaveProperty('length', 1);
+            expect(records[0]).toHaveProperty('sourceId', 'disease of cellular proliferation');
         });
     });
     describe('statements', () => {
@@ -435,7 +449,7 @@ describe('schema', () => {
                 model: schema.Publication, schema, user: admin, content
             })));
         });
-        it('inserts related edges', async () => {
+        test('inserts related edges', async () => {
             await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -448,7 +462,7 @@ describe('schema', () => {
                 schema
             });
         });
-        it('delete a statement', async () => {
+        test('delete a statement', async () => {
             const stat = await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -469,9 +483,9 @@ describe('schema', () => {
                 db,
                 Query.parseRecord(schema, schema.Statement, {'@rid': stat['@rid']}, {activeOnly: true})
             );
-            expect(statements).to.have.property('length', 0);
+            expect(statements).toHaveProperty('length', 0);
         });
-        it('update the review status', async () => {
+        test('update the review status', async () => {
             const stat = await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -493,9 +507,9 @@ describe('schema', () => {
                 db,
                 Query.parseRecord(schema, schema.Statement, {createdAt: stat.createdAt}, {activeOnly: true})
             );
-            expect(statements).to.have.property('length', 0);
+            expect(statements).toHaveProperty('length', 0);
         });
-        it('error on existing statement', async () => {
+        test('error on existing statement', async () => {
             await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -520,13 +534,13 @@ describe('schema', () => {
                     schema
                 });
             } catch (err) {
-                expect(err).to.be.an.instanceof(RecordExistsError);
-                expect(err.message).to.include('already exists');
+                expect(err).toBeInstanceOf(RecordExistsError);
+                expect(err.message).toContain('already exists');
                 return;
             }
             expect.fail('did not throw the expected error');
         });
-        it('allows statement with only some shared edges', async () => {
+        test('allows statement with only some shared edges', async () => {
             await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -550,7 +564,7 @@ describe('schema', () => {
                 schema
             });
         });
-        it('create statment with null appliesTo', async () => {
+        test('create statment with null appliesTo', async () => {
             const statement = await create(db, {
                 content: {
                     relevance: relevance1['@rid'],
@@ -562,7 +576,7 @@ describe('schema', () => {
                 model: schema.Statement,
                 schema
             });
-            expect(statement).to.have.property('appliesTo', null);
+            expect(statement).toHaveProperty('appliesTo', null);
         });
         describe('query', () => {
             let relevance3;
@@ -614,7 +628,7 @@ describe('schema', () => {
                     }
                 ], async opt => create(db, Object.assign({schema, user: admin}, opt))));
             });
-            it('select on related edge properties', async () => {
+            test('select on related edge properties', async () => {
                 const query = Query.parse(
                     schema,
                     schema.Statement,
@@ -635,9 +649,9 @@ describe('schema', () => {
                     }
                 );
                 const recordList = await select(db, query);
-                expect(recordList).to.have.property('length', 2);
+                expect(recordList).toHaveProperty('length', 2);
             });
-            it('select on related uni-directional edge properties', async () => {
+            test('select on related uni-directional edge properties', async () => {
                 const query = Query.parse(
                     schema,
                     schema.Statement,
@@ -658,21 +672,8 @@ describe('schema', () => {
                     }
                 );
                 const recordList = await select(db, query);
-                expect(recordList).to.have.property('length', 2);
+                expect(recordList).toHaveProperty('length', 2);
             });
         });
-    });
-    afterEach(async () => {
-        // clear all V/E records
-        await db.query('delete edge e');
-        await db.query('delete vertex v');
-    });
-    after(async () => {
-        if (server) {
-            if (db && dbName) {
-                await server.drop({name: dbName});
-            }
-            await server.close();
-        }
     });
 });

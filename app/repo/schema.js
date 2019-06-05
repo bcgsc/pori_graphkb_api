@@ -15,7 +15,7 @@ constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert
 
 const {logger} = require('./logging');
 const {ClassModel, Property} = require('./model');
-const {getLoadVersion} = require('./migrate');
+const {getLoadVersion} = require('./migrate/version');
 
 /**
  * Split class models into an array or with dependencies

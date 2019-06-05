@@ -1,0 +1,12 @@
+// main jest configuration file
+const defaults = require('./config');
+
+module.exports = {
+    ...defaults,
+    testPathIgnorePatterns: [
+        '/node_modules/',
+        'test/repo/query/util.js',
+        '.*/empty.js',
+        'test/util.js'
+    ]
+};

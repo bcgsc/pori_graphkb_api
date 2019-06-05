@@ -1,10 +1,7 @@
 /**
  * tests for the parsing of query parameters into the std body query format for POST requets
  */
-const {
-    expect
-} = require('chai');
-const qs = require('qs'); // to simulate express query parameter pparsing for tests
+const qs = require('qs');
 
 const {schema: SCHEMA_DEFN} = require('@bcgsc/knowledgebase-schema');
 
@@ -21,35 +18,35 @@ const {
 
 
 describe('flattenQueryParams', () => {
-    it('flattens single level query', () => {
+    test('flattens single level query', () => {
         const flat = flattenQueryParams({
             key: 'value'
         });
-        expect(flat).to.eql([{attrList: ['key'], value: 'value'}]);
+        expect(flat).toEqual([{attrList: ['key'], value: 'value'}]);
     });
-    it('chains mutli-level query', () => {
+    test('chains mutli-level query', () => {
         const flat = flattenQueryParams({
             key1: {key2: 'value'}
         });
-        expect(flat).to.eql([{attrList: ['key1', 'key2'], value: 'value'}]);
+        expect(flat).toEqual([{attrList: ['key1', 'key2'], value: 'value'}]);
     });
-    it('Does not chain lists', () => {
+    test('Does not chain lists', () => {
         const flat = flattenQueryParams({
             key1: {key2: ['value1', 'value2']}
         });
-        expect(flat).to.eql([{attrList: ['key1', 'key2'], value: ['value1', 'value2']}]);
+        expect(flat).toEqual([{attrList: ['key1', 'key2'], value: ['value1', 'value2']}]);
     });
 });
 
 
 describe('formatTraversal', () => {
-    it('returns direct for single attr', () => {
+    test('returns direct for single attr', () => {
         const formatted = formatTraversal(['a']);
-        expect(formatted).to.eql({attr: 'a'});
+        expect(formatted).toEqual({attr: 'a'});
     });
-    it('creates links for intermediary attrs', () => {
+    test('creates links for intermediary attrs', () => {
         const formatted = formatTraversal(['a', 'b', 'c']);
-        expect(formatted).to.eql({
+        expect(formatted).toEqual({
             attr: 'a',
             type: TRAVERSAL_TYPE.LINK,
             child: {
@@ -63,41 +60,41 @@ describe('formatTraversal', () => {
 
 
 describe('parseValue', () => {
-    it('parses basic equals', () => {
+    test('parses basic equals', () => {
         const parsed = parseValue('attr', 'blargh');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             attr: 'attr',
             value: 'blargh',
             negate: false
         });
     });
-    it('parses null', () => {
+    test('parses null', () => {
         const parsed = parseValue('attr', 'null');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             attr: 'attr',
             value: null,
             negate: false
         });
     });
-    it('parses CONTAINSTEXT operator', () => {
+    test('parses CONTAINSTEXT operator', () => {
         const parsed = parseValue('attr', 'null');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             attr: 'attr',
             value: null,
             negate: false
         });
     });
-    it('parses initial negation', () => {
+    test('parses initial negation', () => {
         const parsed = parseValue('attr', '!blargh');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             attr: 'attr',
             value: 'blargh',
             negate: true
         });
     });
-    it('parses OR list', () => {
+    test('parses OR list', () => {
         const parsed = parseValue('attr', 'blargh|monkeys');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             operator: OPERATORS.OR,
             comparisons: [
                 {
@@ -109,9 +106,9 @@ describe('parseValue', () => {
             ]
         });
     });
-    it('parses OR list with different operators', () => {
+    test('parses OR list with different operators', () => {
         const parsed = parseValue('attr', 'blargh|~monkeys');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             operator: OPERATORS.OR,
             comparisons: [
                 {
@@ -123,9 +120,9 @@ describe('parseValue', () => {
             ]
         });
     });
-    it('parses OR list with some negatives', () => {
+    test('parses OR list with some negatives', () => {
         const parsed = parseValue('attr', 'blargh|!monkeys');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             operator: OPERATORS.OR,
             comparisons: [
                 {
@@ -141,9 +138,9 @@ describe('parseValue', () => {
 
 
 describe('parseCompoundAttr', () => {
-    it('parses edge.link.direct', () => {
+    test('parses edge.link.direct', () => {
         const parsed = parseCompoundAttr('outE.vertex.name');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             type: 'EDGE',
             direction: 'out',
             child: {
@@ -153,9 +150,9 @@ describe('parseCompoundAttr', () => {
             }
         });
     });
-    it('parses edge with classes', () => {
+    test('parses edge with classes', () => {
         const parsed = parseCompoundAttr('out(ImpliedBy, supportedby).vertex.name');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             type: 'EDGE',
             direction: 'out',
             edges: ['ImpliedBy', 'supportedby'],
@@ -166,9 +163,9 @@ describe('parseCompoundAttr', () => {
             }
         });
     });
-    it('parses edge without classes', () => {
+    test('parses edge without classes', () => {
         const parsed = parseCompoundAttr('out().vertex.name');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             type: 'EDGE',
             direction: 'out',
             edges: [],
@@ -179,15 +176,15 @@ describe('parseCompoundAttr', () => {
             }
         });
     });
-    it('parses direct', () => {
+    test('parses direct', () => {
         const parsed = parseCompoundAttr('name');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             attr: 'name'
         });
     });
-    it('parses link.edge', () => {
+    test('parses link.edge', () => {
         const parsed = parseCompoundAttr('source.out(ImpliedBy,supportedby)');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             attr: 'source',
             type: 'LINK',
             child: {
@@ -197,9 +194,9 @@ describe('parseCompoundAttr', () => {
             }
         });
     });
-    it('parses link.direct', () => {
+    test('parses link.direct', () => {
         const parsed = parseCompoundAttr('source.name');
-        expect(parsed).to.eql({
+        expect(parsed).toEqual({
             type: 'LINK',
             attr: 'source',
             child: {
@@ -211,25 +208,25 @@ describe('parseCompoundAttr', () => {
 
 
 describe('parse', () => {
-    it('no query parameters', () => {
+    test('no query parameters', () => {
         const qparams = qs.parse('');
         const result = parse(qparams);
-        expect(result).to.eql({where: []});
+        expect(result).toEqual({where: []});
     });
-    it('neighbors', () => {
+    test('neighbors', () => {
 
     });
-    it('errors on too many neighbors');
-    it('limit');
-    it('error on negative limit');
-    it('error on 0 limit');
-    it('error on limit too large');
-    it('skip');
-    it('error on negative skip');
-    it('sourceId OR name', () => {
+    test.todo('errors on too many neighbors');
+    test.todo('limit');
+    test.todo('error on negative limit');
+    test.todo('error on 0 limit');
+    test.todo('error on limit too large');
+    test.todo('skip');
+    test.todo('error on negative skip');
+    test('sourceId OR name', () => {
         const qparams = qs.parse('sourceId=blargh&name=monkeys&or=sourceId,name');
         const result = parse(qparams);
-        expect(result).to.eql({
+        expect(result).toEqual({
             where: [{
                 operator: OPERATORS.OR,
                 comparisons: [
@@ -244,10 +241,10 @@ describe('parse', () => {
         });
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, result);
     });
-    it('similar attr names', () => {
+    test('similar attr names', () => {
         const qparams = qs.parse('source[name]=disease%20ontology&name=~pediat&neighbors=1');
         const result = parse(qparams);
-        expect(result).to.eql({
+        expect(result).toEqual({
             where: [
                 {
                     attr: {attr: 'source', type: 'LINK', child: {attr: 'name'}},
@@ -287,18 +284,20 @@ describe('parse', () => {
             ]),
             {neighbors: 1}
         );
-        expect(query).to.eql(exp);
+        expect(query).toEqual(exp);
         const {query: sql, params} = query.toString();
-        expect(sql).to.equal('SELECT * FROM (SELECT * FROM Disease WHERE source.name = :param0 AND name CONTAINSTEXT :param1) WHERE deletedAt IS NULL');
-        expect(params).to.eql({
+        expect(sql).toBe(
+            'SELECT * FROM (SELECT * FROM Disease WHERE source.name = :param0 AND name CONTAINSTEXT :param1) WHERE deletedAt IS NULL'
+        );
+        expect(params).toEqual({
             param0: 'disease ontology',
             param1: 'pediat'
         });
     });
-    it('returnProperties', () => {
+    test('returnProperties', () => {
         const qparams = qs.parse('returnProperties=name,sourceId');
         const result = parse(qparams);
-        expect(result).to.eql({
+        expect(result).toEqual({
             where: [],
             returnProperties: ['name', 'sourceId']
         });
