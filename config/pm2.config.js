@@ -10,7 +10,7 @@ module.exports = {
         {
             name: `${packageData.name.replace(/^@bcgsc\//, '')}`,
             script: 'npm',
-            args: 'start',
+            args: 'run start:prod',
             watch: false,
             max_restarts: 25,
             min_uptime: 10000, // min ms up before considered fail to start
