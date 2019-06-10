@@ -51,13 +51,6 @@
     "js-beautify": "^1.10.0",
     "qs": "^6.5.2"
   },
-  "nyc": {
-    "reporter": [
-      "html",
-      "text",
-      "clover"
-    ]
-  },
   "scripts": {
     "start": "NODE_ENV=production node server.js",
     "start:dev": "NODE_ENV=development node server.js",
