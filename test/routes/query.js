@@ -239,7 +239,19 @@ describe('parse', () => {
                 ]
             }]
         });
-        const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, result);
+        expect(() => Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, result)).not.toThrow();
+    });
+    test('parse & validate', () => {
+        const body = {
+            where: [
+                {
+                    attr: 'inE(Impliedby).vertex.reference1.name',
+                    value: 'KRAS'
+                }
+            ]
+        };
+        const query = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Statement, body);
+        expect(() => query.validate()).not.toThrow();
     });
     test('similar attr names', () => {
         const qparams = qs.parse('source[name]=disease%20ontology&name=~pediat&neighbors=1');
