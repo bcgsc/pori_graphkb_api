@@ -20,7 +20,7 @@ const {
 const {connectDB} = require('./repo');
 
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
-const {addResourceRoutes} = require('./routes/util');
+const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
 const {addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked} = require('./routes');
 const config = require('./config');

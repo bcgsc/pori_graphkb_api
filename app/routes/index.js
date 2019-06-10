@@ -6,7 +6,7 @@ const _ = require('lodash');
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
 const openapi = require('./openapi');
-const util = require('./util');
+const util = require('./resource');
 const {logger} = require('./../repo/logging');
 const {constants: {MAX_NEIGHBORS}, util: {castRangeInt, castBoolean}} = require('./../repo/query');
 const {
