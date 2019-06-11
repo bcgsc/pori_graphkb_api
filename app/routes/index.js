@@ -6,7 +6,7 @@ const _ = require('lodash');
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
 const openapi = require('./openapi');
-const util = require('./resource');
+const resource = require('./resource');
 const {logger} = require('./../repo/logging');
 const {constants: {MAX_NEIGHBORS}, util: {castRangeInt, castBoolean}} = require('./../repo/query');
 const {
@@ -30,7 +30,7 @@ const addKeywordSearchRoute = (opt) => {
 
             const options = {user: req.user};
             try {
-                Object.assign(options, util.checkStandardOptions(req.query));
+                Object.assign(options, resource.checkStandardOptions(req.query));
             } catch (err) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
             }
@@ -81,7 +81,7 @@ const addSearchStatementByLinked = (opt) => {
         async (req, res) => {
             const options = {...req.body};
             try {
-                Object.assign(options, util.checkStandardOptions(options));
+                Object.assign(options, resource.checkStandardOptions(options));
             } catch (err) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
             }
@@ -145,5 +145,5 @@ const addGetRecordsByList = ({router, db}) => {
 };
 
 module.exports = {
-    openapi, util, addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked
+    openapi, resource, addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked
 };
