@@ -119,7 +119,7 @@ class Comparison {
                 }
             }
             if (prop) {
-                if (this.operator === OPERATORS.EQ && !prop.iterable) {
+                if (this.operator === OPERATORS.EQ && !prop.iterable && !this.attr.iterable()) {
                     throw new AttributeError(
                         `Using a direct comparison (${
                             this.operator
@@ -139,7 +139,7 @@ class Comparison {
             this.value = validateValue(this.value);
 
             if (this.operator === OPERATORS.CONTAINS) {
-                if (prop && !prop.iterable) {
+                if (prop && !prop.iterable && !this.attr.iterable()) {
                     throw new AttributeError(
                         `CONTAINS can only be used with iterable properties (${
                             prop.name
@@ -149,7 +149,7 @@ class Comparison {
             } if (this.operator === OPERATORS.IN) {
                 throw new AttributeError('IN should only be used with iterable values');
             } if (this.operator === OPERATORS.EQ) {
-                if (prop && prop.iterable) {
+                if (prop && (prop.iterable || this.attr.iterable())) {
                     throw new AttributeError(
                         `A direct comparison (${
                             this.operator
