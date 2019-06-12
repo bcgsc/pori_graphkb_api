@@ -37,14 +37,16 @@ describeWithAuth('schema', () => {
         doSource,
         otherVertex,
         server,
-        dbName;
+        dbName,
+        conf;
     beforeAll(async () => {
         ({
             db,
             schema,
             admin,
             server,
-            dbName
+            dbName,
+            conf
         } = await setUpEmptyDB(createConfig()));
     });
     beforeEach(async () => {
@@ -66,13 +68,17 @@ describeWithAuth('schema', () => {
     });
     afterEach(async () => {
         // clear all V/E records
-        await db.query('delete edge e');
-        await db.query('delete vertex v');
+        await db.command('delete edge e').all();
+        await db.command('delete vertex v').all();
     });
     afterAll(async () => {
         if (server) {
             if (db && dbName) {
-                await server.drop({name: dbName});
+                await server.dropDatabase({
+                    name: dbName,
+                    username: conf.GKB_DBS_USER,
+                    password: conf.GKB_DBS_PASS
+                });
             }
             await server.close();
         }
