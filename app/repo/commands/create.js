@@ -241,11 +241,12 @@ const createStatement = async (db, opt) => {
         );
         commit.let(`edge${edgeCount++}`, tx => tx.create('EDGE', eModel.name)
             .set(omitDBAttributes(_.omit(eRecord, ['out', 'in'])))
-            .from('$statement')
+            .from('$statement[0]')
             .to(eRecord.in));
     }
     commit
-        .let('result', tx => tx.select().from('$statement'))
+        .let('result', tx => tx.select('*, *:{*:{*, @rid, @class, !history}, @rid, @class, !history}')
+            .from('(select expand($statement[0]))'))
         .commit();
     logger.log('debug', commit.buildStatement());
     try {
