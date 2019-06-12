@@ -47,9 +47,9 @@ const selectCounts = async (db, classList, extraGrouping = []) => {
         async (cls) => {
             let statement;
             if (grouping.length === 0) {
-                statement = `SELECT count(*) FROM ${cls}`;
+                statement = `SELECT count(*) as cnt FROM ${cls}`;
             } else {
-                statement = `SELECT ${clause}, count(*) FROM ${cls} GROUP BY ${clause}`;
+                statement = `SELECT ${clause}, count(*) as cnt FROM ${cls} GROUP BY ${clause}`;
             }
             logger.log('debug', statement);
             return db.query(statement).all();
@@ -64,7 +64,7 @@ const selectCounts = async (db, classList, extraGrouping = []) => {
         }
     }
     grouping.unshift('@class');
-    const result = groupRecordsBy(counts, grouping, {value: 'count', aggregate: false});
+    const result = groupRecordsBy(counts, grouping, {value: 'cnt', aggregate: false});
     return result;
 };
 
