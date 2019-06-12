@@ -80,10 +80,9 @@ const getUserByName = async (db, username) => {
     logger.debug(`getUserByName: ${username}`);
     // raw SQL to avoid having to load db models in the middleware
     const user = await db.query(
-        'SELECT * from User where name = :param0 AND deletedAt IS NULL',
+        'SELECT *, groups:{*, @rid, @class} from User where name = :param0 AND deletedAt IS NULL',
         {
-            params: {param0: username},
-            fetchPlan: 'groups:1'
+            params: {param0: username}
         }
     ).all();
     if (user.length > 1) {
