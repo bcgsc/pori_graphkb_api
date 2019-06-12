@@ -68,23 +68,23 @@ const migrate17Xto18X = async (db) => {
  */
 const migrate18Xto19X = async (db) => {
     logger.info('Convert Evidence to an abstract class (slow, please wait)');
-    await db.query('ALTER CLASS Evidence SUPERCLASS -Ontology');
-    await db.query('DROP CLASS EvidenceGroup');
-    await db.query('DROP PROPERTY Permissions.EvidenceGroup');
+    await db.command('ALTER CLASS Evidence SUPERCLASS -Ontology').all();
+    await db.command('DROP CLASS EvidenceGroup').all();
+    await db.command('DROP PROPERTY Permissions.EvidenceGroup').all();
 
     for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication']) {
         logger.info(`Remove Evidence as parent from ${subclass}`);
-        await db.query(`ALTER CLASS ${subclass} SUPERCLASS -Evidence`);
+        await db.command(`ALTER CLASS ${subclass} SUPERCLASS -Evidence`).all();
         logger.info(`Add Ontology as parent to ${subclass}`);
-        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Ontology`);
+        await db.command(`ALTER CLASS ${subclass} SUPERCLASS +Ontology`).all();
     }
     logger.info('make evidence abstract');
-    await db.query('ALTER CLASS Evidence ABSTRACT TRUE');
+    await db.command('ALTER CLASS Evidence ABSTRACT TRUE').all();
 
     logger.info('Re-add Evidence as abstract parent');
     for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication', 'Source']) {
         logger.info(`Add Evidence as parent of ${subclass} (slow, please wait)`);
-        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`);
+        await db.command(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`).all();
     }
 
     logger.info('Add actionType property to class TargetOf');
@@ -94,7 +94,7 @@ const migrate18Xto19X = async (db) => {
 
     logger.info('Create the CuratedContent class');
     await ClassModel.create(SCHEMA_DEFN.CuratedContent, db);
-    await db.query('CREATE PROPERTY Permissions.CuratedContent INTEGER (NOTNULL TRUE, MIN 0, MAX 15)');
+    await db.command('CREATE PROPERTY Permissions.CuratedContent INTEGER (NOTNULL TRUE, MIN 0, MAX 15)').all();
 
     logger.info('Add addition Source properties');
     const source = await db.class.get(SCHEMA_DEFN.Source.name);
