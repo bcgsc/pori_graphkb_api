@@ -1,4 +1,4 @@
-const {RID} = require('orientjs');
+const {RecordID: RID} = require('orientjs');
 
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 

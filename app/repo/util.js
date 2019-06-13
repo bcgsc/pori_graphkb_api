@@ -158,11 +158,17 @@ const trimRecords = (recordList, opt = {}) => {
                 if (value.cluster < 0) { // abstract, remove
                     delete curr[attr];
                 }
-            } else if (value instanceof RIDBag) {
+            } else if (typeof value === 'object' && value && value['@rid'] !== undefined) {
+                if (!accessOk(value) || (activeOnly && value.deletedAt)) {
+                    delete curr[attr];
+                } else {
+                    queue.push(value);
+                }
+            } else if (attr.startsWith('out_') || attr.startsWith('in_')) {
                 // check here for updated edges that have not been removed
                 // https://github.com/orientechnologies/orientjs/issues/32
                 const arr = [];
-                for (const edge of value.all()) {
+                for (const edge of value) {
                     if (edge.out
                         && edge.in
                         && castToRID(edge.out).toString() !== currRID.toString()
@@ -174,12 +180,6 @@ const trimRecords = (recordList, opt = {}) => {
                     arr.push(edge);
                 }
                 curr[attr] = arr;
-            } else if (typeof value === 'object' && value && value['@rid'] !== undefined) {
-                if (!accessOk(value) || (activeOnly && value.deletedAt)) {
-                    delete curr[attr];
-                } else {
-                    queue.push(value);
-                }
             }
         }
     }
