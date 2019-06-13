@@ -139,6 +139,29 @@ describe('trimRecords', () => {
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ]);
     });
+    it('allows protected edges (explicit group)', async () => {
+        const records = [
+            {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
+            {
+                name: 'alice',
+                out_edgeType: [
+                    {'@rid': '44:1', groupRestrictions: [{'@rid': '#2:0'}]}
+                ],
+                groupRestrictions: [{'@rid': '#1:0'}]
+            }
+        ];
+        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}, {'@rid': '#2:0'}]}});
+        expect(trimmed).toEqual([
+            {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
+            {
+                name: 'alice',
+                groupRestrictions: [{'@rid': '#1:0'}],
+                out_edgeType: [
+                    {'@rid': '44:1', groupRestrictions: [{'@rid': '#2:0'}]}
+                ]
+            }
+        ]);
+    });
     test('removes nested protected records', async () => {
         const records = [
             {name: 'bob'},
