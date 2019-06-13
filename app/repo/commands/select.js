@@ -205,7 +205,8 @@ const selectFromList = async (db, recordList, opt) => {
     if (recordList.length < 1) {
         throw new AttributeError('Must select a minimum of 1 record');
     }
-    let query = `SELECT * FROM [${Object.keys(params).sort().map(p => `:${p}`).join(', ')}]`;
+    // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
+    let query = `SELECT * FROM [${Object.values(params).sort().map(p => `${p}`).join(', ')}]`;
 
     if (activeOnly) {
         query = `${query} WHERE deletedAt IS NULL`;
