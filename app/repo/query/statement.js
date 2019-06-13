@@ -179,8 +179,8 @@ const keywordSearch = (keywordsIn, opt) => {
     };
 
     let query = `
-    SELECT expand(distinct) FROM (
-        SELECT distinct(@rid) FROM (
+    SELECT expand(uniqueRecs) FROM (
+        SELECT distinct(@rid) as uniqueRecs FROM (
             SELECT expand($v)
             LET $ont = (SELECT * from Ontology WHERE ${
     subContainsClause(['sourceId', 'name'])
