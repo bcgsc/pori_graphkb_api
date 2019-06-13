@@ -133,7 +133,7 @@ describeWithAuth('API', () => {
     afterAll(async () => {
         if (server) {
             if (db && dbName) {
-                await server.drop({name: dbName});
+                await server.dropDatabase({name: dbName, username: conf.GKB_DBS_USER, password: conf.GKB_DBS_PASS});
             }
             // await server.close();
             await app.close();
