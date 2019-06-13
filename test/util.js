@@ -22,10 +22,10 @@ const setUpEmptyDB = async (conf) => {
 
 const clearDB = async (db, admin) => {
     // clear all V/E records
-    await db.command('delete edge e');
-    await db.command('delete vertex v');
-    await db.command(`delete from user where name != '${admin.name}'`);
-    await db.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\'');
+    await db.command('delete edge e').all();
+    await db.command('delete vertex v').all();
+    await db.command(`delete from user where name != '${admin.name}'`).all();
+    await db.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\'').all();
 };
 
 
