@@ -134,7 +134,7 @@ const select = async (db, query, opt = {}) => {
 
     logger.log('debug', `selected ${recordList.length} records`);
 
-    recordList = trimRecords(recordList, {activeOnly: query.activeOnly, user});
+    recordList = await trimRecords(recordList, {activeOnly: query.activeOnly, user, db});
 
     if (exactlyN !== null) {
         if (recordList.length === 0) {

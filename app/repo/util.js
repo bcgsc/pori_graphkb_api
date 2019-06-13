@@ -1,5 +1,5 @@
 const {error: {AttributeError}, constants: {PERMISSIONS}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
-const {RID, RIDBag} = require('orientjs');
+const {RecordID: RID} = require('orientjs');
 
 
 /**
@@ -94,11 +94,8 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
  * @param {boolean} [opt.activeOnly=true] trim deleted records
  * @param {User} [opt.user=null] if the user object is given, will check record-level permissions and trim any non-permitted content
  */
-const trimRecords = (recordList, opt = {}) => {
-    const {activeOnly, user} = Object.assign({
-        activeOnly: true,
-        user: null
-    }, opt);
+const trimRecords = async (recordList, opt = {}) => {
+    const {activeOnly = true, user = null, db} = opt;
     const queue = recordList.slice();
     const visited = new Set();
     const readableClasses = new Set();
@@ -169,11 +166,17 @@ const trimRecords = (recordList, opt = {}) => {
                 // https://github.com/orientechnologies/orientjs/issues/32
                 const arr = [];
                 for (const edge of value) {
-                    if (edge.out
-                        && edge.in
-                        && castToRID(edge.out).toString() !== currRID.toString()
-                        && castToRID(edge.in).toString() !== currRID.toString()
+                    let edgeCheck = edge;
+                    if (db && (!edge.out || !edge.in)) {
+                        edgeCheck = await db.record.get(edge);
+                    }
+                    if (edgeCheck.out
+                        && edgeCheck.in
+                        && castToRID(edgeCheck.out).toString() !== currRID.toString()
+                        && castToRID(edgeCheck.in).toString() !== currRID.toString()
                     ) {
+                        continue;
+                    } else if (!accessOk(edge)) {
                         continue;
                     }
                     queue.push(edge);

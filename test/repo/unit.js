@@ -97,23 +97,23 @@ describe('hasRecordAccess', () => {
 
 
 describe('trimRecords', () => {
-    test('removes protected records (default ok)', () => {
+    test('removes protected records (default ok)', async () => {
         const records = [
             {name: 'bob'},
             {name: 'alice', link: {name: 'george', '@rid': '#44:0'}}
         ];
-        const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual(records);
     });
-    test('removes protected records (explicit group)', () => {
+    test('removes protected records (explicit group)', async () => {
         const records = [
             {name: 'bob', groupRestrictions: [{'@rid': '#2:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ];
-        const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual([{name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}]);
     });
-    test('removes protected edges (default ok)', () => {
+    test('removes protected edges (default ok)', async () => {
         const records = [
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {
@@ -122,29 +122,29 @@ describe('trimRecords', () => {
                 groupRestrictions: [{'@rid': '#1:0'}]
             }
         ];
-        const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual([
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ]);
     });
-    test('removes protected edges (explicit group)', () => {
+    test('removes protected edges (explicit group)', async () => {
         const records = [
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', out_link: {'@rid': '44:1', groupRestrictions: [{'@rid': '#2:0'}]}, groupRestrictions: [{'@rid': '#1:0'}]}
         ];
-        const trimmed = trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual([
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ]);
     });
-    test('removes nested protected records', () => {
+    test('removes nested protected records', async () => {
         const records = [
             {name: 'bob'},
             {name: 'alice', link: {name: 'george', '@rid': '#44:1', groupRestrictions: [{'@rid': '#55:5'}]}, groupRestrictions: [{'@rid': '#2:1'}]}
         ];
-        const trimmed = trimRecords(records, {user: {groups: [{'@rid': '#2:1'}]}});
+        const trimmed = await trimRecords(records, {user: {groups: [{'@rid': '#2:1'}]}});
         expect(trimmed).toEqual([
             {name: 'bob'},
             {name: 'alice', groupRestrictions: [{'@rid': '#2:1'}]}
