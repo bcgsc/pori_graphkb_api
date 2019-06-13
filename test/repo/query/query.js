@@ -49,7 +49,7 @@ describe('Query Parsing', () => {
                                 new Traversal({attr: 'name', property: FEATURE_PROPS.name}), 'KRAS'
                             )
                         ]),
-                        {type: 'neighborhood'}
+                        {type: 'neighborhood', limit: null}
                     )
                 )
             ]),
@@ -179,7 +179,7 @@ describe('Query Parsing', () => {
                 {activeOnly: false, orderBy: ['@rid']}
             );
             expect(parsed).toEqual(expected);
-            const sql = 'SELECT * FROM Disease ORDER BY @rid ASC';
+            const sql = 'SELECT * FROM Disease ORDER BY @rid ASC LIMIT 1000';
             const {query, params} = parsed.toString();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
@@ -198,7 +198,7 @@ describe('Query Parsing', () => {
                 {activeOnly: false, orderBy: ['name'], orderByDirection: 'DESC'}
             );
             expect(parsed).toEqual(expected);
-            const sql = 'SELECT * FROM Disease ORDER BY name DESC';
+            const sql = 'SELECT * FROM Disease ORDER BY name DESC LIMIT 1000';
             const {query, params} = parsed.toString();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
@@ -207,13 +207,14 @@ describe('Query Parsing', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [],
                 activeOnly: false,
-                orderBy: ['@rid', '@class']
+                orderBy: ['@rid', '@class'],
+                limit: null
             });
 
             const expected = new Query(
                 SCHEMA_DEFN.Disease.name,
                 new Clause('AND', []),
-                {activeOnly: false, orderBy: ['@rid', '@class']}
+                {activeOnly: false, orderBy: ['@rid', '@class'], limit: null}
             );
             expect(parsed).toEqual(expected);
             const sql = 'SELECT * FROM Disease ORDER BY @rid ASC, @class ASC';
@@ -251,7 +252,7 @@ describe('Query Parsing', () => {
                                     new Comparison({attr: 'name', property: SOURCE_PROPS.name}, 'disease-ontology')
                                 ]
                             ),
-                            {activeOnly: true}
+                            {activeOnly: true, limit: null}
                         )
                     )
                 ]),
@@ -265,7 +266,7 @@ describe('Query Parsing', () => {
                         WHERE source IN
                             (SELECT * FROM (SELECT * FROM Source WHERE name = :param0) WHERE deletedAt IS NULL)
                         )
-                    WHERE deletedAt IS NULL`);
+                    WHERE deletedAt IS NULL LIMIT 1000`);
             const {query, params} = parsed.toString();
             expect(params).toEqual({param0: 'disease-ontology'});
             expect(query).toBe(sql);
@@ -299,7 +300,7 @@ describe('Query Parsing', () => {
                                     new Comparison({attr: 'name', property: SOURCE_PROPS.name}, 'disease-ontology')
                                 ]
                             ),
-                            {type: 'neighborhood', activeOnly: false}
+                            {type: 'neighborhood', activeOnly: false, limit: null}
                         )
                     )
                 ]),
@@ -310,7 +311,7 @@ describe('Query Parsing', () => {
                 WHERE source IN (SELECT * FROM (
                     MATCH {class: Source, WHERE: (name = :param0)}.both(
                         ${Array.from(NEIGHBORHOOD_EDGES, quoteWrap).join(', ')}
-                    ){WHILE: ($depth < 3)} RETURN $pathElements))`;
+                    ){WHILE: ($depth < 3)} RETURN DISTINCT $pathElements)) LIMIT 1000`;
             const {query, params} = parsed.toString();
             expect(params).toEqual({param0: 'disease-ontology'});
             expect(stripSQL(query)).toBe(stripSQL(sql));

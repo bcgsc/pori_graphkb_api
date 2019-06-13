@@ -126,6 +126,15 @@ describeWithAuth('schema', () => {
         });
         expect(record).toHaveProperty('sourceId', 'cancer');
         expect(record.source).toEqual(doSource['@rid']);
+        const query = Query.parseRecord(
+            schema,
+            schema.Disease,
+            content,
+            {
+                activeOnly: false,
+                neighbors: 3
+            }
+        );
         // change the name
         const updated = await update(db, {
             schema,
@@ -134,27 +143,21 @@ describeWithAuth('schema', () => {
             },
             model: schema.Disease,
             user: admin,
-            query: Query.parseRecord(schema, schema.Disease, content)
+            query
         });
+
         // check that a history link has been added to the node
         expect(updated).toHaveProperty('sourceId', 'new name');
         expect(record.source).toEqual(doSource['@rid']);
         // check that the 'old'/copy node has the original details
         expect(updated['@rid']).toEqual(record['@rid']);
         // select the original node
-        let originalNode = await select(
+
+        const [originalNode] = await select(
             db,
-            Query.parseRecord(
-                schema,
-                schema.Disease,
-                content,
-                {
-                    activeOnly: false
-                }
-            ),
-            {fetchPlan: '*:1', exactlyN: 1}
+            query,
+            {exactlyN: 1}
         );
-        originalNode = originalNode[0];
         expect(updated.history).toEqual(originalNode['@rid']);
         expect(originalNode.deletedBy['@rid']).toEqual(admin['@rid']);
         expect(updated.createdBy).toEqual(admin['@rid']);
@@ -317,7 +320,7 @@ describeWithAuth('schema', () => {
             user: admin
         });
         const result = await remove(db, {
-            query: Query.parseRecord(schema, schema.Source, {'@rid': doSource['@rid'].toString(), createdAt: doSource.createdAt}),
+            query: Query.parseRecord(schema, schema.Source, {'@rid': doSource['@rid'].toString(), createdAt: doSource.createdAt}, {neighbors: 2}),
             user: admin,
             model: schema.Source,
             schema
@@ -481,7 +484,7 @@ describeWithAuth('schema', () => {
                 schema
             });
             await remove(db, {
-                query: Query.parseRecord(schema, schema.Statement, {'@rid': stat['@rid']}),
+                query: Query.parseRecord(schema, schema.Statement, {'@rid': stat['@rid']}, {neighbors: 2}),
                 user: admin,
                 model: schema.Statement
             });

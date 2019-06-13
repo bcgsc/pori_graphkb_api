@@ -62,7 +62,7 @@ class Comparison {
             if (value.class) {
                 // must be a Query.
                 const subModel = schema[value.class] || model;
-                const subquery = Query.parse(schema, subModel, value);
+                const subquery = Query.parse(schema, subModel, {...value, limit: null, skip: null}); // cannot paginate subqueries
                 return new this(parsedAttr, subquery, operator, negate);
             }
             throw new AttributeError('Value for a comparison must be a primitive value or a subquery. Subqueries must contains the `class` attribute');
@@ -327,10 +327,12 @@ class Query {
         return new this(model.name, conditions, {
             skip,
             activeOnly,
-            returnProperties,
+            projection,
             orderBy,
             orderByDirection,
-            limit: castRangeInt(limit, 1, MAX_LIMIT),
+            limit: limit === null
+                ? limit
+                : castRangeInt(limit, 1, MAX_LIMIT),
             neighbors: castRangeInt(neighbors, 0, MAX_NEIGHBORS),
             type,
             edges,
@@ -402,9 +404,12 @@ class Query {
             queryString = `${queryString} ORDER BY ${this.orderBy.map(param => `${param} ${this.orderByDirection}`).join(', ')}`;
         }
         if (this.count) {
-            queryString = `SELECT count(*) FROM (${queryString})`;
+            queryString = `SELECT count(*) as count FROM (${queryString})`;
         } else if (this.skip != null) {
             queryString = `${queryString} SKIP ${this.skip}`;
+        }
+        if (this.limit !== null) {
+            queryString = `${queryString} LIMIT ${this.limit}`;
         }
         return {query: queryString, params};
     }

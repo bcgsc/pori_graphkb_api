@@ -25,7 +25,6 @@ const {
 const STATS_GROUPING = new Set(['@class', 'source']);
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
-const FETCH_OMIT = -2;
 
 
 /**
@@ -110,12 +109,9 @@ const getUserByName = async (db, username) => {
  *
  * @returns {Array.<Object>} array of database records
  */
-const select = async (db, query, opt) => {
+const select = async (db, query, opt = {}) => {
     // set the default options
-    const {exactlyN, user, fetchPlan} = Object.assign({
-        exactlyN: null,
-        fetchPlan: null
-    }, opt);
+    const {exactlyN = null, user} = opt;
     logger.log('debug', query.displayString());
 
     // send the query statement to the database
@@ -123,22 +119,6 @@ const select = async (db, query, opt) => {
     const queryOpt = {
         params
     };
-    if (!query.count) {
-        queryOpt.limit = query.limit;
-        if (fetchPlan) {
-            queryOpt.fetchPlan = fetchPlan;
-        } else if (query.neighbors !== null && query.neighbors !== undefined) {
-            queryOpt.fetchPlan = `*:${query.neighbors}`;
-        }
-        // add history if not explicity specified already
-        if (query.activeOnly && (!queryOpt.fetchPlan || !queryOpt.fetchPlan.includes('history'))) {
-            if (!queryOpt.fetchPlan) {
-                queryOpt.fetchPlan = `history:${FETCH_OMIT}`;
-            } else if (!queryOpt.fetchPlan.includes(`history:${FETCH_OMIT}`)) {
-                queryOpt.fetchPlan = `${queryOpt.fetchPlan} history:${FETCH_OMIT}`;
-            }
-        }
-    }
     logger.log('debug', JSON.stringify(queryOpt));
 
     let recordList;

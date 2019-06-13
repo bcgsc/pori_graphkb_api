@@ -299,7 +299,7 @@ describe('parse', () => {
         expect(query).toEqual(exp);
         const {query: sql, params} = query.toString();
         expect(sql).toBe(
-            'SELECT * FROM (SELECT * FROM Disease WHERE source.name = :param0 AND name CONTAINSTEXT :param1) WHERE deletedAt IS NULL'
+            'SELECT * FROM (SELECT *, *:{*, @rid, @class} FROM Disease WHERE source.name = :param0 AND name CONTAINSTEXT :param1) WHERE deletedAt IS NULL LIMIT 1000'
         );
         expect(params).toEqual({
             param0: 'disease ontology',
