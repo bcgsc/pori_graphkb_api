@@ -10,6 +10,29 @@ const {castRangeInt, castBoolean} = require('./util');
 const {Traversal} = require('./traversal');
 
 
+/**
+ * Given some depth level, calculates the nested projection required
+ * to expand all associated links and edges
+ */
+const nestedProjection = (initialDepth, excludeHistory = true) => {
+    const recursiveNestedProjection = (depth) => {
+        let current = '*';
+        if (depth !== initialDepth) {
+            current = `${current}, @rid, @class`;
+            if (excludeHistory) {
+                current = `${current}, !history`;
+            }
+        }
+        if (depth <= 0) {
+            return current;
+        }
+        const inner = recursiveNestedProjection(depth - 1);
+        return `${current}, *:{${inner}}`;
+    };
+    return recursiveNestedProjection(initialDepth);
+};
+
+
 class Comparison {
     /**
      * @param {string|Traversal} attr the attribute being compared to
@@ -234,7 +257,7 @@ class Query {
             neighbors = 0,
             orderBy = null,
             orderByDirection = 'ASC',
-            returnProperties = null,
+            projection = null,
             activeOnly = true,
             skip = null,
             count = false
@@ -243,7 +266,7 @@ class Query {
         this.where = where || new Clause(OPERATORS.AND); // conditions that make up the terms of the query
         this.skip = skip;
         this.type = match[opt.type] || null;
-        this.returnProperties = returnProperties;
+        this.projection = projection;
         this.neighbors = neighbors;
         this.limit = limit;
         this.activeOnly = activeOnly;
@@ -284,6 +307,10 @@ class Query {
             where = !(opt.where instanceof Array)
                 ? [opt.where]
                 : opt.where;
+        }
+        let projection = null;
+        if (returnProperties) {
+            projection = returnProperties.join(', ');
         }
 
         if (!['ASC', 'DESC'].includes(orderByDirection)) {
@@ -367,9 +394,7 @@ class Query {
      * @returns {Object} an object containing the SQL query statment (query) and the parameters (params)
      */
     toString(paramIndex = 0) {
-        const selectionElements = this.returnProperties
-            ? this.returnProperties.join(', ')
-            : '*';
+        const selectionElements = this.projection || nestedProjection(this.neighbors, !this.activeOnly);
 
         let queryString,
             params;
@@ -522,4 +547,6 @@ class Clause {
 }
 
 
-module.exports = {Query, Comparison, Clause};
+module.exports = {
+    Query, Comparison, Clause, nestedProjection
+};

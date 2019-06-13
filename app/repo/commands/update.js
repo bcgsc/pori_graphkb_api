@@ -130,7 +130,8 @@ const modifyEdgeTx = async (db, opt) => {
                 .set('out = $srcCopy[0]').set('in = $tgtCopy[0]')
                 .set({deletedAt: timeStampNow(), deletedBy: userRID})
                 .return('AFTER @rid'))
-            .let('result', tx => tx.select('*, *:{*, @rid, @class}').from('(select expand($deleted[0]))')); // See https://github.com/orientechnologies/orientdb/issues/8786
+            .let('result', tx => tx.select().from(original['@class']).where({'@rid': original['@rid']}));
+        // .let('result', tx => tx.select('*, *:{*, @rid, @class}').from('(select expand($deleted[0]))')); // See https://github.com/orientechnologies/orientdb/issues/8786
     } else {
         // edge update
         throw new NotImplementedError('Cannot update edges. Waiting on external fix: https://github.com/orientechnologies/orientdb/issues/8444');
