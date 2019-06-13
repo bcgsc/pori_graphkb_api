@@ -4,7 +4,12 @@ const {
 } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    Clause, Comparison, Query, Traversal, constants: {NEIGHBORHOOD_EDGES, OPERATORS}
+    Clause,
+    Comparison,
+    Query,
+    Traversal,
+    constants: {NEIGHBORHOOD_EDGES, OPERATORS},
+    nestedProjection
 } = require('./../../../app/repo/query');
 const {quoteWrap} = require('./../../../app/repo/util');
 
@@ -13,6 +18,23 @@ const DISEASE_PROPS = SCHEMA_DEFN.Disease.queryProperties;
 const FEATURE_PROPS = SCHEMA_DEFN.Feature.queryProperties;
 
 const {stripSQL} = require('./util');
+
+
+describe('nestedProjection', () => {
+    it('does not nest for no depth', () => {
+        expect(nestedProjection(0, false)).toBe('*');
+    });
+    it('does not exclude top-level history', () => {
+        expect(nestedProjection(0, true)).toBe('*');
+    });
+    it('nests a positive depth', () => {
+        expect(nestedProjection(1, false)).toBe('*, *:{*, @rid, @class}');
+    });
+    it('can exclude nested history', () => {
+        expect(nestedProjection(1, true)).toBe('*, *:{*, @rid, @class, !history}');
+        expect(nestedProjection(2, true)).toBe('*, *:{*, @rid, @class, !history, *:{*, @rid, @class, !history}}');
+    });
+});
 
 
 describe('Query Parsing', () => {
@@ -327,17 +349,17 @@ describe('Comparison', () => {
     describe('constructor', () => {
         test('throws error on non-std operator', () => {
             expect(() => {
-                new Comparison('blargh', 'monkeys', 'BAD');
+                new Comparison('blargh', 'monkeys', 'BAD');  // eslint-disable-line
             }).toThrowError('Invalid operator');
         });
         test('throws error on AND operator', () => {
             expect(() => {
-                new Comparison('blargh', 'monkeys', 'AND');
+                new Comparison('blargh', 'monkeys', 'AND'); // eslint-disable-line
             }).toThrowError('Invalid operator');
         });
         test('throws error on OR operator', () => {
             expect(() => {
-                new Comparison('blargh', 'monkeys', 'OR');
+                new Comparison('blargh', 'monkeys', 'OR'); // eslint-disable-line
             }).toThrowError('Invalid operator');
         });
     });

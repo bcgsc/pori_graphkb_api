@@ -7,7 +7,9 @@
  * @ignore
  */
 
-const {Comparison, Clause, Query} = require('./query');
+const {
+    Comparison, Clause, Query, nestedProjection
+} = require('./query');
 const {Traversal} = require('./traversal');
 const match = require('./match');
 const constants = require('./constants');
@@ -25,5 +27,6 @@ module.exports = {
     constants,
     util,
     generalKeywordSearch,
-    searchByLinkedRecords
+    searchByLinkedRecords,
+    nestedProjection
 };
