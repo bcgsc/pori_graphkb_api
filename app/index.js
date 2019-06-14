@@ -18,6 +18,7 @@ const {
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
 
 const {connectDB} = require('./repo');
+const {getLoadVersion} = require('./repo/migrate/version');
 
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
 const {addResourceRoutes} = require('./routes/resource');
@@ -140,7 +141,8 @@ class AppServer {
         this.router.get('/version', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({
                 api: process.env.npm_package_version,
-                db: GKB_DB_NAME
+                db: GKB_DB_NAME,
+                schema: getLoadVersion().version
             });
         });
         // read the key file if it wasn't already set
