@@ -26,7 +26,7 @@ POST /api/statements/search
 {
     "where": [
         {
-            "attr": "outE(impliedBy).vertex.reference1.name",
+            "attr": "outE(ImpliedBy).vertex.reference1.name",
             "value": "KRAS"
         }
     ]
@@ -43,7 +43,7 @@ To do this we can use a neighborhood subquery as follows
 POST /api/statements/search
 {
     "where": {
-        "attr": "outE(impliedBy).vertex",
+        "attr": "outE(ImpliedBy).vertex",
         "value": {
             "type": "neighborhood",
             "where": [{"attr": "name", "value": "KRAS"}],
