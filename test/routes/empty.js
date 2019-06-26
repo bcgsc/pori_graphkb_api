@@ -1439,10 +1439,11 @@ describeWithAuth('API', () => {
                     method: 'POST'
                 })).body.result['@rid'];
                 reference1 = (await request({
-                    uri: `${app.url}/vocabulary`,
+                    uri: `${app.url}/features`,
                     body: {
                         sourceId: 'variantReference',
                         name: 'variantReference',
+                        biotype: 'gene',
                         source
                     },
                     headers: {Authorization: mockToken},
