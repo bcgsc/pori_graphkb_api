@@ -137,12 +137,9 @@ const select = async (db, query, opt = {}) => {
     recordList = await trimRecords(recordList, {activeOnly: query.activeOnly, user, db});
 
     if (exactlyN !== null) {
-        if (recordList.length === 0) {
-            if (exactlyN === 0) {
-                return [];
-            }
+        if (recordList.length < exactlyN) {
             throw new NoRecordFoundError({
-                message: 'query expected results but returned an empty list',
+                message: `query expected ${exactlyN} records but only found ${recordList.length}`,
                 sql: query.displayString()
             });
         } else if (exactlyN !== recordList.length) {
@@ -218,7 +215,7 @@ const selectFromList = async (db, recordList, opt) => {
         params
     }, opt);
     queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj);
+    return select(db, queryObj, {exactlyN: recordList.length});
 };
 
 

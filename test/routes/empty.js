@@ -843,16 +843,23 @@ describeWithAuth('API', () => {
                 }
                 expect(res.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
                 expect(res.body).toHaveProperty('message');
-                expect(res.body.message).toContain('One or more invalid record cluster IDs (<cluster>:#)');
+                expect(res.body.message).toContain('expected 2 records but only found 1');
             });
-            test('Ignores non-existant RID on a valid cluster', async () => {
-                const res = await request({
-                    uri: `${app.url}/records`,
-                    method: 'GET',
-                    qs: {rid: `${record1},1:1111`},
-                    headers: {Authorization: mockToken}
-                });
-                expect(res.body.result).toHaveProperty('length', 1);
+            test('errors on missing non-existant RID on a valid cluster', async () => {
+                let res;
+                try {
+                    res = await request({
+                        uri: `${app.url}/records`,
+                        method: 'GET',
+                        qs: {rid: `${record1},1:1111`},
+                        headers: {Authorization: mockToken}
+                    });
+                } catch (err) {
+                    res = err.response;
+                }
+                expect(res.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
+                expect(res.body).toHaveProperty('message');
+                expect(res.body.message).toContain('expected 2 records but only found 1');
             });
             test('error on bad neighbors argument', async () => {
                 let res;
@@ -910,14 +917,21 @@ describeWithAuth('API', () => {
                 expect(res.body).toHaveProperty('message');
                 expect(res.body.message).toContain('not a valid RID');
             });
-            test('ignores deleted records', async () => {
-                const res = await request({
-                    uri: `${app.url}/records`,
-                    method: 'GET',
-                    qs: {rid: `${record1},${record2},${deletedRecord}`},
-                    headers: {Authorization: mockToken}
-                });
-                expect(res.body.result).toHaveProperty('length', 2);
+            test('errors on deleted records', async () => {
+                let res;
+                try {
+                    res = await request({
+                        uri: `${app.url}/records`,
+                        method: 'GET',
+                        qs: {rid: `${record1},${record2},${deletedRecord}`},
+                        headers: {Authorization: mockToken}
+                    });
+                } catch (err) {
+                    res = err.response;
+                }
+                expect(res.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
+                expect(res.body).toHaveProperty('message');
+                expect(res.body.message).toContain('expected 3 records but only found 2');
             });
             test('includes deleted records when activeOnly off', async () => {
                 const res = await request({
