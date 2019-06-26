@@ -28,12 +28,14 @@ class Property extends kbSchema.Property {
         if (model.default !== undefined) {
             dbProperties.default = model.default;
         }
+        /** TODO: pending resolution https://github.com/orientechnologies/orientjs/issues/377
         if (model.min !== undefined) {
             dbProperties.min = model.min;
         }
         if (model.max !== undefined) {
             dbProperties.max = model.max;
-        }
+        } */
+
         return dbClass.property.create(dbProperties);
     }
 }
