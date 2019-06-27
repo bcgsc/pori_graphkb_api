@@ -1,9 +1,9 @@
 # Complex Queries
 
 - [Examples](#examples)
-    - [Query by related vertices](#query-by-related-vertices)
-    - [Query by link in neighborhood](#query-by-link-in-neighborhood)
-    - [Tree Queries: Query Ancestors or Descendants](#tree-queries--query-ancestors-or-descendants)
+  - [Query by related vertices](#query-by-related-vertices)
+  - [Query by link in neighborhood](#query-by-link-in-neighborhood)
+  - [Tree Queries: Query Ancestors or Descendants](#tree-queries-query-ancestors-or-descendants)
 
 For simple queries, the GET routes and builtin query parameters should suffice. However, for more
 complex queries the user may want to use the search endpoints instead. All exposed models will
@@ -26,19 +26,12 @@ POST /api/statements/search
 {
     "where": [
         {
-            "attr": "inE(implies).vertex.reference1.name",
+            "attr": "outE(ImpliedBy).vertex.reference1.name",
             "value": "KRAS"
         }
     ]
 }
 ```
-
-This becomes the query
-
-```SQL
-SELECT * FROM Statement WHERE inE('Implies').outV().reference1.name = "KRAS"
-```
-
 The above example is fairly simple. Where the search endpoint showcases its utitlity is in the pre-boxed queries.
 
 ### Query by link in neighborhood
@@ -50,7 +43,7 @@ To do this we can use a neighborhood subquery as follows
 POST /api/statements/search
 {
     "where": {
-        "attr": "inE(implies).vertex",
+        "attr": "outE(ImpliedBy).vertex",
         "value": {
             "type": "neighborhood",
             "where": [{"attr": "name", "value": "KRAS"}],
@@ -59,15 +52,6 @@ POST /api/statements/search
         }
     }
 }
-```
-
-This becomes
-
-```SQL
-SELECT * FROM (MATCH
-    {class: Disease, WHERE: (sourceId = 'cancer' AND deletedAt IS NULL)}
-        .both('AliasOf', 'GeneralizationOf', 'DeprecatedBy', 'CrossReferenceOf', 'ElementOf'){WHILE: ($depth < 3)}
-RETURN $pathElements)
 ```
 
 Note that the class must be given for subqueries or it will be assumed to be the same as the starting
