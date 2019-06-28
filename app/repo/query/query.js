@@ -1,4 +1,4 @@
-const {RID} = require('orientjs');
+const {RecordID: RID} = require('orientjs');
 
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
@@ -8,6 +8,29 @@ const {
 } = require('./constants');
 const {castRangeInt, castBoolean} = require('./util');
 const {Traversal} = require('./traversal');
+
+
+/**
+ * Given some depth level, calculates the nested projection required
+ * to expand all associated links and edges
+ */
+const nestedProjection = (initialDepth, excludeHistory = true) => {
+    const recursiveNestedProjection = (depth) => {
+        let current = '*';
+        if (depth !== initialDepth) {
+            current = `${current}, @rid, @class`;
+            if (excludeHistory) {
+                current = `${current}, !history`;
+            }
+        }
+        if (depth <= 0) {
+            return current;
+        }
+        const inner = recursiveNestedProjection(depth - 1);
+        return `${current}, *:{${inner}}`;
+    };
+    return recursiveNestedProjection(initialDepth);
+};
 
 
 class Comparison {
@@ -62,7 +85,7 @@ class Comparison {
             if (value.class) {
                 // must be a Query.
                 const subModel = schema[value.class] || model;
-                const subquery = Query.parse(schema, subModel, value);
+                const subquery = Query.parse(schema, subModel, {...value, limit: null, skip: null}); // cannot paginate subqueries
                 return new this(parsedAttr, subquery, operator, negate);
             }
             throw new AttributeError('Value for a comparison must be a primitive value or a subquery. Subqueries must contains the `class` attribute');
@@ -234,7 +257,7 @@ class Query {
             neighbors = 0,
             orderBy = null,
             orderByDirection = 'ASC',
-            returnProperties = null,
+            projection = null,
             activeOnly = true,
             skip = null,
             count = false
@@ -243,7 +266,7 @@ class Query {
         this.where = where || new Clause(OPERATORS.AND); // conditions that make up the terms of the query
         this.skip = skip;
         this.type = match[opt.type] || null;
-        this.returnProperties = returnProperties;
+        this.projection = projection;
         this.neighbors = neighbors;
         this.limit = limit;
         this.activeOnly = activeOnly;
@@ -284,6 +307,10 @@ class Query {
             where = !(opt.where instanceof Array)
                 ? [opt.where]
                 : opt.where;
+        }
+        let projection = null;
+        if (returnProperties) {
+            projection = returnProperties.join(', ');
         }
 
         if (!['ASC', 'DESC'].includes(orderByDirection)) {
@@ -327,10 +354,12 @@ class Query {
         return new this(model.name, conditions, {
             skip,
             activeOnly,
-            returnProperties,
+            projection,
             orderBy,
             orderByDirection,
-            limit: castRangeInt(limit, 1, MAX_LIMIT),
+            limit: limit === null
+                ? limit
+                : castRangeInt(limit, 1, MAX_LIMIT),
             neighbors: castRangeInt(neighbors, 0, MAX_NEIGHBORS),
             type,
             edges,
@@ -365,9 +394,7 @@ class Query {
      * @returns {Object} an object containing the SQL query statment (query) and the parameters (params)
      */
     toString(paramIndex = 0) {
-        const selectionElements = this.returnProperties
-            ? this.returnProperties.join(', ')
-            : '*';
+        const selectionElements = this.projection || nestedProjection(this.neighbors, !this.activeOnly);
 
         let queryString,
             params;
@@ -402,9 +429,12 @@ class Query {
             queryString = `${queryString} ORDER BY ${this.orderBy.map(param => `${param} ${this.orderByDirection}`).join(', ')}`;
         }
         if (this.count) {
-            queryString = `SELECT count(*) FROM (${queryString})`;
+            queryString = `SELECT count(*) as count FROM (${queryString})`;
         } else if (this.skip != null) {
             queryString = `${queryString} SKIP ${this.skip}`;
+        }
+        if (this.limit !== null) {
+            queryString = `${queryString} LIMIT ${this.limit}`;
         }
         return {query: queryString, params};
     }
@@ -517,4 +547,6 @@ class Clause {
 }
 
 
-module.exports = {Query, Comparison, Clause};
+module.exports = {
+    Query, Comparison, Clause, nestedProjection
+};

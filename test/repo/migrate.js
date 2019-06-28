@@ -24,8 +24,10 @@ describe('migrate', () => {
 
     beforeAll(() => {
         createRecordMock = jest.fn();
+        const queryMock = jest.fn().mockReturnValue({all: jest.fn(), one: jest.fn()});
         db = {
-            query: jest.fn(),
+            query: queryMock,
+            command: queryMock,
             index: {
                 create: jest.fn()
             },
@@ -45,9 +47,9 @@ describe('migrate', () => {
     });
 
     test('getCurrentVersion', async () => {
-        db.query.mockResolvedValueOnce([{version: '1.6.2'}]);
+        db.query.mockReturnValue({all: jest.fn().mockResolvedValueOnce([{version: '1.6.2'}])});
         const version = await getCurrentVersion(db);
-        expect(db.query).toHaveBeenCalledWith('SELECT * FROM SchemaHistory ORDER BY createdAt DESC', {limit: 1});
+        expect(db.query).toHaveBeenCalledWith('SELECT * FROM SchemaHistory ORDER BY createdAt DESC LIMIT 1');
         expect(version).toEqual('1.6.2');
     });
 

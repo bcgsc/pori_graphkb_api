@@ -4,7 +4,12 @@ const {
 } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    Clause, Comparison, Query, Traversal, constants: {NEIGHBORHOOD_EDGES, OPERATORS}
+    Clause,
+    Comparison,
+    Query,
+    Traversal,
+    constants: {NEIGHBORHOOD_EDGES, OPERATORS},
+    nestedProjection
 } = require('./../../../app/repo/query');
 const {quoteWrap} = require('./../../../app/repo/util');
 
@@ -13,6 +18,23 @@ const DISEASE_PROPS = SCHEMA_DEFN.Disease.queryProperties;
 const FEATURE_PROPS = SCHEMA_DEFN.Feature.queryProperties;
 
 const {stripSQL} = require('./util');
+
+
+describe('nestedProjection', () => {
+    it('does not nest for no depth', () => {
+        expect(nestedProjection(0, false)).toBe('*');
+    });
+    it('does not exclude top-level history', () => {
+        expect(nestedProjection(0, true)).toBe('*');
+    });
+    it('nests a positive depth', () => {
+        expect(nestedProjection(1, false)).toBe('*, *:{*, @rid, @class}');
+    });
+    it('can exclude nested history', () => {
+        expect(nestedProjection(1, true)).toBe('*, *:{*, @rid, @class, !history}');
+        expect(nestedProjection(2, true)).toBe('*, *:{*, @rid, @class, !history, *:{*, @rid, @class, !history}}');
+    });
+});
 
 
 describe('Query Parsing', () => {
@@ -49,7 +71,7 @@ describe('Query Parsing', () => {
                                 new Traversal({attr: 'name', property: FEATURE_PROPS.name}), 'KRAS'
                             )
                         ]),
-                        {type: 'neighborhood'}
+                        {type: 'neighborhood', limit: null}
                     )
                 )
             ]),
@@ -179,7 +201,7 @@ describe('Query Parsing', () => {
                 {activeOnly: false, orderBy: ['@rid']}
             );
             expect(parsed).toEqual(expected);
-            const sql = 'SELECT * FROM Disease ORDER BY @rid ASC';
+            const sql = 'SELECT * FROM Disease ORDER BY @rid ASC LIMIT 1000';
             const {query, params} = parsed.toString();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
@@ -198,7 +220,7 @@ describe('Query Parsing', () => {
                 {activeOnly: false, orderBy: ['name'], orderByDirection: 'DESC'}
             );
             expect(parsed).toEqual(expected);
-            const sql = 'SELECT * FROM Disease ORDER BY name DESC';
+            const sql = 'SELECT * FROM Disease ORDER BY name DESC LIMIT 1000';
             const {query, params} = parsed.toString();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
@@ -207,13 +229,14 @@ describe('Query Parsing', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 where: [],
                 activeOnly: false,
-                orderBy: ['@rid', '@class']
+                orderBy: ['@rid', '@class'],
+                limit: null
             });
 
             const expected = new Query(
                 SCHEMA_DEFN.Disease.name,
                 new Clause('AND', []),
-                {activeOnly: false, orderBy: ['@rid', '@class']}
+                {activeOnly: false, orderBy: ['@rid', '@class'], limit: null}
             );
             expect(parsed).toEqual(expected);
             const sql = 'SELECT * FROM Disease ORDER BY @rid ASC, @class ASC';
@@ -251,7 +274,7 @@ describe('Query Parsing', () => {
                                     new Comparison({attr: 'name', property: SOURCE_PROPS.name}, 'disease-ontology')
                                 ]
                             ),
-                            {activeOnly: true}
+                            {activeOnly: true, limit: null}
                         )
                     )
                 ]),
@@ -265,7 +288,7 @@ describe('Query Parsing', () => {
                         WHERE source IN
                             (SELECT * FROM (SELECT * FROM Source WHERE name = :param0) WHERE deletedAt IS NULL)
                         )
-                    WHERE deletedAt IS NULL`);
+                    WHERE deletedAt IS NULL LIMIT 1000`);
             const {query, params} = parsed.toString();
             expect(params).toEqual({param0: 'disease-ontology'});
             expect(query).toBe(sql);
@@ -299,7 +322,7 @@ describe('Query Parsing', () => {
                                     new Comparison({attr: 'name', property: SOURCE_PROPS.name}, 'disease-ontology')
                                 ]
                             ),
-                            {type: 'neighborhood', activeOnly: false}
+                            {type: 'neighborhood', activeOnly: false, limit: null}
                         )
                     )
                 ]),
@@ -310,7 +333,7 @@ describe('Query Parsing', () => {
                 WHERE source IN (SELECT * FROM (
                     MATCH {class: Source, WHERE: (name = :param0)}.both(
                         ${Array.from(NEIGHBORHOOD_EDGES, quoteWrap).join(', ')}
-                    ){WHILE: ($depth < 3)} RETURN $pathElements))`;
+                    ){WHILE: ($depth < 3)} RETURN DISTINCT $pathElements)) LIMIT 1000`;
             const {query, params} = parsed.toString();
             expect(params).toEqual({param0: 'disease-ontology'});
             expect(stripSQL(query)).toBe(stripSQL(sql));
@@ -326,17 +349,17 @@ describe('Comparison', () => {
     describe('constructor', () => {
         test('throws error on non-std operator', () => {
             expect(() => {
-                new Comparison('blargh', 'monkeys', 'BAD');
+                new Comparison('blargh', 'monkeys', 'BAD');  // eslint-disable-line
             }).toThrowError('Invalid operator');
         });
         test('throws error on AND operator', () => {
             expect(() => {
-                new Comparison('blargh', 'monkeys', 'AND');
+                new Comparison('blargh', 'monkeys', 'AND'); // eslint-disable-line
             }).toThrowError('Invalid operator');
         });
         test('throws error on OR operator', () => {
             expect(() => {
-                new Comparison('blargh', 'monkeys', 'OR');
+                new Comparison('blargh', 'monkeys', 'OR'); // eslint-disable-line
             }).toThrowError('Invalid operator');
         });
     });

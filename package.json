@@ -23,7 +23,7 @@
     "json-cycle": "^1.2.0",
     "jsonwebtoken": "^8.2.0",
     "lodash": "^4.17.4",
-    "orientjs": "^2.2.11",
+    "orientjs": "^3.0.5",
     "portfinder": "^1.0.20",
     "request-promise": "^4.2.1",
     "semver": "^5.6.0",

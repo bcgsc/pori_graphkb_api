@@ -1,5 +1,5 @@
 const {error: {AttributeError}, constants: {PERMISSIONS}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
-const {RID, RIDBag} = require('orientjs');
+const {RecordID: RID} = require('orientjs');
 
 
 /**
@@ -94,11 +94,8 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
  * @param {boolean} [opt.activeOnly=true] trim deleted records
  * @param {User} [opt.user=null] if the user object is given, will check record-level permissions and trim any non-permitted content
  */
-const trimRecords = (recordList, opt = {}) => {
-    const {activeOnly, user} = Object.assign({
-        activeOnly: true,
-        user: null
-    }, opt);
+const trimRecords = async (recordList, opt = {}) => {
+    const {activeOnly = true, user = null, db} = opt;
     const queue = recordList.slice();
     const visited = new Set();
     const readableClasses = new Set();
@@ -158,28 +155,34 @@ const trimRecords = (recordList, opt = {}) => {
                 if (value.cluster < 0) { // abstract, remove
                     delete curr[attr];
                 }
-            } else if (value instanceof RIDBag) {
-                // check here for updated edges that have not been removed
-                // https://github.com/orientechnologies/orientjs/issues/32
-                const arr = [];
-                for (const edge of value.all()) {
-                    if (edge.out
-                        && edge.in
-                        && castToRID(edge.out).toString() !== currRID.toString()
-                        && castToRID(edge.in).toString() !== currRID.toString()
-                    ) {
-                        continue;
-                    }
-                    queue.push(edge);
-                    arr.push(edge);
-                }
-                curr[attr] = arr;
             } else if (typeof value === 'object' && value && value['@rid'] !== undefined) {
                 if (!accessOk(value) || (activeOnly && value.deletedAt)) {
                     delete curr[attr];
                 } else {
                     queue.push(value);
                 }
+            } else if (attr.startsWith('out_') || attr.startsWith('in_')) {
+                // check here for updated edges that have not been removed
+                // https://github.com/orientechnologies/orientjs/issues/32
+                const arr = [];
+                for (const edge of value) {
+                    let edgeCheck = edge;
+                    if (db && (!edge.out || !edge.in)) {
+                        edgeCheck = await db.record.get(edge);
+                    }
+                    if (edgeCheck.out
+                        && edgeCheck.in
+                        && castToRID(edgeCheck.out).toString() !== currRID.toString()
+                        && castToRID(edgeCheck.in).toString() !== currRID.toString()
+                    ) {
+                        continue;
+                    } else if (!accessOk(edge)) {
+                        continue;
+                    }
+                    queue.push(edge);
+                    arr.push(edge);
+                }
+                curr[attr] = arr;
             }
         }
     }

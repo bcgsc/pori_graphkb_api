@@ -104,7 +104,7 @@ const createStatement = async (db, opt) => {
     } = opt;
     content.impliedBy = content.impliedBy || [];
     content.supportedBy = content.supportedBy || [];
-    const query = new Query(model.name, new Clause('AND', []), {activeOnly: true});
+    const query = new Query(model.name, new Clause('AND', []), {activeOnly: true, neighbors: 2});
 
     // Enusre the edge multiple plicity is as expected
     query.where.push(new Comparison(
@@ -215,9 +215,7 @@ const createStatement = async (db, opt) => {
     }
     const userRID = castToRID(user);
     // try to select the statement to see if it exists
-    const records = await select(db, query, {
-        fetchPlan: '*:2'
-    });
+    const records = await select(db, query);
     if (records.length !== 0) {
         throw new RecordExistsError({
             current: records,
@@ -241,11 +239,12 @@ const createStatement = async (db, opt) => {
         );
         commit.let(`edge${edgeCount++}`, tx => tx.create('EDGE', eModel.name)
             .set(omitDBAttributes(_.omit(eRecord, ['out', 'in'])))
-            .from('$statement')
+            .from('$statement[0]')
             .to(eRecord.in));
     }
     commit
-        .let('result', tx => tx.select().from('$statement'))
+        .let('result', tx => tx.select('*, *:{*:{*, @rid, @class, !history}, @rid, @class, !history}')
+            .from('(select expand($statement[0]))'))
         .commit();
     logger.log('debug', commit.buildStatement());
     try {

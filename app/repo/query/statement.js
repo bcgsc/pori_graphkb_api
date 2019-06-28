@@ -15,7 +15,8 @@ const {Traversal} = require('./traversal');
  * Subquery to gather similar ontology terms starting with some list of current terms
  */
 const similarFromRidList = (params, {prefix = ''} = {}) => {
-    const initialVertices = `[${params.map(p => `:${p}`).join(', ')}]`;
+    // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
+    const initialVertices = `[${params.map(p => `${p}`).join(', ')}]`;
     const disambiguationClause = cond => `TRAVERSE both('AliasOf', 'DeprecatedBy', 'CrossReferenceOf') FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
     // disambiguate
     const query = `SELECT expand($${prefix}Result)
@@ -96,19 +97,21 @@ const searchByLinkedRecords = (opt) => {
     // search the impliedBy relationships
     const subqueries = {};
 
-    const pickParamNames = list => Object.entries(params).map(([key, value]) => (list.includes(value)
-        ? key
-        : null)).filter(k => k !== null);
+    // const pickParamNames = list => Object.entries(params).map(([key, value]) => (list.includes(value)
+    //     ? key
+    //     : null)).filter(k => k !== null);
 
     if (relevance.length) {
-        subqueries.$relevance = `SELECT * FROM Statement WHERE relevance IN (SELECT * FROM (${similarFromRidList(pickParamNames(relevance), {prefix: 'relevance'})}))`;
+        // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
+        // subqueries.$relevance = `SELECT * FROM Statement WHERE relevance IN (SELECT * FROM (${similarFromRidList(pickParamNames(relevance), {prefix: 'relevance'})}))`;
+        subqueries.$relevance = `SELECT * FROM Statement WHERE relevance IN (SELECT * FROM (${similarFromRidList(relevance, {prefix: 'relevance'})}))`;
     }
     if (impliedBy.length) {
-        subqueries.$impliedBy = `SELECT expand(inE('ImpliedBy').outV()) FROM (${similarFromRidList(pickParamNames(impliedBy), {prefix: 'implied'})})`;
+        subqueries.$impliedBy = `SELECT expand(inE('ImpliedBy').outV()) FROM (${similarFromRidList(impliedBy, {prefix: 'implied'})})`;
     }
 
     if (appliesTo.length) {
-        subqueries.$appliesTo = `SELECT * FROM Statement WHERE appliesTo IN (SELECT * FROM (${similarFromRidList(pickParamNames(relevance), {prefix: 'appliesTo'})}))`;
+        subqueries.$appliesTo = `SELECT * FROM Statement WHERE appliesTo IN (SELECT * FROM (${similarFromRidList(appliesTo, {prefix: 'appliesTo'})}))`;
     }
 
     let query;
@@ -127,7 +130,9 @@ const searchByLinkedRecords = (opt) => {
 
     for (const [linkName, rids] of Object.entries(directLinks)) {
         if (rids.length) {
-            where.push(`${linkName} IN [${pickParamNames(rids).map(p => `:${p}`).join(', ')}]`);
+            // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
+            // where.push(`${linkName} IN [${pickParamNames(rids).map(p => `:${p}`).join(', ')}]`);
+            where.push(`${linkName} IN [${rids.map(p => `${p}`).join(', ')}]`);
         }
     }
 
@@ -179,8 +184,8 @@ const keywordSearch = (keywordsIn, opt) => {
     };
 
     let query = `
-    SELECT expand(distinct) FROM (
-        SELECT distinct(@rid) FROM (
+    SELECT expand(uniqueRecs) FROM (
+        SELECT distinct(@rid) as uniqueRecs FROM (
             SELECT expand($v)
             LET $ont = (SELECT * from Ontology WHERE ${
     subContainsClause(['sourceId', 'name'])

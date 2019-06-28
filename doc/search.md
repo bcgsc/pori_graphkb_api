@@ -1,9 +1,9 @@
 # Complex Queries
 
 - [Examples](#examples)
-    - [Query by related vertices](#query-by-related-vertices)
-    - [Query by link in neighborhood](#query-by-link-in-neighborhood)
-    - [Tree Queries: Query Ancestors or Descendants](#tree-queries--query-ancestors-or-descendants)
+  - [Query by related vertices](#query-by-related-vertices)
+  - [Query by link in neighborhood](#query-by-link-in-neighborhood)
+  - [Tree Queries: Query Ancestors or Descendants](#tree-queries-query-ancestors-or-descendants)
 
 For simple queries, the GET routes and builtin query parameters should suffice. However, for more
 complex queries the user may want to use the search endpoints instead. All exposed models will
@@ -67,7 +67,7 @@ This becomes
 SELECT * FROM (MATCH
     {class: Disease, WHERE: (sourceId = 'cancer' AND deletedAt IS NULL)}
         .both('AliasOf', 'GeneralizationOf', 'DeprecatedBy', 'CrossReferenceOf', 'ElementOf'){WHILE: ($depth < 3)}
-RETURN $pathElements)
+RETURN DISTINCT $pathElements)
 ```
 
 Note that the class must be given for subqueries or it will be assumed to be the same as the starting

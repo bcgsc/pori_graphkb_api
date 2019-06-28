@@ -6,7 +6,7 @@ const path = require('path');
  * @param {orientjs.Db} db the database connection
  */
 const getCurrentVersion = async (db) => {
-    const [{version}] = await db.query('SELECT * FROM SchemaHistory ORDER BY createdAt DESC', {limit: 1});
+    const [{version}] = await db.query('SELECT * FROM SchemaHistory ORDER BY createdAt DESC LIMIT 1').all();
     return version;
 };
 

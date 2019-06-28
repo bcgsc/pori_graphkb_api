@@ -25,7 +25,6 @@ const {
 const STATS_GROUPING = new Set(['@class', 'source']);
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
-const FETCH_OMIT = -2;
 
 
 /**
@@ -47,9 +46,9 @@ const selectCounts = async (db, classList, extraGrouping = []) => {
         async (cls) => {
             let statement;
             if (grouping.length === 0) {
-                statement = `SELECT count(*) FROM ${cls}`;
+                statement = `SELECT count(*) as cnt FROM ${cls}`;
             } else {
-                statement = `SELECT ${clause}, count(*) FROM ${cls} GROUP BY ${clause}`;
+                statement = `SELECT ${clause}, count(*) as cnt FROM ${cls} GROUP BY ${clause}`;
             }
             logger.log('debug', statement);
             return db.query(statement).all();
@@ -64,7 +63,7 @@ const selectCounts = async (db, classList, extraGrouping = []) => {
         }
     }
     grouping.unshift('@class');
-    const result = groupRecordsBy(counts, grouping, {value: 'count', aggregate: false});
+    const result = groupRecordsBy(counts, grouping, {value: 'cnt', aggregate: false});
     return result;
 };
 
@@ -80,10 +79,9 @@ const getUserByName = async (db, username) => {
     logger.debug(`getUserByName: ${username}`);
     // raw SQL to avoid having to load db models in the middleware
     const user = await db.query(
-        'SELECT * from User where name = :param0 AND deletedAt IS NULL',
+        'SELECT *, groups:{*, @rid, @class} from User where name = :param0 AND deletedAt IS NULL',
         {
-            params: {param0: username},
-            fetchPlan: 'groups:1'
+            params: {param0: username}
         }
     ).all();
     if (user.length > 1) {
@@ -111,12 +109,9 @@ const getUserByName = async (db, username) => {
  *
  * @returns {Array.<Object>} array of database records
  */
-const select = async (db, query, opt) => {
+const select = async (db, query, opt = {}) => {
     // set the default options
-    const {exactlyN, user, fetchPlan} = Object.assign({
-        exactlyN: null,
-        fetchPlan: null
-    }, opt);
+    const {exactlyN = null, user} = opt;
     logger.log('debug', query.displayString());
 
     // send the query statement to the database
@@ -124,22 +119,6 @@ const select = async (db, query, opt) => {
     const queryOpt = {
         params
     };
-    if (!query.count) {
-        queryOpt.limit = query.limit;
-        if (fetchPlan) {
-            queryOpt.fetchPlan = fetchPlan;
-        } else if (query.neighbors !== null && query.neighbors !== undefined) {
-            queryOpt.fetchPlan = `*:${query.neighbors}`;
-        }
-        // add history if not explicity specified already
-        if (query.activeOnly && (!queryOpt.fetchPlan || !queryOpt.fetchPlan.includes('history'))) {
-            if (!queryOpt.fetchPlan) {
-                queryOpt.fetchPlan = `history:${FETCH_OMIT}`;
-            } else if (!queryOpt.fetchPlan.includes(`history:${FETCH_OMIT}`)) {
-                queryOpt.fetchPlan = `${queryOpt.fetchPlan} history:${FETCH_OMIT}`;
-            }
-        }
-    }
     logger.log('debug', JSON.stringify(queryOpt));
 
     let recordList;
@@ -155,15 +134,12 @@ const select = async (db, query, opt) => {
 
     logger.log('debug', `selected ${recordList.length} records`);
 
-    recordList = trimRecords(recordList, {activeOnly: query.activeOnly, user});
+    recordList = await trimRecords(recordList, {activeOnly: query.activeOnly, user, db});
 
     if (exactlyN !== null) {
-        if (recordList.length === 0) {
-            if (exactlyN === 0) {
-                return [];
-            }
+        if (recordList.length < exactlyN) {
             throw new NoRecordFoundError({
-                message: 'query expected results but returned an empty list',
+                message: `query expected ${exactlyN} records but only found ${recordList.length}`,
                 sql: query.displayString()
             });
         } else if (exactlyN !== recordList.length) {
@@ -226,7 +202,8 @@ const selectFromList = async (db, recordList, opt) => {
     if (recordList.length < 1) {
         throw new AttributeError('Must select a minimum of 1 record');
     }
-    let query = `SELECT * FROM [${Object.keys(params).sort().map(p => `:${p}`).join(', ')}]`;
+    // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
+    let query = `SELECT * FROM [${Object.values(params).sort().map(p => `${p}`).join(', ')}]`;
 
     if (activeOnly) {
         query = `${query} WHERE deletedAt IS NULL`;
@@ -238,7 +215,7 @@ const selectFromList = async (db, recordList, opt) => {
         params
     }, opt);
     queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj);
+    return select(db, queryObj, {exactlyN: recordList.length});
 };
 
 
