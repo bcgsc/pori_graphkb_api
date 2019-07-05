@@ -71,6 +71,9 @@ const migrate18Xto19X = async (db) => {
     await db.query('ALTER CLASS Evidence SUPERCLASS -Ontology');
     await db.query('DROP CLASS EvidenceGroup');
     await db.query('DROP PROPERTY Permissions.EvidenceGroup');
+    logger.info('Update the existing usergroup permission schemes: remove Permissions.EvidenceGroup');
+    await db.query('UPDATE UserGroup REMOVE permissions.EvidenceGroup');
+
 
     for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication']) {
         logger.info(`Remove Evidence as parent from ${subclass}`);
@@ -87,6 +90,7 @@ const migrate18Xto19X = async (db) => {
         await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`);
     }
 
+
     logger.info('Add actionType property to class TargetOf');
     const {actionType} = SCHEMA_DEFN.TargetOf.properties;
     const targetof = await db.class.get(SCHEMA_DEFN.TargetOf.name);
@@ -95,6 +99,10 @@ const migrate18Xto19X = async (db) => {
     logger.info('Create the CuratedContent class');
     await ClassModel.create(SCHEMA_DEFN.CuratedContent, db);
     await db.query('CREATE PROPERTY Permissions.CuratedContent INTEGER (NOTNULL TRUE, MIN 0, MAX 15)');
+    logger.info('Update the existing usergroup permission schemes: add Permissions.CuratedContent');
+    await db.query('UPDATE UserGroup SET permissions.CuratedContent = 0');
+    await db.query('UPDATE UserGroup SET permissions.CuratedContent = 15 where name = \'admin\' or name = \'regular\'');
+    await db.query('UPDATE UserGroup SET permissions.CuratedContent = 4 where name = \'readonly\'');
 
     logger.info('Add addition Source properties');
     const source = await db.class.get(SCHEMA_DEFN.Source.name);
