@@ -1424,5 +1424,54 @@ describeWithAuth('API', () => {
                 expect(res.statusCode).toBe(HTTP_STATUS.CREATED);
             });
         });
+        describe('CREATE PositionalVariant', () => {
+            let type,
+                reference1;
+            beforeEach(async () => {
+                type = (await request({
+                    uri: `${app.url}/vocabulary`,
+                    body: {
+                        sourceId: 'variantType',
+                        name: 'variantType',
+                        source
+                    },
+                    headers: {Authorization: mockToken},
+                    method: 'POST'
+                })).body.result['@rid'];
+                reference1 = (await request({
+                    uri: `${app.url}/features`,
+                    body: {
+                        sourceId: 'variantReference',
+                        name: 'variantReference',
+                        biotype: 'gene',
+                        source
+                    },
+                    headers: {Authorization: mockToken},
+                    method: 'POST'
+                })).body.result['@rid'];
+            });
+            test('create a amino acid substitution', async () => {
+                const resp = await request({
+                    uri: `${app.url}/positionalvariants`,
+                    body: {
+                        untemplatedSeq: 'R',
+                        untemplatedSeqSize: 1,
+                        type,
+                        break1Start: {
+                            '@class': 'ProteinPosition',
+                            refAA: 'G',
+                            pos: 12
+                        },
+                        reference1,
+                        refSeq: 'G',
+                        break1Repr: 'p.G12',
+                        reference2: null
+                    },
+                    headers: {Authorization: mockToken},
+                    method: 'POST'
+                });
+                expect(resp.statusCode).toBe(HTTP_STATUS.CREATED);
+            });
+        });
     });
 });
