@@ -83,6 +83,7 @@ const migrate18Xto19X = async (db) => {
     }
     logger.info('make evidence abstract');
     await db.query('ALTER CLASS Evidence ABSTRACT TRUE');
+    await db.query('UPDATE UserGroup set permissions.Evidence = 4 where permissions.Evidence > 4');
 
     logger.info('Re-add Evidence as abstract parent');
     for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication', 'Source']) {
