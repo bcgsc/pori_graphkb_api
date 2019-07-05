@@ -154,6 +154,13 @@ describeWithAuth('API', () => {
             expect(res.body.result).not.toHaveProperty('Variant'); // ignore abstract
         });
     });
+    test('GET unprotected /version information', async () => {
+        const res = await request({uri: `${app.url}/version`, method: 'GET'});
+        expect(res.statusCode).toBe(HTTP_STATUS.OK);
+        expect(res.body).toHaveProperty('api', expect.stringMatching(/^\d+\.\d+\.\d+$/));
+        expect(res.body).toHaveProperty('db');
+        expect(res.body).toHaveProperty('schema');
+    });
     describe('database', () => {
         let source;
         beforeEach(async () => {
