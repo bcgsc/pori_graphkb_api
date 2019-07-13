@@ -7,7 +7,7 @@
 const _ = require('lodash');
 
 const {RID} = require('orientjs');
-const {constants, schema: SCHEMA_DEFN, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
+const {constants, schema: {schema: SCHEMA_DEFN}, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
 
 const {PERMISSIONS} = constants;
 

@@ -59,4 +59,6 @@ const hasRecordAccess = (user, record) => {
     return false;
 };
 
-module.exports = {wrapIfTypeError, omitDBAttributes, hasRecordAccess};
+module.exports = {
+    wrapIfTypeError, omitDBAttributes, hasRecordAccess
+};
