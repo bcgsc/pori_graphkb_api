@@ -7,6 +7,7 @@
  * @ignore
  */
 const {error: {AttributeError}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
+const {variant: {VariantNotation}} = require('@bcgsc/knowledgebase-parser');
 
 const {logger} = require('../logging');
 const {
@@ -175,11 +176,12 @@ const selectByKeyword = async (db, keywords, opt) => {
  * @param {orientjs.Db} db Database connection from orientjs
  * @param {Object} opt Selection options
  */
-const selectStatementByLinks = async (db, opt) => {
-    const queryObj = Object.assign({
+const searchSelect = async (db, opt) => {
+    const queryObj = {
+        ...opt,
         toString: () => searchByLinkedRecords(opt),
         activeOnly: true
-    }, opt);
+    };
     queryObj.displayString = () => Query.displayString(queryObj);
     return select(db, queryObj);
 };
@@ -191,19 +193,20 @@ const selectStatementByLinks = async (db, opt) => {
  * @param {Object} opt Selection options
  * @param {?Number} opt.neighbors number of related records to fetch
  * @param {?Boolean} opt.activeOnly exclude deleted records
+ * @param {?string} opt.projection project to use from select
  */
-const selectFromList = async (db, recordList, opt) => {
-    const {neighbors = 0, activeOnly = true} = opt;
+const selectFromList = async (db, inputRecordList, opt) => {
+    const {neighbors = 0, activeOnly = true, projection = '*'} = opt;
     const params = {};
-    recordList.forEach((rec) => {
-        const rid = castToRID(rec);
+    const recordList = inputRecordList.map(castToRID);
+    recordList.forEach((rid) => {
         params[`param${Object.keys(params).length}`] = rid;
     });
     if (recordList.length < 1) {
         throw new AttributeError('Must select a minimum of 1 record');
     }
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
-    let query = `SELECT * FROM [${Object.values(params).sort().map(p => `${p}`).join(', ')}]`;
+    let query = `SELECT ${projection} FROM [${recordList.map(p => `${p}`).join(', ')}]`;
 
     if (activeOnly) {
         query = `${query} WHERE deletedAt IS NULL`;
@@ -219,6 +222,39 @@ const selectFromList = async (db, recordList, opt) => {
 };
 
 
+/**
+ * Calculate the display name when it requires a db connection to resolve linked records
+ */
+const fetchDisplayName = async (db, model, content) => {
+    if (model.inherits.includes('Variant')) {
+        const links = [content.type, content.reference1];
+        if (content.reference2) {
+            links.push(content.reference2);
+        }
+        const [type, reference1, reference2] = (await selectFromList(
+            db,
+            links,
+            {projection: 'displayName'}
+        )).map(rec => rec.displayName);
+
+        if (model.name === 'CategoryVariant') {
+            if (reference2) {
+                return `${reference1} and ${reference2} ${type}`;
+            }
+            return `${reference1} ${type}`;
+        } if (model.name === 'PositionalVariant') {
+            const notation = VariantNotation.toString({
+                ...content, multiFeature: Boolean(reference2), reference1, reference2, type
+            });
+            return notation;
+        }
+    } if (model.name === 'Statement') {
+        return null;
+    }
+    return content.name;
+};
+
+
 module.exports = {
     getUserByName,
     QUERY_LIMIT,
@@ -227,5 +263,6 @@ module.exports = {
     selectCounts,
     selectByKeyword,
     selectFromList,
-    selectStatementByLinks
+    searchSelect,
+    fetchDisplayName
 };
