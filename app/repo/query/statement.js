@@ -3,7 +3,7 @@
  * @module app/repo/query/statement
  */
 const {
-    DEFAULT_STATEMENT_PROJECTION
+    DEFAULT_PROJECTION
 } = require('./constants');
 const {postConditionalQueryOptions} = require('./search');
 
@@ -43,7 +43,7 @@ const keywordSearch = (keywordsIn, opt) => {
     };
 
     let query = `
-    SELECT expand(uniqueRecs) FROM (
+    SELECT ${DEFAULT_PROJECTION} FROM (SELECT expand(uniqueRecs) FROM (
         SELECT distinct(@rid) as uniqueRecs FROM (
             SELECT expand($v)
             LET $ont = (SELECT * from Ontology WHERE ${
@@ -70,7 +70,7 @@ const keywordSearch = (keywordsIn, opt) => {
 }),
                 $v = (SELECT expand(UNIONALL($statements, $implicable)))
         ) WHERE deletedAt IS NULL
-    )`;
+    ))`;
     query = postConditionalQueryOptions(query, opt);
     return {query, params};
 };

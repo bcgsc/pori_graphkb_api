@@ -109,6 +109,9 @@ const TRAVERSAL_TYPE = {LINK: 'LINK', EDGE: 'EDGE', DIRECT: 'DIRECT'};
 const SIZE_COMPUTATION = 'size()';
 
 
+const DEFAULT_PROJECTION = '*, *:{@rid, @class, displayName}';
+
+
 module.exports = {
     DIRECTIONS,
     FUZZY_CLASSES,
@@ -121,5 +124,6 @@ module.exports = {
     DEFAULT_NEIGHBORS,
     SIZE_COMPUTATION,
     SPECIAL_QUERY_ARGS,
-    TRAVERSAL_TYPE
+    TRAVERSAL_TYPE,
+    DEFAULT_PROJECTION
 };

@@ -5,7 +5,7 @@
 const {util: {castToRID}, error: {AttributeError: ValidationError}, schema: SCHEMA_DEFN} = require('@bcgsc/knowledgebase-schema');
 
 const {
-    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_STATEMENT_PROJECTION
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_PROJECTION
 } = require('./constants');
 const {reverseDirection} = require('./util');
 
@@ -123,11 +123,9 @@ const searchByLinkedRecords = (opt) => {
     const {
         model,
         filters = {},
-        activeOnly = true
+        activeOnly = true,
+        projection = DEFAULT_PROJECTION
     } = opt;
-    const projection = opt.projection || (model.name === 'Statement'
-        ? DEFAULT_STATEMENT_PROJECTION
-        : '*, *:{@rid, @class, displayName}');
 
     const {queryProperties} = model;
 
