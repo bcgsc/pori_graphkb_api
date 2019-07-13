@@ -77,9 +77,28 @@ class ClassModel extends kbSchema.ClassModel {
             ));
         }
         if (indices) {
-            await Promise.all(Array.from(model.indices, i => db.index.create(i)));
+            await Promise.all(
+                model.indices
+                    .filter(i => this.checkDbCanCreateIndex(model, i))
+                    .map(i => db.index.create(i))
+            );
         }
         return cls;
+    }
+
+    static checkDbCanCreateIndex(model, index) {
+        const {properties} = model;
+        if (index.type.toLowerCase() !== 'unique') {
+            return true;
+        }
+        for (const propName of index.properties) {
+            const propModel = properties[propName];
+            if (propModel && propModel.iterable) {
+                logger.log('warn', `Cannot create index (${index.name}) on iterable property (${propModel.name})`);
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
