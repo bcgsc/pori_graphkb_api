@@ -7,6 +7,8 @@
 const orientjs = require('orientjs');
 const kbSchema = require('@bcgsc/knowledgebase-schema');
 
+const {logger} = require('./logging');
+
 
 class Property extends kbSchema.Property {
     /**
@@ -26,7 +28,10 @@ class Property extends kbSchema.Property {
             dbProperties.linkedClass = model.linkedClass.name;
         }
         if (model.default !== undefined) {
-            dbProperties.default = model.default;
+            // TODO: PENDING https://github.com/orientechnologies/orientjs/issues/379
+            if (model.type !== 'string' || !/\s+/.exec(model.default)) {
+                dbProperties.default = model.default;
+            }
         }
         /** TODO: pending resolution https://github.com/orientechnologies/orientjs/issues/377
         if (model.min !== undefined) {
