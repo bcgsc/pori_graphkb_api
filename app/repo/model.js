@@ -72,7 +72,7 @@ class ClassModel extends kbSchema.ClassModel {
         }
         if (properties) {
             await Promise.all(Array.from(
-                Object.values(model._properties).filter(prop => !prop.name.startsWith('@')),
+                Object.values(model._properties).filter(prop => !prop.name.startsWith('@') && !model.inheritsProperty(prop.name)),
                 async prop => Property.create(prop, cls)
             ));
         }
