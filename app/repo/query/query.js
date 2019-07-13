@@ -350,8 +350,15 @@ class Query {
      */
     static parseRecord(schema, model, content = {}, opt = {}) {
         const where = [];
+        const {properties} = model;
         for (const [key, value] of Object.entries(content || {})) {
-            where.push({attr: key, value});
+            const prop = properties[key];
+            if (prop.iterable) {
+                where.push({attr: key, value, operator: 'CONTAINSALL'});
+                where.push({attr: `${key}.size()`, value: value.length});
+            } else {
+                where.push({attr: key, value});
+            }
         }
         return this.parse(schema, model, Object.assign({}, opt, {where}));
     }
