@@ -13,7 +13,8 @@ const {
 const {Traversal} = require('./traversal');
 const match = require('./match');
 const constants = require('./constants');
-const {keywordSearch: generalKeywordSearch, searchByLinkedRecords} = require('./statement');
+const {searchByLinkedRecords} = require('./search');
+const {keywordSearch: generalKeywordSearch} = require('./statement');
 
 const util = require('./util');
 

@@ -68,7 +68,7 @@ const keywordSearch = (keywordsIn, opt) => {
         'relevance.sourceId'
     ])
 }),
-                $v = UNIONALL($statements, $implicable)
+                $v = (SELECT expand(UNIONALL($statements, $implicable)))
         ) WHERE deletedAt IS NULL
     )`;
     query = postConditionalQueryOptions(query, opt);

@@ -87,7 +87,7 @@ const parseCompoundAttr = (compoundAttr) => {
  * @throws {AttributeError} on bad input
  */
 const castRangeInt = (value, min, max) => {
-    const castValue = castDecimalInteger(value);
+    const castValue = castInteger(value);
     if (min !== null && castValue < min) {
         throw new AttributeError(`value (${castValue}) must be greater than or equal to ${min}`);
     }
@@ -117,6 +117,12 @@ const generateSqlParams = (items, paramStart) => {
     return params;
 };
 
+
+const reverseDirection = direction => (direction === 'out'
+    ? 'in'
+    : 'out');
+
+
 module.exports = {
-    parseCompoundAttr, castRangeInt, castBoolean, generateSqlParams
+    parseCompoundAttr, castRangeInt, castBoolean, generateSqlParams, nestedProjection, reverseDirection
 };
