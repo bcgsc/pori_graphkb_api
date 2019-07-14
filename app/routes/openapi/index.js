@@ -593,7 +593,7 @@ const generateSwaggerSpec = (schema, metadata) => {
 
             if (isList) {
                 propDefn.type = 'array';
-                propDefn.items = {};
+                propDefn.items = {minItems: prop.minItems, maxItems: prop.maxItems};
                 propDefn = propDefn.items;
             }
             if (prop.name === 'subsets') {
