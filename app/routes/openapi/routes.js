@@ -102,9 +102,9 @@ const GET_VERSION = {
     }
 };
 
-const GET_STATMENT_BY_KEYWORD = {
+const GET_STATEMENT_BY_KEYWORD = {
     summary: 'Search statement records by a single keyword',
-    tags: ['Metadata'],
+    tags: ['Statement'],
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {
