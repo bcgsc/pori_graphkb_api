@@ -275,7 +275,6 @@ const Comparison = {
     }
 };
 
-
 module.exports = {
     dependency,
     deprecated,

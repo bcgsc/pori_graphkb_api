@@ -4,77 +4,6 @@
  */
 
 
-const POST_STATEMENT = {
-    summary: 'Add a new statement',
-    tags: ['Statement'],
-    parameters: [
-        {$ref: '#/components/parameters/Content-Type'},
-        {$ref: '#/components/parameters/Accept'},
-        {$ref: '#/components/parameters/Authorization'}
-    ],
-    requestBody: {
-        required: true,
-        content: {
-            'application/json': {
-                schema: {
-                    allOf: [{$ref: '#/components/schemas/Statement'}],
-                    type: 'object',
-                    required: ['impliedBy', 'appliesTo', 'relevance', 'supportedBy'],
-                    properties: {
-                        impliedBy: {
-                            type: 'array',
-                            items: {$ref: '#/components/schemas/PutativeEdge'},
-                            description: 'A list of putative edges to be created'
-                        },
-                        supportedBy: {
-                            type: 'array',
-                            items: {$ref: '#/components/schemas/PutativeEdge'},
-                            description: 'A list of putative edges to be created'
-                        }
-                    }
-                }
-            }
-        }
-    },
-    responses: {
-        201: {
-            description: 'A new record was created',
-            content: {
-                'application/json': {
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            result: {$ref: '#/components/schemas/Statement'}
-                        }
-                    }
-                }
-            },
-            links: {
-                getById: {
-                    parameters: {rid: '$response.body#/result.@rid'},
-                    operationId: 'get_statements__rid_',
-                    description: 'The `@rid` value returned in the response can be used as the `rid` parameter in [GET `/statements/{rid}`](.#/Statement/get_statements__rid_) requests'
-                },
-                patchById: {
-                    parameters: {rid: '$response.body#/result.@rid'},
-                    operationId: 'patch_statements__rid_',
-                    description: 'The `@rid` value returned in the resnse can be used as the `rid` parameter in [PATCH `/statements/{rid}`](.#/Statement/patch_statements__rid_) requests'
-                },
-                deleteById: {
-                    parameters: {rid: '$response.body#/result.@rid'},
-                    operationId: 'delete_statements__rid_',
-                    description: 'The `@rid` value returned in the response can be used as the `rid` parameter in [DELETE `/statements/{rid}`](.#/Statement/delete_statements__rid_) requests'
-                }
-            }
-        },
-        401: {$ref: '#/components/responses/NotAuthorized'},
-        400: {$ref: '#/components/responses/BadInput'},
-        409: {$ref: '#/components/responses/RecordExistsError'},
-        403: {$ref: '#/components/responses/Forbidden'}
-    }
-};
-
-
 const POST_TOKEN = {
     summary: 'Generate an authentication token to be used for requests to the KB API server',
     tags: ['General'],
@@ -327,12 +256,10 @@ const GET_STATS = {
 };
 
 module.exports = {
-    POST_STATEMENT,
     POST_TOKEN,
     GET_SCHEMA,
     GET_STATS,
     GET_VERSION,
-    GET_STATMENT_BY_KEYWORD,
-    GET_RECORDS,
-    SEARCH_STATEMENT_BY_LINKS
+    GET_STATEMENT_BY_KEYWORD,
+    GET_RECORDS
 };
