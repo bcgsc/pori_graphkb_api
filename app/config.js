@@ -1,3 +1,5 @@
+const {hostname} = require('os');
+
 module.exports = {
     common: {
         GKB_DISABLE_AUTH: false,
@@ -17,7 +19,7 @@ module.exports = {
         GKB_LOG_LEVEL: 'debug',
         GKB_PORT: 8080,
         GKB_USER_CREATE: true,
-        GKB_HOST: process.env.HOSTNAME
+        GKB_HOST: hostname()
     },
     development: {
         GKB_DB_CREATE: false,
