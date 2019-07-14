@@ -72,39 +72,6 @@ const queryRoutes = (opt) => {
             }
         });
 
-    logger.log('verbose', `NEW ROUTE [QUERY] POST ${model.routeName}/query`);
-    router.post(`${model.routeName}/query`,
-        async (req, res) => {
-            if (!_.isEmpty(req.query)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
-                    {message: 'No query parameters are allowed for this query type', params: req.query}
-                ));
-            }
-            let query;
-            try {
-                query = Query.parse(schema, model, checkStandardOptions(req.body));
-                query.validate();
-            } catch (err) {
-                logger.log('debug', err);
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
-            }
-            try {
-                const result = await select(db, query, {user: req.user});
-                return res.json(jc.decycle({result}));
-            } catch (err) {
-                logger.log('debug', err);
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
-            }
-        });
-
     logger.log('verbose', `NEW ROUTE [SEARCH] POST ${model.routeName}/search`);
     router.post(`${model.routeName}/search`,
         async (req, res) => {
@@ -113,18 +80,54 @@ const queryRoutes = (opt) => {
                     {message: 'No query parameters are allowed for this query type', params: req.query}
                 ));
             }
-            try {
-                const result = await searchSelect(db, {
-                    ...checkStandardOptions(req.body), model, user: req.user
-                });
-                return res.json(jc.decycle({result}));
-            } catch (err) {
-                logger.log('debug', err);
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+            if (req.body.where && req.body.search) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                    {message: 'Where and search are mutually exclusive', params: req.body}
+                ));
+            } if (req.body.where) {
+                // complex query
+                let query;
+                try {
+                    query = Query.parse(schema, model, checkStandardOptions(req.body));
+                    query.validate();
+                } catch (err) {
+                    logger.log('debug', err);
+                    if (err instanceof AttributeError) {
+                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    }
+                    logger.log('error', err.stack || err);
+                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
                 }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                try {
+                    const result = await select(db, query, {user: req.user});
+                    return res.json(jc.decycle({result}));
+                } catch (err) {
+                    logger.log('debug', err);
+                    if (err instanceof AttributeError) {
+                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    }
+                    logger.log('error', err.stack || err);
+                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                }
+            } else if (req.body.search) {
+                // search
+                try {
+                    const result = await searchSelect(db, {
+                        ...checkStandardOptions(req.body), model, user: req.user
+                    });
+                    return res.json(jc.decycle({result}));
+                } catch (err) {
+                    logger.log('debug', err);
+                    if (err instanceof AttributeError) {
+                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    }
+                    logger.log('error', err.stack || err);
+                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                }
+            } else {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                    {message: 'Either where or search are required body parameters', params: req.body}
+                ));
             }
         });
 };

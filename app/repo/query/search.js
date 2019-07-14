@@ -122,7 +122,7 @@ const edgeSubquery = (edge, recordIdList, {activeOnly = true} = {}) => {
 const searchByLinkedRecords = (opt) => {
     const {
         model,
-        filters = {},
+        search = {},
         activeOnly = true,
         projection = DEFAULT_PROJECTION
     } = opt;
@@ -140,9 +140,9 @@ const searchByLinkedRecords = (opt) => {
 
     const clauses = [];
 
-    for (const fieldName of Object.keys(filters)) {
+    for (const fieldName of Object.keys(search)) {
         // separate edge queries
-        const values = filters[fieldName];
+        const values = search[fieldName];
         const propModel = queryProperties[fieldName];
         // attr in (SUBQUERY) for links and intersect() > 1 for iterable properties
         if (propModel) {

@@ -372,30 +372,84 @@ const describeOperationByID = (model, operation = 'delete') => {
 
 
 /**
- * Describe the main search endpoint for complex queries using POST
+ * Given a class model, generate the swagger documentation for the search routes
+ * @param {ClassModel} model
  */
 const describePostSearch = (model) => {
+    const searchable = {};
+    for (const prop of Object.values(model.properties)) {
+        if ((prop.linkedClass && prop.linkedClass.embedded) || prop.name === '@class') {
+            continue;
+        }
+        const defn = {
+            type: 'array',
+            items: {},
+            description: 'search for records with any of the following'
+        };
+
+        if (prop.linkedClass) {
+            defn.items = linkOrModel(prop.linkedClass.name);
+            defn.description = 'search for records related to any of the following';
+        } else if (prop.linkedType) {
+            defn.items = {type: prop.linkedType};
+        } else {
+            defn.items = {type: prop.type};
+        }
+        searchable[prop.name] = defn;
+    }
+
     const body = {
         type: 'object',
         properties: {
-            skip: {$ref: '#/components/schemas/skip'},
             activeOnly: {$ref: '#/components/schemas/activeOnly'},
-            where: {type: 'array', items: {$ref: `${SCHEMA_PREFIX}/Comparison`}},
-            returnProperties: {$ref: '#/components/schemas/returnProperties'},
-            limit: {$ref: '#/components/schemas/limit'},
-            neighbors: {$ref: '#/components/schemas/neighbors'},
             count: {$ref: '#/components/schemas/count'},
+            limit: {$ref: '#/components/schemas/limit'},
             orderBy: {$ref: '#/components/schemas/orderBy'},
-            orderByDirection: {$ref: '#/components/schemas/orderByDirection'}
-        }
+            orderByDirection: {$ref: '#/components/schemas/orderByDirection'},
+            skip: {$ref: '#/components/schemas/skip'}
+        },
+        oneOf: [
+            {
+                description: 'Build queries in JSON',
+                type: 'object',
+                required: ['where'],
+                properties: {
+                    where: {type: 'array', items: {$ref: `${SCHEMA_PREFIX}/Comparison`}},
+                    returnProperties: {$ref: '#/components/schemas/returnProperties'},
+                    neighbors: {$ref: '#/components/schemas/neighbors'}
+                }
+            },
+            {
+                description: 'Quick search properties and related records',
+                type: 'object',
+                required: ['search'],
+                properties: {
+                    search: {
+                        description: 'Arrays of possible values for properties of this class',
+                        type: 'object',
+                        properties: searchable
+                    }
+                }
+            }
+        ]
     };
+
     const description = {
-        summary: `Query ${model.name} records using complex query objects`,
+        summary: `Search or Query ${model.name} records`,
+        description: `There are two main ways to query records. Using the query-builder ("where") where
+            the user has full control over specifying the operations at each level, and the quick search option
+            ("search") where the user inputs direct attributes which are OR'd for each attribute and related records
+            are also searched. The search and where properties are mutually exclusive. The former will
+            try the quick search method and the latter uses the query builder`,
         tags: [model.name],
         parameters: Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({$ref: `#/components/parameters/${p.name}`})),
         requestBody: {
             required: true,
-            content: {'application/json': {schema: body}}
+            content: {
+                'application/json': {
+                    schema: body
+                }
+            }
         },
         responses: {
             200: {
@@ -482,9 +536,12 @@ const generateSwaggerSpec = (schema, metadata) => {
         if (Object.values(model.expose).some(x => x) && docs.paths[model.routeName] === undefined) {
             docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
-        if (model.expose.QUERY && !docs.paths[model.routeName].get) {
-            docs.paths[model.routeName].get = describeGet(model);
-            docs.paths[`${model.routeName}/search`] = {post: describePostSearch(model)};
+        if (model.expose.QUERY && !model.isEdge) {
+            docs.paths[model.routeName].get = docs.paths[model.routeName].get || describeGet(model);
+            docs.paths[`${model.routeName}/search`] = {
+                ...docs.paths[`${model.routeName}/search`] || {},
+                post: describePostSearch(model)
+            };
         }
         if (model.expose.POST && !docs.paths[model.routeName].post) {
             docs.paths[model.routeName].post = describePost(model);
