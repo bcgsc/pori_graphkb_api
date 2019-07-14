@@ -12,7 +12,14 @@ const HTTP_STATUS = require('http-status-codes');
 const swaggerUi = require('swagger-ui-express');
 
 
-const routes = require('./routes');
+const {
+    POST_TOKEN,
+    GET_SCHEMA,
+    GET_VERSION,
+    GET_STATEMENT_BY_KEYWORD,
+    GET_RECORDS,
+    GET_STATS
+} = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
 const {GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS} = require('./params');
@@ -31,13 +38,11 @@ const STUB = {
         version: process.env.npm_package_version
     },
     paths: {
-        '/statements': {post: routes.POST_STATEMENT},
-        '/token': {post: routes.POST_TOKEN},
-        '/schema': {get: routes.GET_SCHEMA},
-        '/version': {get: routes.GET_VERSION},
-        '/statements/search': {get: routes.GET_STATEMENT_BY_KEYWORD},
-        '/statements/search-links': {post: routes.SEARCH_STATEMENT_BY_LINKS},
-        '/records': {get: routes.GET_RECORDS},
+        '/token': {post: POST_TOKEN},
+        '/schema': {get: GET_SCHEMA},
+        '/version': {get: GET_VERSION},
+        '/statements/search': {get: GET_STATEMENT_BY_KEYWORD},
+        '/records': {get: GET_RECORDS},
         '/spec': {
             get: {
                 summary: 'Returns this specification',
@@ -66,7 +71,7 @@ const STUB = {
                 }
             }
         },
-        '/stats': {get: routes.GET_STATS}
+        '/stats': {get: GET_STATS}
     },
     components: {
         schemas: Object.assign({
@@ -504,7 +509,7 @@ const tagsSorter = (tag1, tag2) => {
  * @returns {Object} the JSON object representing the swagger API specification
  */
 const generateSwaggerSpec = (schema, metadata) => {
-    const docs = Object.assign({}, STUB);
+    const docs = {...STUB};
     docs.servers = [{
         url: `http://${metadata.host}:${metadata.port}/api`
     }];
