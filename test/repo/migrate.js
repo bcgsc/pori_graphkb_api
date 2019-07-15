@@ -127,7 +127,7 @@ describe('migrate', () => {
         test('incompatible check only', async () => {
             _version.getCurrentVersion = jest.fn().mockResolvedValue('1.8.0');
             _version.getLoadVersion = jest.fn().mockReturnValue({version: '1.9.1'});
-            expect(migrate(db, {checkOnly: true})).rejects.toContain('are no compatible');
+            expect(migrate(db, {checkOnly: true})).rejects.toContain('are not compatible');
             expect(db.query).not.toHaveBeenCalled();
             expect(db.class.get).not.toHaveBeenCalled();
         });

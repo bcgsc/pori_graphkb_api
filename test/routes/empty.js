@@ -819,6 +819,49 @@ describeWithAuth('API', () => {
                 expect(res.body.result).toHaveProperty('length', 6);
             });
         });
+        describe('POST /<class>/search', () => {
+            beforeEach(async () => {
+                await mockRelatedDiseases({app, source, mockToken});
+            });
+            test('default all', async () => {
+                const res = await request({
+                    uri: `${app.url}/diseases/search`,
+                    method: 'POST',
+                    body: {},
+                    headers: {Authorization: mockToken}
+                });
+                expect(res.body.result).toHaveProperty('length', 3);
+            });
+            test('apply skip', async () => {
+                const res = await request({
+                    uri: `${app.url}/diseases/search`,
+                    method: 'POST',
+                    body: {skip: 1},
+                    headers: {Authorization: mockToken}
+                });
+                expect(res.body.result).toHaveProperty('length', 2);
+            });
+            test('apply limit', async () => {
+                const res = await request({
+                    uri: `${app.url}/diseases/search`,
+                    method: 'POST',
+                    body: {limit: 1},
+                    headers: {Authorization: mockToken}
+                });
+                expect(res.body.result).toHaveProperty('length', 1);
+            });
+            test('retrieve deleted records', async () => {
+                const res = await request({
+                    uri: `${app.url}/diseases/search`,
+                    method: 'POST',
+                    body: {activeOnly: false},
+                    headers: {Authorization: mockToken}
+                });
+                expect(res.body.result).toHaveProperty('length', 3);
+            });
+            test.todo('throw error on neighbors');
+            test.todo('allow ordering');
+        });
         describe('GET /records Records by ID list', () => {
             let record1,
                 record2,
@@ -885,7 +928,7 @@ describeWithAuth('API', () => {
                 }
                 expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
                 expect(res.body).toHaveProperty('message');
-                expect(res.body.message).toContain('k is not a valid decimal integer');
+                expect(res.body.message).toContain('k is not a valid integer');
             });
             test('error on unrecognized argument', async () => {
                 let res;
@@ -1116,8 +1159,8 @@ describeWithAuth('API', () => {
                     body: {
                         appliesTo: feature,
                         relevance: vocab,
-                        impliedBy: [{target: liverAngiosarc}],
-                        supportedBy: [{target: publication}]
+                        impliedBy: [liverAngiosarc],
+                        supportedBy: [publication]
                     },
                     headers: {Authorization: mockToken}
                 });
@@ -1127,8 +1170,8 @@ describeWithAuth('API', () => {
                     body: {
                         appliesTo: feature,
                         relevance: vocab,
-                        impliedBy: [{target: liverAngiosarc}, {target: liverCancer}],
-                        supportedBy: [{target: publication}]
+                        impliedBy: [liverAngiosarc, liverCancer],
+                        supportedBy: [publication]
                     },
                     headers: {Authorization: mockToken}
                 });
@@ -1138,8 +1181,8 @@ describeWithAuth('API', () => {
                     body: {
                         appliesTo: breastCancer,
                         relevance: vocab,
-                        impliedBy: [{target: liverAngiosarc}],
-                        supportedBy: [{target: publication}]
+                        impliedBy: [liverAngiosarc],
+                        supportedBy: [publication]
                     },
                     headers: {Authorization: mockToken}
                 });
@@ -1362,8 +1405,8 @@ describeWithAuth('API', () => {
                         method: 'POST',
                         body: {
                             appliesTo: '#448989898:0',
-                            impliedBy: [{target: disease1}],
-                            supportedBy: [{target: publication1}],
+                            impliedBy: [disease1],
+                            supportedBy: [publication1],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
@@ -1383,8 +1426,8 @@ describeWithAuth('API', () => {
                         method: 'POST',
                         body: {
                             appliesTo: disease1,
-                            impliedBy: [{target: disease1}],
-                            supportedBy: [{target: publication1}]
+                            impliedBy: [disease1],
+                            supportedBy: [publication1]
                         },
                         headers: {Authorization: mockToken}
                     };
@@ -1403,8 +1446,8 @@ describeWithAuth('API', () => {
                         uri: `${app.url}/statements`,
                         method: 'POST',
                         body: {
-                            impliedBy: [{target: disease1}],
-                            supportedBy: [{target: publication1}],
+                            impliedBy: [disease1],
+                            supportedBy: [publication1],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
@@ -1422,8 +1465,8 @@ describeWithAuth('API', () => {
                     method: 'POST',
                     body: {
                         appliesTo: disease1,
-                        impliedBy: [{target: disease2}],
-                        supportedBy: [{target: publication1}],
+                        impliedBy: [disease2],
+                        supportedBy: [publication1],
                         relevance: relevance1
                     },
                     headers: {Authorization: mockToken}

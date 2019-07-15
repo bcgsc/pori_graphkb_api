@@ -463,8 +463,8 @@ describeWithAuth('schema', () => {
                 content: {
                     relevance: relevance1['@rid'],
                     appliesTo: drug['@rid'],
-                    impliedBy: [{target: disease1['@rid']}],
-                    supportedBy: [{target: publication1['@rid'], level}]
+                    impliedBy: [disease1['@rid']],
+                    supportedBy: [publication1['@rid']]
                 },
                 user: admin,
                 model: schema.Statement,
@@ -476,8 +476,8 @@ describeWithAuth('schema', () => {
                 content: {
                     relevance: relevance1['@rid'],
                     appliesTo: drug['@rid'],
-                    impliedBy: [{target: disease1['@rid']}],
-                    supportedBy: [{target: publication1['@rid'], level}]
+                    impliedBy: [disease1['@rid']],
+                    supportedBy: [publication1['@rid']]
                 },
                 user: admin,
                 model: schema.Statement,
@@ -499,8 +499,8 @@ describeWithAuth('schema', () => {
                 content: {
                     relevance: relevance1['@rid'],
                     appliesTo: drug['@rid'],
-                    impliedBy: [{target: disease1['@rid']}],
-                    supportedBy: [{target: publication1['@rid'], level}]
+                    impliedBy: [disease1['@rid']],
+                    supportedBy: [publication1['@rid']]
                 },
                 user: admin,
                 model: schema.Statement,
@@ -523,8 +523,8 @@ describeWithAuth('schema', () => {
                 content: {
                     relevance: relevance1['@rid'],
                     appliesTo: drug['@rid'],
-                    impliedBy: [{target: disease1['@rid']}],
-                    supportedBy: [{target: publication1['@rid'], level}]
+                    impliedBy: [disease1['@rid']],
+                    supportedBy: [publication1['@rid']]
                 },
                 user: admin,
                 model: schema.Statement,
@@ -535,8 +535,8 @@ describeWithAuth('schema', () => {
                     content: {
                         relevance: relevance1['@rid'],
                         appliesTo: drug['@rid'],
-                        impliedBy: [{target: disease1['@rid']}],
-                        supportedBy: [{target: publication1['@rid'], level}]
+                        impliedBy: [disease1['@rid']],
+                        supportedBy: [publication1['@rid']]
                     },
                     user: admin,
                     model: schema.Statement,
@@ -544,7 +544,7 @@ describeWithAuth('schema', () => {
                 });
             } catch (err) {
                 expect(err).toBeInstanceOf(RecordExistsError);
-                expect(err.message).toContain('already exists');
+                expect(err.message).toContain('Cannot create the record. Violates the unique constraint');
                 return;
             }
             expect.fail('did not throw the expected error');
@@ -554,8 +554,8 @@ describeWithAuth('schema', () => {
                 content: {
                     relevance: relevance1['@rid'],
                     appliesTo: drug['@rid'],
-                    impliedBy: [{target: disease1['@rid']}],
-                    supportedBy: [{target: publication1['@rid'], level}]
+                    impliedBy: [disease1['@rid']],
+                    supportedBy: [publication1['@rid']]
                 },
                 user: admin,
                 model: schema.Statement,
@@ -565,8 +565,8 @@ describeWithAuth('schema', () => {
                 content: {
                     relevance: relevance1['@rid'],
                     appliesTo: drug['@rid'],
-                    impliedBy: [{target: disease1['@rid']}, {target: disease2['@rid']}],
-                    supportedBy: [{target: publication1['@rid'], level}]
+                    impliedBy: [disease1['@rid'], disease2['@rid']],
+                    supportedBy: [publication1['@rid']]
                 },
                 user: admin,
                 model: schema.Statement,
@@ -578,8 +578,8 @@ describeWithAuth('schema', () => {
                 content: {
                     relevance: relevance1['@rid'],
                     appliesTo: null,
-                    impliedBy: [{target: disease1['@rid']}],
-                    supportedBy: [{target: publication1['@rid'], level}]
+                    impliedBy: [disease1['@rid']],
+                    supportedBy: [publication1['@rid']]
                 },
                 user: admin,
                 model: schema.Statement,
@@ -612,8 +612,8 @@ describeWithAuth('schema', () => {
                         content: {
                             relevance: relevance1['@rid'],
                             appliesTo: drug['@rid'],
-                            impliedBy: [{target: disease1['@rid']}],
-                            supportedBy: [{target: publication1['@rid'], level}]
+                            impliedBy: [disease1['@rid']],
+                            supportedBy: [publication1['@rid']]
                         },
                         model: schema.Statement
                     },
@@ -621,8 +621,8 @@ describeWithAuth('schema', () => {
                         content: {
                             relevance: relevance2['@rid'],
                             appliesTo: drug['@rid'],
-                            impliedBy: [{target: disease1['@rid']}, {target: disease2['@rid']}],
-                            supportedBy: [{target: publication1['@rid'], level}]
+                            impliedBy: [disease1['@rid'], disease2['@rid']],
+                            supportedBy: [publication1['@rid']]
                         },
                         model: schema.Statement
                     },
@@ -630,59 +630,15 @@ describeWithAuth('schema', () => {
                         content: {
                             relevance: relevance3['@rid'],
                             appliesTo: drug['@rid'],
-                            impliedBy: [{target: disease1['@rid']}, {target: disease2['@rid']}],
-                            supportedBy: [{target: publication2['@rid']}]
+                            impliedBy: [disease1['@rid'], disease2['@rid']],
+                            supportedBy: [publication2['@rid']]
                         },
                         model: schema.Statement
                     }
                 ], async opt => create(db, Object.assign({schema, user: admin}, opt))));
             });
-            test('select on related edge properties', async () => {
-                const query = Query.parse(
-                    schema,
-                    schema.Statement,
-                    {
-                        where: [
-                            {
-                                attr: {
-                                    type: 'EDGE',
-                                    edges: ['SupportedBy'],
-                                    child: {
-                                        attr: 'level', type: 'LINK', child: 'name'
-                                    },
-                                    direction: 'out'
-                                },
-                                value: level.name
-                            }
-                        ]
-                    }
-                );
-                const recordList = await select(db, query);
-                expect(recordList).toHaveProperty('length', 2);
-            });
-            test('select on related uni-directional edge properties', async () => {
-                const query = Query.parse(
-                    schema,
-                    schema.Statement,
-                    {
-                        where: [
-                            {
-                                attr: {
-                                    type: 'EDGE',
-                                    edges: ['SupportedBy'],
-                                    child: {
-                                        type: 'LINK', child: 'name', attr: 'level'
-                                    },
-                                    direction: 'both'
-                                },
-                                value: level.name
-                            }
-                        ]
-                    }
-                );
-                const recordList = await select(db, query);
-                expect(recordList).toHaveProperty('length', 2);
-            });
+            test.todo('select on related edge properties');
+            test.todo('select on related uni-directional edge properties');
         });
     });
 });

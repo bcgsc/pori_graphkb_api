@@ -1,6 +1,6 @@
 const {
-    schema: SCHEMA_DEFN,
-    util: {castDecimalInteger, castToRID}
+    schema: {schema: SCHEMA_DEFN},
+    util: {castInteger, castToRID}
 } = require('@bcgsc/knowledgebase-schema');
 
 const {
@@ -37,11 +37,11 @@ describe('nestedProjection', () => {
 });
 
 
-describe('Query Parsing', () => {
+describe('Query.parse', () => {
     test('parses a complex traversal', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.V, {
             where: {
-                attr: 'inE(ImpliedBy).vertex',
+                attr: 'inE(AliasOf).vertex',
                 value: {
                     type: 'neighborhood',
                     where: [
@@ -62,7 +62,7 @@ describe('Query Parsing', () => {
             new Clause('AND', [
                 new Comparison(
                     new Traversal({
-                        type: 'EDGE', edges: ['ImpliedBy'], direction: 'in', child: new Traversal({attr: 'outV()', cast: castToRID})
+                        type: 'EDGE', edges: ['AliasOf'], direction: 'in', child: new Traversal({attr: 'outV()', cast: castToRID})
                     }),
                     new Query(
                         'Feature',
@@ -82,7 +82,7 @@ describe('Query Parsing', () => {
     test('uses contains for an edge traversal', () => {
         const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.V, {
             where: {
-                attr: 'out(ImpliedBy).vertex.reference1.name',
+                attr: 'out(AliasOf).vertex.reference1.name',
                 value: 'kras'
             },
             neighbors: 3,
@@ -94,7 +94,7 @@ describe('Query Parsing', () => {
                 new Comparison(
                     new Traversal({
                         type: 'EDGE',
-                        edges: ['ImpliedBy'],
+                        edges: ['AliasOf'],
                         direction: 'out',
                         child: new Traversal({
                             attr: 'inV()',
@@ -344,6 +344,53 @@ describe('Query Parsing', () => {
     });
 });
 
+describe('Query.parseRecord', () => {
+    test('adds size check to iterable properties', () => {
+        const parsed = Query.parseRecord(
+            SCHEMA_DEFN,
+            SCHEMA_DEFN.Statement,
+            {
+                impliedBy: ['#33:0', '#44:0']
+            },
+            {
+                activeOnly: false,
+                neighbors: 0,
+                limit: null,
+                checkMissingNull: false
+            }
+        );
+        const {query, params} = parsed.toString();
+        expect(query).toEqual('SELECT * FROM Statement WHERE impliedBy CONTAINSALL [:param0, :param1] AND impliedBy.size() = :param2');
+        expect(params).toEqual({param0: '#33:0', param1: '#44:0', param2: 2});
+    });
+    test('adds null check to missing properties', () => {
+        const parsed = Query.parseRecord(
+            SCHEMA_DEFN,
+            SCHEMA_DEFN.Statement,
+            {
+                impliedBy: ['#33:0', '#44:0']
+            },
+            {
+                neighbors: 0,
+                limit: null,
+                ignoreMissing: false
+            }
+        );
+        const {query, params} = parsed.toString();
+        expect(query).toEqual(stripSQL(`SELECT * FROM (SELECT * FROM Statement WHERE
+            impliedBy CONTAINSALL [:param0, :param1]
+            AND impliedBy.size() = :param2
+            AND appliesTo IS NULL
+            AND relevance IS NULL
+            AND source IS NULL
+            AND sourceId IS NULL
+            AND supportedBy.size() = :param3) WHERE deletedAt IS NULL`));
+        expect(params).toEqual({
+            param0: '#33:0', param1: '#44:0', param2: 2, param3: 0
+        });
+    });
+});
+
 
 describe('Comparison', () => {
     describe('constructor', () => {
@@ -383,7 +430,7 @@ describe('Comparison', () => {
                 new Traversal({
                     attr: 'blargh',
                     property: {
-                        cast: castDecimalInteger,
+                        cast: castInteger,
                         iterable: true
                     }
                 }),
@@ -397,7 +444,7 @@ describe('Comparison', () => {
                 new Traversal({
                     attr: 'blargh',
                     property: {
-                        cast: castDecimalInteger,
+                        cast: castInteger,
                         iterable: true
                     }
                 }),
@@ -514,8 +561,4 @@ describe('Comparison', () => {
             expect(comp.validate.bind(comp)).toThrowError('must be against an iterable value');
         });
     });
-});
-
-
-describe('SQL', () => {
 });
