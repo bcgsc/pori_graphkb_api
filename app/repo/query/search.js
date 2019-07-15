@@ -153,16 +153,16 @@ const searchByLinkedRecords = (opt) => {
                     clauses.push(`${fieldName} IN (${similarFromRidList(values, {prefix: fieldName, activeOnly})})`);
                 } else {
                     // set of links
-                    clauses.push(`intersect(${fieldName}, (${similarFromRidList(values, {prefix: fieldName, activeOnly})})).size() > 0`);
+                    clauses.push(`${fieldName} CONTAINSANY (${similarFromRidList(values, {prefix: fieldName, activeOnly})})`);
                 }
             } else if (propModel.iterable) {
                 // Positive intersection of lists
                 const paramKey = aliasParameter(propModel.validate(values));
-                clauses.push(`intersect(${fieldName}, :${paramKey}).size() > 0`);
+                clauses.push(`${fieldName} CONTAINSANY :${paramKey}`);
             } else {
                 // in any of the items from the list
                 const paramKeys = values.map(v => aliasParameter(propModel.validate(v)));
-                clauses.push(`${fieldName} in [${paramKeys.map(p => `:${p}`).join(', ')}]`);
+                clauses.push(`${fieldName} IN [${paramKeys.map(p => `:${p}`).join(', ')}]`);
             }
         } else if (fieldName.startsWith('out_') || fieldName.startsWith('in_')) {
             try {
