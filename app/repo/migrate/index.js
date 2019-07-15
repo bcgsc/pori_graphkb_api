@@ -5,7 +5,7 @@
 const {RID} = require('orientjs');
 const semver = require('semver');
 
-const {constants, schema: SCHEMA_DEFN, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
+const {constants, schema: {schema: SCHEMA_DEFN}, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 

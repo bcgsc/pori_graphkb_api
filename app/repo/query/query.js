@@ -53,12 +53,16 @@ class Comparison {
      */
     static parse(schema, model, opt) {
         const {
-            attr, value, operator, negate
-        } = Object.assign({negate: false}, opt);
+            attr, value, operator, negate = false
+        } = opt;
 
         const parsedAttr = Traversal.parse(schema, model, attr);
 
-        if (typeof value === 'object' && value !== null && !(value instanceof Array) && !(value instanceof RID)) {
+        if (typeof value === 'object'
+            && value !== null
+            && !(value instanceof Array)
+            && !(value instanceof RID)
+        ) {
             if (value.class) {
                 // must be a Query.
                 const subModel = schema[value.class] || model;
@@ -349,18 +353,34 @@ class Query {
      * Given the contents of a record, create a query to select it from the DB
      */
     static parseRecord(schema, model, content = {}, opt = {}) {
+        const {ignoreMissing = true, ...rest} = opt;
         const where = [];
         const {properties} = model;
         for (const [key, value] of Object.entries(content || {})) {
             const prop = properties[key];
             if (prop.iterable) {
-                where.push({attr: key, value, operator: 'CONTAINSALL'});
+                where.push({attr: key, value: prop.validate(value), operator: 'CONTAINSALL'});
                 where.push({attr: `${key}.size()`, value: value.length});
             } else {
-                where.push({attr: key, value});
+                where.push({attr: key, value: prop.validate(value)});
             }
         }
-        return this.parse(schema, model, Object.assign({}, opt, {where}));
+        if (!ignoreMissing) {
+            for (const propName of (model.getActiveProperties() || []).sort()) {
+                if (propName === 'deletedAt') {
+                    continue; // taken care of by activeOnly property
+                }
+                const prop = properties[propName];
+                if (content[propName] === undefined) {
+                    if (prop.iterable) {
+                        where.push({attr: `${propName}.size()`, value: 0});
+                    } else {
+                        where.push({attr: propName, value: null});
+                    }
+                }
+            }
+        }
+        return this.parse(schema, model, {...rest, where});
     }
 
     /**
