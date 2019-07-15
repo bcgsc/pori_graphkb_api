@@ -1281,7 +1281,7 @@ describeWithAuth('API', () => {
                         method: 'POST',
                         body: {
                             appliesTo: disease1['@rid'],
-                            impliedBy: [{target: disease1['@rid']}],
+                            impliedBy: [disease1['@rid']],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
@@ -1302,7 +1302,7 @@ describeWithAuth('API', () => {
                         body: {
                             appliesTo: disease1['@rid'],
                             supportedBy: [],
-                            impliedBy: [{target: disease1['@rid']}],
+                            impliedBy: [disease1['@rid']],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
@@ -1322,8 +1322,8 @@ describeWithAuth('API', () => {
                         method: 'POST',
                         body: {
                             appliesTo: disease1['@rid'],
-                            supportedBy: [{target: 'not an rid'}],
-                            impliedBy: [{target: disease1['@rid']}],
+                            supportedBy: ['not an rid'],
+                            impliedBy: [disease1['@rid']],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
@@ -1343,7 +1343,7 @@ describeWithAuth('API', () => {
                         method: 'POST',
                         body: {
                             appliesTo: disease1['@rid'],
-                            supportedBy: [{target: publication1['@rid']}],
+                            supportedBy: [publication1['@rid']],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
@@ -1364,7 +1364,7 @@ describeWithAuth('API', () => {
                         body: {
                             appliesTo: disease1['@rid'],
                             impliedBy: [],
-                            supportedBy: [{target: publication1['@rid']}],
+                            supportedBy: [publication1['@rid']],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
@@ -1384,8 +1384,8 @@ describeWithAuth('API', () => {
                         method: 'POST',
                         body: {
                             appliesTo: disease1['@rid'],
-                            impliedBy: [{target: 'not an rid'}],
-                            supportedBy: [{target: publication1['@rid']}],
+                            impliedBy: ['not an rid'],
+                            supportedBy: [publication1['@rid']],
                             relevance: relevance1
                         },
                         headers: {Authorization: mockToken}
