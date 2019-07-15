@@ -19,17 +19,6 @@ const {
 
 const PREFIX = '#/components/schemas';
 
-const PutativeEdge = {
-    type: 'object',
-    properties: {
-        target: {$ref: `${PREFIX}/@rid`}
-    },
-    additionalProperties: true,
-    required: ['target'],
-    description: 'An edge to be created',
-    example: {target: '#41:2'}
-};
-
 const dependency = {
     $ref: `${PREFIX}/RecordLink`,
     nullable: true,
@@ -283,7 +272,6 @@ module.exports = {
     EdgeTraversal,
     FeatureLink,
     OntologyLink,
-    PutativeEdge,
     RecordLink,
     RecordList,
     source,
