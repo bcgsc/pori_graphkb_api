@@ -225,7 +225,7 @@ const parse = (queryParams) => {
             attr = attrList[0];
         }
         if (STD_QUERY_OPTIONS.includes(attr)) {
-            specialArgs[attr] = castRangeInt(value, 0, MAX_NEIGHBORS);
+            specialArgs[attr] = value;
         } else if (attr === 'or') {
             specialArgs[attr] = value.split(',');
         } else if (attr === 'compoundSyntax') {

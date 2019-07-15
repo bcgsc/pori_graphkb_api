@@ -543,7 +543,7 @@ class Clause {
             }
             Object.assign(params, result.params);
             components.push(result.query);
-            paramIndex += Object.values(params).length;
+            paramIndex = Object.values(params).length;
         }
         const query = components.join(` ${this.type} `);
         return {query, params};
