@@ -363,6 +363,9 @@ class Query {
 
         for (const [key, value] of Object.entries(content || {})) {
             const prop = properties[key];
+            if (!prop) {
+                throw new AttributeError(`property (${key}) does not exist on this model (${model.name})`);
+            }
             if (prop.iterable) {
                 where.push({attr: key, value: prop.validate(value), operator: 'CONTAINSALL'});
                 where.push({attr: `${key}.size()`, value: value.length});
