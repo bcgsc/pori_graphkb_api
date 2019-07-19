@@ -6,7 +6,7 @@
  * @constant
  * @ignore
  */
-const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
+const {error: {AttributeError}, schema} = require('@bcgsc/knowledgebase-schema');
 const {quoteWrap} = require('./../util');
 
 const {
@@ -54,7 +54,12 @@ const neighborhood = (opt) => {
     const {
         whereClause, modelName, paramIndex = 0, edges = []
     } = opt;
-    const edges = opt.edges || NEIGHBORHOOD_EDGES;
+    // check the edges are valid edge names
+    for (const edge of edges) {
+        if (!schema.get(edge)) {
+            throw new AttributeError(`Invalid edge parameter (${edge})`);
+        }
+    }
     const depth = castRangeInt(opt.depth || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);
 
     const {query, params} = whereClause.toString(paramIndex);
