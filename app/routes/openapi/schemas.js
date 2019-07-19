@@ -208,7 +208,12 @@ const NeighborhoodQuery = {
             enum: ['neighborhood']
         },
         edges: {
-            default: NEIGHBORHOOD_EDGES
+            default: null,
+            type: 'array',
+            items: {
+                type: 'string',
+                enum: schema.getEdgeModels().map(model => model.name)
+            }
         },
         depth: {
             type: 'integer', description: 'maximum depth to follow out from a matched node'

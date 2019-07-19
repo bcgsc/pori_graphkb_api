@@ -186,11 +186,12 @@ const GET_STATS = {
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {$ref: '#/components/parameters/Authorization'},
+        {$ref: '#/components/parameters/activeOnly'},
         {
             in: 'query',
-            name: 'grouping',
-            schema: {type: 'string', enum: ['source']},
-            description: 'Additional attribute to group by'
+            name: 'groupBySource',
+            schema: {type: 'boolean', default: false},
+            description: 'Count by class and source versus only by class'
         }
     ],
     responses: {

@@ -6,66 +6,69 @@
 /**
  * @ignore
  */
-const {error: {AttributeError}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
+const {error: {AttributeError}, util: {castToRID}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
 const {variant: {VariantNotation}} = require('@bcgsc/knowledgebase-parser');
 
 const {logger} = require('../logging');
 const {
-    Query, generalKeywordSearch, searchByLinkedRecords
+    Query, keywordSearch, searchByLinkedRecords
 } = require('../query');
 const {
     MultipleRecordsFoundError,
     NoRecordFoundError
 } = require('../error');
-const {
-    groupRecordsBy,
-    trimRecords
-} = require('../util');
+const {trimRecords} = require('../util');
 
 
-const STATS_GROUPING = new Set(['@class', 'source']);
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
 
 
 /**
  * @param {orientjs.Db} db the database connection object
- * @param {Array.<string>} classList list of classes to gather stats for
- * @param {Array.<string>} [extraGrouping=[]] the terms used for grouping the counts into sets (not includeing @class which is always used)
+ * @param {Object} opt
+ * @param {Array.<string>} opt.classList list of classes to gather stats for. Defaults to all
+ * @param {Boolean} [opt.activeOnly=true] ignore deleted records
+ * @param {Boolean} [opt.groupBySource=false] group by class and source instead of class only
  */
-const selectCounts = async (db, classList, extraGrouping = []) => {
-    const grouping = [];
-    grouping.push(...(extraGrouping || []));
-    for (const attr of grouping) {
-        if (!STATS_GROUPING.has(attr)) {
-            throw new AttributeError(`Invalid attribute for grouping (${attr}) is not supported`);
-        }
-    }
-    const clause = grouping.join(', ');
-    const tempCounts = await Promise.all(Array.from(
-        classList,
+const selectCounts = async (db, opt = {}) => {
+    const {
+        groupBySource = false,
+        activeOnly = true,
+        classList = Object.keys(schema)
+    } = opt;
+
+    const tempCounts = await Promise.all(classList.map(
         async (cls) => {
             let statement;
-            if (grouping.length === 0) {
+            if (!groupBySource) {
                 statement = `SELECT count(*) as cnt FROM ${cls}`;
+                if (activeOnly) {
+                    statement = `${statement} WHERE deletedAt IS NULL`;
+                }
+            } else if (activeOnly) {
+                statement = `SELECT source, count(*) as cnt FROM ${cls} WHERE deletedAt IS NULL GROUP BY source`;
             } else {
-                statement = `SELECT ${clause}, count(*) as cnt FROM ${cls} GROUP BY ${clause}`;
+                statement = `SELECT source, count(*) as cnt FROM ${cls} GROUP BY source`;
             }
             logger.log('debug', statement);
             return db.query(statement).all();
         }
     ));
-    const counts = [];
+    const counts = {};
     // nest counts into objects based on the grouping keys
     for (let i = 0; i < classList.length; i++) {
+        const name = classList[i];
+        counts[name] = {};
         for (const record of tempCounts[i]) {
-            record['@class'] = classList[i]; // selecting @prefix removes on return
-            counts.push(record);
+            if (groupBySource) {
+                counts[name][record.source || null] = record.cnt;
+            } else {
+                counts[name] = record.cnt;
+            }
         }
     }
-    grouping.unshift('@class');
-    const result = groupRecordsBy(counts, grouping, {value: 'cnt', aggregate: false});
-    return result;
+    return counts;
 };
 
 
