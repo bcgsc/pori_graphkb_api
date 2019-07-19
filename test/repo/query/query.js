@@ -8,10 +8,9 @@ const {
     Comparison,
     Query,
     Traversal,
-    constants: {NEIGHBORHOOD_EDGES, OPERATORS},
+    constants: {OPERATORS},
     nestedProjection
 } = require('./../../../app/repo/query');
-const {quoteWrap} = require('./../../../app/repo/util');
 
 const SOURCE_PROPS = SCHEMA_DEFN.Source.queryProperties;
 const DISEASE_PROPS = SCHEMA_DEFN.Disease.queryProperties;
@@ -331,9 +330,7 @@ describe('Query.parse', () => {
             expect(parsed).toEqual(expected);
             const sql = `SELECT * FROM Disease
                 WHERE source IN (SELECT * FROM (
-                    MATCH {class: Source, WHERE: (name = :param0)}.both(
-                        ${Array.from(NEIGHBORHOOD_EDGES, quoteWrap).join(', ')}
-                    ){WHILE: ($depth < 3)} RETURN DISTINCT $pathElements)) LIMIT 1000`;
+                    MATCH {class: Source, WHERE: (name = :param0)}.both(){WHILE: ($depth < 3)} RETURN DISTINCT $pathElements)) LIMIT 1000`;
             const {query, params} = parsed.toString();
             expect(params).toEqual({param0: 'disease-ontology'});
             expect(stripSQL(query)).toBe(stripSQL(sql));
