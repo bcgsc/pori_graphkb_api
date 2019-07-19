@@ -165,10 +165,9 @@ const select = async (db, query, opt = {}) => {
  * @param {Array.<string>} keywords array of keywords to search for
  * @param {Object} opt Selection options
  */
-const selectByKeyword = async (db, keywords, opt) => {
+const selectByKeyword = async (db, keywords, opt = {}) => {
     const queryObj = Object.assign({
-        toString: () => generalKeywordSearch(keywords, {...opt, skip: opt.skip || 0}),
-        activeOnly: true
+        toString: () => keywordSearch(keywords, {...opt})
     }, opt);
     queryObj.displayString = () => Query.displayString(queryObj);
     return select(db, queryObj);
@@ -178,12 +177,13 @@ const selectByKeyword = async (db, keywords, opt) => {
 /**
  * @param {orientjs.Db} db Database connection from orientjs
  * @param {Object} opt Selection options
+ * @param {ClassModel} opt.model
+ * @param {Object} opt.search filters
  */
-const searchSelect = async (db, opt) => {
+const searchSelect = async (db, opt = {}) => {
     const queryObj = {
         ...opt,
-        toString: () => searchByLinkedRecords(opt),
-        activeOnly: true
+        toString: () => searchByLinkedRecords(opt)
     };
     queryObj.displayString = () => Query.displayString(queryObj);
     return select(db, queryObj);
