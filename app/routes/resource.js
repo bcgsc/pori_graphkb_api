@@ -39,7 +39,7 @@ const activeRidQuery = (schema, model, rid) => {
  * @param {Object.<string,ClassModel>} opt.schema the mapping of class names to models
  *
  */
-const queryRoutes = (opt) => {
+const queryRoute = (opt) => {
     const {
         router, model, db, schema
     } = opt;
@@ -71,6 +71,12 @@ const queryRoutes = (opt) => {
                 return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
             }
         });
+};
+
+const searchRoute = (opt) => {
+    const {
+        router, model, db, schema
+    } = opt;
 
     logger.log('verbose', `NEW ROUTE [SEARCH] POST ${model.routeName}/search`);
     router.post(`${model.routeName}/search`,
@@ -84,8 +90,23 @@ const queryRoutes = (opt) => {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
                     {message: 'Where and search are mutually exclusive', params: req.body}
                 ));
-            } if (req.body.where) {
-                // complex query
+            } if (req.body.search) {
+                // search
+                try {
+                    const result = await searchSelect(db, {
+                        ...checkStandardOptions(req.body), model, user: req.user
+                    });
+                    return res.json(jc.decycle({result}));
+                } catch (err) {
+                    logger.log('debug', err);
+                    if (err instanceof AttributeError) {
+                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    }
+                    logger.log('error', err.stack || err);
+                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                }
+            } else {
+                // default to the complex query
                 let query;
                 try {
                     query = Query.parse(schema, model, checkStandardOptions(req.body));
@@ -109,25 +130,6 @@ const queryRoutes = (opt) => {
                     logger.log('error', err.stack || err);
                     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
                 }
-            } else if (req.body.search) {
-                // search
-                try {
-                    const result = await searchSelect(db, {
-                        ...checkStandardOptions(req.body), model, user: req.user
-                    });
-                    return res.json(jc.decycle({result}));
-                } catch (err) {
-                    logger.log('debug', err);
-                    if (err instanceof AttributeError) {
-                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                    }
-                    logger.log('error', err.stack || err);
-                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
-                }
-            } else {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
-                    {message: 'Either where or search are required body parameters', params: req.body}
-                ));
             }
         });
 };
@@ -215,7 +217,7 @@ const postRoute = (opt) => {
                 return res.status(HTTP_STATUS.CREATED).json(jc.decycle({result}));
             } catch (err) {
                 logger.log('debug', err.toString());
-                if (err instanceof AttributeError) {
+                if (err instanceof AttributeError || err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                 } if (err instanceof RecordExistsError) {
                     return res.status(HTTP_STATUS.CONFLICT).json(err);
@@ -348,8 +350,11 @@ const addResourceRoutes = (opt) => {
     });
     router.use(model.routeName, checkClassPermissions);
 
+    if (model.expose.QUERY) {
+        queryRoute(opt);
+    }
     if (model.expose.QUERY && !model.isEdge) {
-        queryRoutes(opt);
+        searchRoute(opt);
     }
     if (model.expose.GET) {
         getRoute(opt);
