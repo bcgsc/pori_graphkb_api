@@ -65,7 +65,7 @@ const neighborhood = (opt) => {
     const {query, params} = whereClause.toString(paramIndex);
     const statement = `SELECT * FROM (MATCH
     {class: ${modelName}, WHERE: (${query})}
-        .both(${Array.from(edges, quoteWrap).join(', ')}){WHILE: ($depth < ${depth})}
+        .both(${edges.map(quoteWrap).join(', ')}){WHILE: ($depth < ${depth})}
 RETURN DISTINCT $pathElements)`;
     return {query: statement, params};
 };
