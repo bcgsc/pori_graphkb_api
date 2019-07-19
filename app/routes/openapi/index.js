@@ -541,12 +541,15 @@ const generateSwaggerSpec = (schema, metadata) => {
         if (Object.values(model.expose).some(x => x) && docs.paths[model.routeName] === undefined) {
             docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
-        if (model.expose.QUERY && !model.isEdge) {
+        if (model.expose.QUERY) {
             docs.paths[model.routeName].get = docs.paths[model.routeName].get || describeGet(model);
-            docs.paths[`${model.routeName}/search`] = {
-                ...docs.paths[`${model.routeName}/search`] || {},
-                post: describePostSearch(model)
-            };
+            if (!model.isEdge) {
+                // cannot complex search edge classes
+                docs.paths[`${model.routeName}/search`] = {
+                    ...docs.paths[`${model.routeName}/search`] || {},
+                    post: describePostSearch(model)
+                };
+            }
         }
         if (model.expose.POST && !docs.paths[model.routeName].post) {
             docs.paths[model.routeName].post = describePost(model);
