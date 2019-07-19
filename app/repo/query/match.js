@@ -10,7 +10,7 @@ const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 const {quoteWrap} = require('./../util');
 
 const {
-    NEIGHBORHOOD_EDGES, MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS
 } = require('./constants');
 const {castRangeInt} = require('./util');
 

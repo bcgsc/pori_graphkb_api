@@ -10,7 +10,7 @@ const {schema: SCHEMA_DEFN} = require('@bcgsc/knowledgebase-schema');
 
 const {
     constants: {
-        TRAVERSAL_TYPE, DIRECTIONS, NEIGHBORHOOD_EDGES, OPERATORS
+        TRAVERSAL_TYPE, DIRECTIONS, OPERATORS
     }
 } = require('./../../repo/query');
 const {

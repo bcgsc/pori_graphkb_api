@@ -91,18 +91,6 @@ const OPERATORS = {
     AND: 'AND'
 };
 
-/**
- * @constant
- * @type {Array.<string>}
- * @default
- */
-const NEIGHBORHOOD_EDGES = [
-    'AliasOf',
-    'GeneralizationOf',
-    'DeprecatedBy',
-    'CrossReferenceOf',
-    'ElementOf'
-];
 
 const TRAVERSAL_TYPE = {LINK: 'LINK', EDGE: 'EDGE', DIRECT: 'DIRECT'};
 
@@ -118,7 +106,6 @@ module.exports = {
     MAX_LIMIT,
     MAX_NEIGHBORS,
     MAX_TRAVEL_DEPTH,
-    NEIGHBORHOOD_EDGES,
     OPERATORS,
     PARAM_PREFIX,
     DEFAULT_NEIGHBORS,
