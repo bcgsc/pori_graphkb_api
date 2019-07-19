@@ -269,5 +269,12 @@ const parse = (queryParams) => {
 };
 
 module.exports = {
-    parse, flattenQueryParams, formatTraversal, parseValue, parseCompoundAttr, STD_QUERY_OPTIONS, checkStandardOptions
+    parse,
+    flattenQueryParams,
+    formatTraversal,
+    parseValue,
+    parseCompoundAttr,
+    STD_QUERY_OPTIONS,
+    checkStandardOptions,
+    MIN_WORD_SIZE
 };
