@@ -255,6 +255,7 @@ class Query {
         this.orderBy = orderBy;
         this.orderByDirection = orderByDirection;
         this.count = count;
+        this.edges = edges;
     }
 
     /**
