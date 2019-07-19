@@ -44,35 +44,26 @@ const keywordSearch = (keywordsIn, opt = {}) => {
     };
 
     let query = `
-    SELECT ${DEFAULT_PROJECTION} FROM (SELECT expand(uniqueRecs) FROM (
-        SELECT distinct(@rid) as uniqueRecs FROM (
-            SELECT expand($v)
+    SELECT ${DEFAULT_PROJECTION} FROM (
+            SELECT expand($statements)
             LET $ont = (SELECT * from Ontology WHERE ${
     subContainsClause(['sourceId', 'name'])
 }),
-                $variants = (SELECT * FROM Variant WHERE ${
-    subContainsClause([
-        'type.name',
-        'type.sourceId',
-        'reference1.name',
-        'reference1.sourceId',
-        'reference2.name',
-        'reference2.sourceId'
-    ])
-}),
-                $implicable = (SELECT expand(inE('ImpliedBy').outV()) from (select expand(UNIONALL($ont, $variants)))),
-                $statements = (SELECT * FROM Statement WHERE ${
-    subContainsClause([
-        'appliesTo.name',
-        'appliesTo.sourceId',
-        'relevance.name',
-        'relevance.sourceId'
-    ])
-}),
-                $v = (SELECT expand(UNIONALL($statements, $implicable)))
-        ) WHERE deletedAt IS NULL
-    ))`;
-    query = postConditionalQueryOptions(query, opt);
+                $variants = (SELECT * FROM Variant WHERE type IN $ont OR reference1 in $ont OR reference2 IN $ont),
+                $implicable = (SELECT expand(UNIONALL($ont, $variants))),
+                $statements = (SELECT * FROM Statement
+                    WHERE
+                        impliedBy CONTAINSANY (SELECT expand($implicable))
+                        OR supportedBy CONTAINSANY (SELECT expand($ont))
+                        OR appliesTo IN (SELECT expand($implicable))
+                        OR relevance IN (SELECT expand($ont))
+                )
+        )${
+    activeOnly
+        ? 'WHERE deletedAt IS NULL'
+        : ''
+}`;
+    query = postConditionalQueryOptions(query, rest);
     return {query, params};
 };
 

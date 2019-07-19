@@ -157,8 +157,8 @@ const searchByLinkedRecords = (opt) => {
                 }
             } else if (propModel.iterable) {
                 // Positive intersection of lists
-                const paramKey = aliasParameter(propModel.validate(values));
-                clauses.push(`${fieldName} CONTAINSANY :${paramKey}`);
+                const paramKeys = values.map(value => aliasParameter(propModel.validate(value)));
+                clauses.push(`${fieldName} CONTAINSANY [${paramKeys.map(p => `:${p}`).join(', ')}]`);
             } else {
                 // in any of the items from the list
                 const paramKeys = values.map(v => aliasParameter(propModel.validate(v)));
