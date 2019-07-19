@@ -122,7 +122,9 @@ const create = async (db, opt) => {
             // displayName exists but has not been filled
             record.displayName = await fetchDisplayName(db, model, record);
         }
-        return await db.insert().into(model.name).set(omitDBAttributes(record)).one();
+        const result = await db.insert().into(model.name).set(omitDBAttributes(record)).one();
+        logger.debug(`created ${result['@rid']}`);
+        return result;
     } catch (err) {
         throw wrapIfTypeError(err);
     }
