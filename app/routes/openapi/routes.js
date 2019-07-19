@@ -93,7 +93,8 @@ const GET_VERSION = {
                         type: 'object',
                         properties: {
                             api: {type: 'string', description: 'Version of the API', example: '0.6.3'},
-                            db: {type: 'string', description: 'Name of the database the API is connected to', example: 'kbapi_v0.6.3'}
+                            db: {type: 'string', description: 'Name of the database the API is connected to', example: 'kbapi_v0.6.3'},
+                            schema: {type: 'string', description: 'Version of the schema package used to build the database', example: '1.2.1'}
                         }
                     }
                 }
