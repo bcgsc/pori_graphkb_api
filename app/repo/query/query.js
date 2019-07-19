@@ -354,10 +354,13 @@ class Query {
     /**
      * Given the contents of a record, create a query to select it from the DB
      */
-    static parseRecord(schema, model, content = {}, opt = {}) {
+    static parseRecord(schema, model, rawContent = {}, opt = {}) {
         const {ignoreMissing = true, ...rest} = opt;
         const where = [];
         const {properties} = model;
+
+        const content = model.formatRecord(rawContent, {addDefaults: false, ignoreMissing: true});
+
         for (const [key, value] of Object.entries(content || {})) {
             const prop = properties[key];
             if (prop.iterable) {
