@@ -33,7 +33,7 @@ class Property extends kbSchema.Property {
                 dbProperties.default = model.default;
             }
         }
-        /** TODO: pending resolution https://github.com/orientechnologies/orientjs/issues/377
+        /** TODO: PENDING https://github.com/orientechnologies/orientjs/issues/377
         if (model.min !== undefined) {
             dbProperties.min = model.min;
         }

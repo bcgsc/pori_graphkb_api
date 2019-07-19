@@ -302,6 +302,7 @@ const update = async (db, opt) => {
  * @param {Object} opt options
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
+ * @param {ClassModel} opt.model the class model
  */
 const remove = async (db, opt) => modify(db, Object.assign({}, opt, {changes: null}));
 
