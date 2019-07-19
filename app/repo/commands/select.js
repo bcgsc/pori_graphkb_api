@@ -243,9 +243,10 @@ const fetchDisplayName = async (db, model, content) => {
             }
             return `${reference1} ${type}`;
         } if (model.name === 'PositionalVariant') {
-            const notation = VariantNotation.toString({
+            const obj = {
                 ...content, multiFeature: Boolean(reference2), reference1, reference2, type
-            });
+            };
+            const notation = VariantNotation.toString(obj);
             return notation;
         }
     } if (model.name === 'Statement') {

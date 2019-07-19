@@ -7,7 +7,8 @@ const {
     selectCounts,
     selectByKeyword,
     selectFromList,
-    searchSelect
+    searchSelect,
+    fetchDisplayName
 } = require('./select');
 const {remove, update} = require('./update');
 
@@ -23,5 +24,6 @@ module.exports = {
     selectCounts,
     selectFromList,
     update,
-    searchSelect
+    searchSelect,
+    fetchDisplayName
 };
