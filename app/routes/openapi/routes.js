@@ -121,6 +121,7 @@ const GET_STATEMENT_BY_KEYWORD = {
         {$ref: '#/components/parameters/skip'},
         {$ref: '#/components/parameters/orderBy'},
         {$ref: '#/components/parameters/orderByDirection'},
+        {$ref: '#/components/parameters/activeOnly'},
         {$ref: '#/components/parameters/count'}
     ],
     responses: {

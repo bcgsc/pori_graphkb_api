@@ -6,7 +6,7 @@
  * @constant
  * @ignore
  */
-const {schema: SCHEMA_DEFN} = require('@bcgsc/knowledgebase-schema');
+const {schema} = require('@bcgsc/knowledgebase-schema');
 
 const {
     constants: {
@@ -172,7 +172,7 @@ const BasicQuery = {
         where: {
             type: 'object', $ref: `${PREFIX}/Clause`
         },
-        class: {type: 'string', enum: Object.keys(SCHEMA_DEFN)}
+        class: {type: 'string', enum: schema.getModels().map(m => m.name)}
     }
 };
 
@@ -189,7 +189,7 @@ const TreeQuery = {
             items: {
                 type: 'string',
                 enum: Array.from(
-                    Object.values(SCHEMA_DEFN).filter(model => model.isEdge && !model.isAbstract),
+                    schema.getModels().map(model => model.isEdge && !model.isAbstract),
                     model => model.name
                 )
             },
