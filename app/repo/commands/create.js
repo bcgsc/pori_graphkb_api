@@ -93,10 +93,16 @@ const create = async (db, opt) => {
     } if (model.getActiveProperties()) {
         // try select before create if active properties are defined (as they may not be db enforceable)
         try {
+            const query = {};
+            for (const pname of model.getActiveProperties()) {
+                if (content[pname]) {
+                    query[pname] = content[pname];
+                }
+            }
             const records = await select(db, Query.parseRecord(
                 SCHEMA_DEFN,
                 model,
-                content,
+                query,
                 {ignoreMissing: false, activeOnly: true}
             ));
             if (records.length) {
