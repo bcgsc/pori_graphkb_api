@@ -151,19 +151,16 @@ const getRoute = (opt) => {
     logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}`);
     router.get(`${model.routeName}/:rid`,
         async (req, res) => {
-            if (!looksLikeRID(req.params.rid, false)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
-                    {message: `rid does not look like a valid record ID: ${req.params.rid}`}
-                ));
+            if (Object.keys(req.query).length > 0) {
+                return res
+                    .status(HTTP_STATUS.BAD_REQUEST)
+                    .json(new AttributeError('query parameters are not accepted for this route'));
             }
-            req.params.rid = `#${req.params.rid.replace(/^#/, '')}`;
-
             let query;
             try {
-                query = parseQueryLanguage(req.query);
-                query = Query.parse(schema, model, Object.assign(query, {
+                query = Query.parse(schema, model, {
                     where: [{attr: {attr: '@rid', cast: castToRID}, value: req.params.rid}]
-                }));
+                });
                 query.validate();
             } catch (err) {
                 if (err instanceof AttributeError) {
