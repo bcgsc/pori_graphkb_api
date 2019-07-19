@@ -11,8 +11,6 @@ const HTTP_STATUS = require('http-status-codes');
 const {getPortPromise} = require('portfinder');
 
 const {logger} = require('./repo/logging');
-const {selectCounts} = require('./repo/commands');
-const {AttributeError} = require('./repo/error');
 const {
     checkToken
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
