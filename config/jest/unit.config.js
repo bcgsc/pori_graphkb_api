@@ -6,7 +6,7 @@ module.exports = {
     testPathIgnorePatterns: [
         '/node_modules/',
         'test/repo/query/util.js',
-        '.*/empty.js',
-        'test/util.js'
+        'test/util.js',
+        'test/db_integration'
     ]
 };
