@@ -198,7 +198,7 @@ const searchSelect = async (db, opt = {}) => {
  * @param {?Boolean} opt.activeOnly exclude deleted records
  * @param {?string} opt.projection project to use from select
  */
-const selectFromList = async (db, inputRecordList, opt) => {
+const selectFromList = async (db, inputRecordList, opt = {}) => {
     const {neighbors = 0, activeOnly = true, projection = '*'} = opt;
     const params = {};
     const recordList = inputRecordList.map(castToRID);

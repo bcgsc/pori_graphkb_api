@@ -11,7 +11,8 @@ const {postConditionalQueryOptions} = require('./search');
 /**
  * For the GUI to speed up the main search query until we can migrate to v3 odb
  */
-const keywordSearch = (keywordsIn, opt) => {
+const keywordSearch = (keywordsIn, opt = {}) => {
+    const {activeOnly = true, ...rest} = opt;
     const params = {};
     const paramMapping = {};
 

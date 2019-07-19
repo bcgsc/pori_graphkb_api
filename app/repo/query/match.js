@@ -52,7 +52,7 @@ const treeQuery = (opt) => {
  */
 const neighborhood = (opt) => {
     const {
-        whereClause, modelName, paramIndex = 0
+        whereClause, modelName, paramIndex = 0, edges = []
     } = opt;
     const edges = opt.edges || NEIGHBORHOOD_EDGES;
     const depth = castRangeInt(opt.depth || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);

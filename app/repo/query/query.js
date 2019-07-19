@@ -241,7 +241,8 @@ class Query {
             projection = null,
             activeOnly = true,
             skip = null,
-            count = false
+            count = false,
+            edges = []
         } = opt;
         this.modelName = modelName;
         this.where = where || new Clause(OPERATORS.AND); // conditions that make up the terms of the query
@@ -279,7 +280,7 @@ class Query {
             count = false,
             neighbors = 0,
             type = null,
-            edges = null,
+            edges = [],
             depth = null
         } = opt;
 
