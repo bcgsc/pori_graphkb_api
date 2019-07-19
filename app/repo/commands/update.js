@@ -286,9 +286,10 @@ const modify = async (db, opt) => {
  * @param {Object} opt.changes the new content to be set for the node/edge
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
+ * @param {ClassModel} opt.model
  */
 const update = async (db, opt) => {
-    if (opt.changes === null) {
+    if (opt.changes === null || opt.changes === undefined) {
         throw new AttributeError('opt.changes is a required argument');
     }
     return modify(db, opt);
