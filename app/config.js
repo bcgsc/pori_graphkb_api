@@ -21,8 +21,8 @@ module.exports = {
     },
     development: {
         GKB_DB_CREATE: false,
-        GKB_DB_NAME: 'development',
-        GKB_LOG_MAX_FILES: 7
+        GKB_LOG_MAX_FILES: 7,
+        GKB_DB_NAME: 'test-statement-linkset'
     },
     local: {},
     production: {
