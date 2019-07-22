@@ -9,15 +9,12 @@ const {
 } = require('./../repo/error');
 const {logger} = require('./../repo/logging');
 const {
-    select, create, update, remove
+    select, searchSelect, create, update, remove
 } = require('./../repo/commands');
 const {checkClassPermissions} = require('./../middleware/auth');
-const {
-    Query,
-    constants: {MAX_LIMIT, MAX_NEIGHBORS}, util: {castRangeInt, castBoolean}
-} = require('./../repo/query');
+const {Query} = require('./../repo/query');
 
-const {parse: parseQueryLanguage} = require('./query');
+const {parse: parseQueryLanguage, checkStandardOptions} = require('./query');
 
 
 const activeRidQuery = (schema, model, rid) => {
@@ -31,6 +28,7 @@ const activeRidQuery = (schema, model, rid) => {
     return query;
 };
 
+
 /**
  * Query a record class
  *
@@ -41,17 +39,17 @@ const activeRidQuery = (schema, model, rid) => {
  * @param {Object.<string,ClassModel>} opt.schema the mapping of class names to models
  *
  */
-const queryRoute = (opt) => {
+const queryRoutes = (opt) => {
     const {
         router, model, db, schema
     } = opt;
-    logger.log('verbose', `NEW ROUTE [QUERY] ${model.routeName}`);
+    logger.log('verbose', `NEW ROUTE [QUERY] GET ${model.routeName}`);
 
     router.get(model.routeName,
         async (req, res) => {
             let query;
             try {
-                query = Query.parse(schema, model, parseQueryLanguage(req.query));
+                query = Query.parse(schema, model, parseQueryLanguage(checkStandardOptions(req.query)));
                 query.validate();
             } catch (err) {
                 logger.log('debug', err);
@@ -73,25 +71,9 @@ const queryRoute = (opt) => {
                 return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
             }
         });
-};
 
-/**
- * Complex query endpoint for searching via POST
- *
- * @param {Object} opt
- * @param {orientjs.Db} opt.db the database connection
- * @param {express.Router} opt.router the router to ad the route to
- * @param {ClassModel} opt.model the model the route is being built for
- * @param {Object.<string,ClassModel>} opt.schema the mapping of class names to models
- *
- */
-const searchRoute = (opt) => {
-    const {
-        router, model, db, schema
-    } = opt;
-    logger.log('verbose', `NEW ROUTE [SEARCH] ${model.routeName}/search`);
-
-    router.post(`${model.routeName}/search`,
+    logger.log('verbose', `NEW ROUTE [QUERY] POST ${model.routeName}/query`);
+    router.post(`${model.routeName}/query`,
         async (req, res) => {
             if (!_.isEmpty(req.query)) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
@@ -100,7 +82,7 @@ const searchRoute = (opt) => {
             }
             let query;
             try {
-                query = Query.parse(schema, model, req.body);
+                query = Query.parse(schema, model, checkStandardOptions(req.body));
                 query.validate();
             } catch (err) {
                 logger.log('debug', err);
@@ -112,6 +94,29 @@ const searchRoute = (opt) => {
             }
             try {
                 const result = await select(db, query, {user: req.user});
+                return res.json(jc.decycle({result}));
+            } catch (err) {
+                logger.log('debug', err);
+                if (err instanceof AttributeError) {
+                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                }
+                logger.log('error', err.stack || err);
+                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+            }
+        });
+
+    logger.log('verbose', `NEW ROUTE [SEARCH] POST ${model.routeName}/search`);
+    router.post(`${model.routeName}/search`,
+        async (req, res) => {
+            if (!_.isEmpty(req.query)) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                    {message: 'No query parameters are allowed for this query type', params: req.query}
+                ));
+            }
+            try {
+                const result = await searchSelect(db, {
+                    ...checkStandardOptions(req.body), model, user: req.user
+                });
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 logger.log('debug', err);
@@ -319,44 +324,6 @@ const deleteRoute = (opt) => {
         });
 };
 
-/**
- * @param {object} opt the query options
- * @param {Number} opt.skip the number of records to skip (for paginating)
- * @param {Array.<string>} opt.orderBy the properties used to determine the sort order of the results
- * @param {string} opt.orderByDirection the direction to order (ASC or DESC)
- * @param {boolean} opt.count count the records instead of returning them
- * @param {Number} opt.neighbors the number of neighboring record levels to fetch
- */
-const checkStandardOptions = (opt) => {
-    const {
-        limit, neighbors, skip, orderBy, orderByDirection, count
-    } = opt;
-
-    const options = {};
-    if (limit !== undefined) {
-        options.limit = castRangeInt(limit, 1, MAX_LIMIT);
-    }
-    if (neighbors !== undefined) {
-        options.neighbors = castRangeInt(neighbors, 0, MAX_NEIGHBORS);
-    }
-    if (skip !== undefined) {
-        options.skip = castRangeInt(skip, 0);
-    }
-    if (orderBy) {
-        options.orderBy = orderBy.split(',').map(prop => prop.trim());
-    }
-    if (orderByDirection) {
-        options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
-        if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
-            throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
-        }
-    }
-    if (count) {
-        options.count = castBoolean(count);
-    }
-    return options;
-};
-
 
 /*
  * add basic CRUD methods for any standard db class
@@ -378,9 +345,8 @@ const addResourceRoutes = (opt) => {
     });
     router.use(model.routeName, checkClassPermissions);
 
-    if (model.expose.QUERY) {
-        queryRoute(opt);
-        searchRoute(opt);
+    if (model.expose.QUERY && !model.isEdge) {
+        queryRoutes(opt);
     }
     if (model.expose.GET) {
         getRoute(opt);
@@ -391,7 +357,7 @@ const addResourceRoutes = (opt) => {
     if (model.expose.DELETE) {
         deleteRoute(opt);
     }
-    if (model.expose.PATCH) {
+    if (model.expose.PATCH && !model.isEdge) {
         updateRoute(opt);
     }
 };

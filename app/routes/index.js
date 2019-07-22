@@ -12,7 +12,7 @@ const {constants: {MAX_NEIGHBORS}, util: {castRangeInt, castBoolean}} = require(
 const {
     MIN_WORD_SIZE
 } = require('./query');
-const {selectByKeyword, selectFromList, selectStatementByLinks} = require('../repo/commands');
+const {selectByKeyword, selectFromList} = require('../repo/commands');
 const {NoRecordFoundError} = require('../repo/error');
 
 
@@ -71,36 +71,6 @@ const addKeywordSearchRoute = (opt) => {
 };
 
 
-const addSearchStatementByLinked = (opt) => {
-    const {
-        router, db
-    } = opt;
-    logger.log('verbose', 'NEW ROUTE [GET] /statements/search-links');
-
-    router.post('/statements/search-links',
-        async (req, res) => {
-            const options = {...req.body};
-            try {
-                Object.assign(options, resource.checkStandardOptions(options));
-            } catch (err) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-            }
-
-            try {
-                const result = await selectStatementByLinks(db, options);
-                return res.json(jc.decycle({result}));
-            } catch (err) {
-                if (err instanceof AttributeError) {
-                    logger.log('debug', err);
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                }
-                logger.log('error', err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
-            }
-        });
-};
-
-
 const addGetRecordsByList = ({router, db}) => {
     router.get('/records',
         async (req, res) => {
@@ -145,5 +115,5 @@ const addGetRecordsByList = ({router, db}) => {
 };
 
 module.exports = {
-    openapi, resource, addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked
+    openapi, resource, addKeywordSearchRoute, addGetRecordsByList
 };

@@ -23,7 +23,7 @@ const {getLoadVersion} = require('./repo/migrate/version');
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
 const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
-const {addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked} = require('./routes');
+const {addKeywordSearchRoute, addGetRecordsByList} = require('./routes');
 const config = require('./config');
 
 const BOOLEAN_FLAGS = [
@@ -168,7 +168,6 @@ class AppServer {
         }
         addKeywordSearchRoute({router: this.router, db, config: this.conf});
         addGetRecordsByList({router: this.router, db, config: this.conf});
-        addSearchStatementByLinked({router: this.router, db, config: this.conf});
         // add the stats route
         const classList = Object.keys(this.schema).filter(
             name => !this.schema[name].isAbstract
