@@ -56,7 +56,7 @@ const updateNodeTx = async (db, opt) => {
     commit
         .let('updated', tx => tx.update(original['@rid'])
             .set(omitDBAttributes(changes))
-            .set('history = $copy')
+            .set('history = $copy[0]')
             .where({createdAt: original.createdAt})
             .return('AFTER @rid'))
         .let('result', tx => tx.select()
@@ -109,14 +109,14 @@ const modifyEdgeTx = async (db, opt) => {
         .let('srcCopy', tx => tx.create('VERTEX', src['@class'])
             .set(srcCopy))
         .let('src', tx => tx.update(src['@rid'])
-            .set('history = $srcCopy')
+            .set('history = $srcCopy[0]')
             .set({createdBy: userRID, createdAt: timeStampNow()})
             .where({createdAt: src.createdAt})
             .return('AFTER @rid'))
         .let('tgtCopy', tx => tx.create('VERTEX', tgt['@class'])
             .set(tgtCopy))
         .let('tgt', tx => tx.update(tgt['@rid'])
-            .set('history = $tgtCopy')
+            .set('history = $tgtCopy[0]')
             .set({createdBy: userRID, createdAt: timeStampNow()})
             .where({createdAt: tgt.createdAt})
             .return('AFTER @rid'));
@@ -127,10 +127,11 @@ const modifyEdgeTx = async (db, opt) => {
         commit
             .let('deleted', tx => tx.update(`EDGE ${original['@rid']}`)
                 .where({createdAt: original.createdAt})
-                .set('out = $srcCopy').set('in = $tgtCopy')
+                .set('out = $srcCopy[0]').set('in = $tgtCopy[0]')
                 .set({deletedAt: timeStampNow(), deletedBy: userRID})
                 .return('AFTER @rid'))
-            .let('result', tx => tx.select().from('$deleted').fetch({'*': 1}));
+            .let('result', tx => tx.select().from(original['@class']).where({'@rid': original['@rid']}));
+        // .let('result', tx => tx.select('*, *:{*, @rid, @class}').from('(select expand($deleted[0]))')); // See https://github.com/orientechnologies/orientdb/issues/8786
     } else {
         // edge update
         throw new NotImplementedError('Cannot update edges. Waiting on external fix: https://github.com/orientechnologies/orientdb/issues/8444');
@@ -195,7 +196,7 @@ const deleteNodeTx = async (db, opt) => {
                     .let(name, tx => tx.create('VERTEX', targetNode['@class'])
                         .set(targetContent))
                     .let(`vertex${Object.keys(updatedVertices).length}`, tx => tx.update(target)
-                        .set(`history = $${name}`)
+                        .set(`history = $${name}[0]`)
                         .set({createdBy: userRID, createdAt: timeStampNow()})
                         .where({createdAt: targetContent.createdAt})
                         .return('AFTER @rid'));
@@ -205,7 +206,7 @@ const deleteNodeTx = async (db, opt) => {
             // move the current edge to point to the copied node
             commit.let(`edge${edgeCount++}`, tx => tx.update(castToRID(value))
                 .set({deletedAt: timeStampNow(), deletedBy: userRID})
-                .set(`${direction} = $${updatedVertices[target.toString()]}`)
+                .set(`${direction} = $${updatedVertices[target.toString()]}[0]`)
                 .where({createdAt: value.createdAt})
                 .return('AFTER @rid'));
         }
@@ -241,12 +242,13 @@ const modify = async (db, opt) => {
             ignoreMissing: true,
             ignoreExtra: false
         }));
+    query.neighbors = 2;
     // select the original record and check permissions
     // select will also throw an error when the user attempts to modify a deleted record
     const [original] = await select(db, query, {
-        exactlyN: 1,
-        fetchPlan: 'in_*:2 out_*:2 history:0'
+        exactlyN: 1
     });
+
     if (!hasRecordAccess(user, original)) {
         throw new PermissionError(`The user '${user.name}' does not have sufficient permissions to interact with record ${original['@rid']}`);
     }
@@ -284,9 +286,10 @@ const modify = async (db, opt) => {
  * @param {Object} opt.changes the new content to be set for the node/edge
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
+ * @param {ClassModel} opt.model
  */
 const update = async (db, opt) => {
-    if (opt.changes === null) {
+    if (opt.changes === null || opt.changes === undefined) {
         throw new AttributeError('opt.changes is a required argument');
     }
     return modify(db, opt);
@@ -299,6 +302,7 @@ const update = async (db, opt) => {
  * @param {Object} opt options
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
+ * @param {ClassModel} opt.model the class model
  */
 const remove = async (db, opt) => modify(db, Object.assign({}, opt, {changes: null}));
 

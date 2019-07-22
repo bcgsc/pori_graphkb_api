@@ -1,16 +1,13 @@
-const _ = require('lodash');
-
-const {util: {castToRID}, error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
+const {error: {AttributeError}, schema: {schema: SCHEMA_DEFN}} = require('@bcgsc/knowledgebase-schema');
 
 const {logger} = require('../logging');
 const {
-    Query, Comparison, Clause, Traversal, constants: {TRAVERSAL_TYPE, OPERATORS}
+    Query
 } = require('../query');
-const {SCHEMA_DEFN} = require('../schema');
 const {
     RecordExistsError
 } = require('../error');
-const {select, getUserByName} = require('./select');
+const {select, getUserByName, fetchDisplayName} = require('./select');
 const {wrapIfTypeError, omitDBAttributes} = require('./util');
 
 /**
@@ -76,190 +73,6 @@ const createEdge = async (db, opt) => {
     }
 };
 
-/**
- * Create statement record and its linking required edges. The array of edge objects should be an
- * array of objects with a target property for the node connected to the statement and any other
- * properties to add to the new edge
- *
- * @param {orientjs.Db} db the database connection object
- * @param {Object} opt options
- * @param {Object} opt.content the content of the statement
- * @param {Array} opt.content.impliedBy conditions which imply the current statement
- * @param {Array} opt.content.supportedBy evidence used to support the statement
- * @param {ClassModel} opt.model the statement class model
- * @param {Object} opt.user the user record
- * @param {Object.<string,ClassModel>} opt.schema the object mapping class names to models for all db classes
- *
- * @example
- * > createStatement({record: {
- *      impliedBy: [{target: '#33:0', comment: 'some comment on the edge'}],
- *      supportedBy: [{target: '44:0'}],
- *      relevance: '#45:1',
- *      appliesTo: '#87:0'
- *  } ...})
- */
-const createStatement = async (db, opt) => {
-    const {
-        content, model, schema, user
-    } = opt;
-    content.impliedBy = content.impliedBy || [];
-    content.supportedBy = content.supportedBy || [];
-    const query = new Query(model.name, new Clause('AND', []), {activeOnly: true});
-
-    // Enusre the edge multiple plicity is as expected
-    query.where.push(new Comparison(
-        new Traversal({
-            type: TRAVERSAL_TYPE.EDGE, edges: ['SupportedBy'], direction: 'out', child: 'size()'
-        }),
-        content.supportedBy.length
-    ));
-    query.where.push(new Comparison(
-        new Traversal({
-            type: TRAVERSAL_TYPE.EDGE, edges: ['ImpliedBy'], direction: 'out', child: 'size()'
-        }),
-        content.impliedBy.length
-    ));
-
-    let dependencies = [];
-    // ensure the RIDs look valid for the support
-    const edges = [];
-    if (content.supportedBy.length === 0) {
-        throw new AttributeError('statement must include an array property supportedBy with 1 or more elements');
-    }
-    if (content.impliedBy.length === 0) {
-        throw new AttributeError('statement must include an array property impliedBy with 1 or more elements');
-    }
-
-    const suppTraversal = new Traversal({
-        type: TRAVERSAL_TYPE.EDGE, edges: ['SupportedBy'], direction: 'out', child: 'inV()'
-    });
-    for (const edge of content.supportedBy) {
-        if (!edge || edge.target === undefined) {
-            throw new AttributeError('expected supportedBy edge object to have target attribute');
-        }
-        let rid = edge.target;
-        delete edge.target;
-        try {
-            rid = castToRID(rid);
-        } catch (err) {
-            throw new AttributeError(`the supportedBy dependency does not look like a valid RID: ${rid}`);
-        }
-        dependencies.push(rid);
-        edges.push(Object.assign(edge, {'@class': 'SupportedBy', in: rid}));
-        query.where.push(new Comparison(suppTraversal, rid, OPERATORS.CONTAINS));
-    }
-
-    // ensure the RIDs look valid for the impliedBy
-    const impTraversal = new Traversal({
-        type: TRAVERSAL_TYPE.EDGE, edges: ['ImpliedBy'], direction: 'out', child: 'inV()'
-    });
-    for (const edge of content.impliedBy) {
-        if (!edge || edge.target === undefined) {
-            throw new AttributeError('expected impliedBy edge object to have target attribute');
-        }
-        let rid = edge.target;
-        delete edge.target;
-        try {
-            rid = castToRID(rid);
-        } catch (err) {
-            throw new AttributeError(`the impliedBy dependency does not look like a valid RID: ${rid}`);
-        }
-        dependencies.push(rid);
-        edges.push(Object.assign(edge, {'@class': 'ImpliedBy', in: rid}));
-        query.where.push(new Comparison(impTraversal, rid, OPERATORS.CONTAINS));
-    }
-
-    if (content.appliesTo === undefined) {
-        throw new AttributeError('statement must have the appliesTo property');
-    }
-    try {
-        if (content.appliesTo !== null) {
-            content.appliesTo = castToRID(content.appliesTo);
-            dependencies.push(content.appliesTo);
-        }
-        query.where.push(new Comparison('appliesTo', content.appliesTo || null));
-    } catch (err) {
-        throw new AttributeError(
-            `statement appliesTo record ID does not look like a valid record ID: ${content.appliesTo}`
-        );
-    }
-    if (content.relevance === undefined) {
-        throw new AttributeError('statement must have the relevance property');
-    }
-    try {
-        content.relevance = castToRID(content.relevance);
-        dependencies.push(content.relevance);
-        query.where.push(new Comparison('relevance', content.relevance));
-    } catch (err) {
-        throw new AttributeError(
-            `statement relevance record ID does not look like a valid record ID: ${content.relevance}`
-        );
-    }
-    if (content.source) {
-        content.source = castToRID(content.source);
-        dependencies.push(content.source);
-    }
-    query.where.push(Comparison.parse(schema, schema.Statement, {attr: 'source', value: content.source || null}));
-    query.where.push(Comparison.parse(schema, schema.Statement, {attr: 'sourceId', value: content.sourceId || null}));
-    // check the DB to ensure all dependencies already exist (and are not deleted)
-    try {
-        // ensure that the dependency records are valid
-        dependencies = Array.from(dependencies, rid => ({'@rid': rid, deletedAt: null}));
-        dependencies = await db.record.get(dependencies);
-    } catch (err) {
-        throw new AttributeError({
-            message: 'error in retrieving one or more of the dependencies',
-            dependencies,
-            suberror: err
-        });
-    }
-    const userRID = castToRID(user);
-    // try to select the statement to see if it exists
-    const records = await select(db, query, {
-        fetchPlan: '*:2'
-    });
-    if (records.length !== 0) {
-        throw new RecordExistsError({
-            current: records,
-            message: 'Statement cannot be created. A similar statement already exists'
-        });
-    }
-    // create the main statement node
-    const commit = db
-        .let('statement', tx => tx.create('VERTEX', model.name)
-            .set(omitDBAttributes(model.formatRecord(
-                {..._.omit(content, ['impliedBy', 'supportedBy']), createdBy: userRID},
-                {addDefaults: true}
-            ))));
-    // link to the dependencies
-    let edgeCount = 0;
-    for (const edge of edges) {
-        const eModel = schema[edge['@class']];
-        const eRecord = eModel.formatRecord(
-            {...edge, createdBy: userRID},
-            {dropExtra: true, addDefaults: true, ignoreMissing: true}
-        );
-        commit.let(`edge${edgeCount++}`, tx => tx.create('EDGE', eModel.name)
-            .set(omitDBAttributes(_.omit(eRecord, ['out', 'in'])))
-            .from('$statement')
-            .to(eRecord.in));
-    }
-    commit
-        .let('result', tx => tx.select().from('$statement'))
-        .commit();
-    logger.log('debug', commit.buildStatement());
-    try {
-        const result = await commit.return('$result').one();
-        if (!result) {
-            throw new Error('Failed to create the statement');
-        }
-        return result;
-    } catch (err) {
-        err.sql = commit.buildStatement();
-        throw wrapIfTypeError(err);
-    }
-};
-
 
 /**
  * create new record in the database
@@ -277,15 +90,41 @@ const create = async (db, opt) => {
     } = opt;
     if (model.isEdge) {
         return createEdge(db, opt);
-    } if (model.name === 'Statement') {
-        return createStatement(db, opt);
+    } if (model.getActiveProperties()) {
+        // try select before create if active properties are defined (as they may not be db enforceable)
+        try {
+            const query = {};
+            for (const pname of model.getActiveProperties()) {
+                if (content[pname]) {
+                    query[pname] = content[pname];
+                }
+            }
+            const records = await select(db, Query.parseRecord(
+                SCHEMA_DEFN,
+                model,
+                query,
+                {ignoreMissing: false, activeOnly: true}
+            ));
+            if (records.length) {
+                throw new RecordExistsError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
+            }
+        } catch (err) {
+            logger.error(err);
+            throw wrapIfTypeError(err);
+        }
     }
     const record = model.formatRecord(
-        Object.assign({}, content, {createdBy: user['@rid']}),
+        {...content, createdBy: user['@rid']},
         {dropExtra: false, addDefaults: true},
     );
     try {
-        return await db.insert().into(model.name).set(omitDBAttributes(record)).one();
+        if (!record.displayName && model.properties.displayName) {
+            // displayName exists but has not been filled
+            record.displayName = await fetchDisplayName(db, model, record);
+        }
+        const result = await db.insert().into(model.name).set(omitDBAttributes(record)).one();
+        logger.debug(`created ${result['@rid']}`);
+        return result;
     } catch (err) {
         throw wrapIfTypeError(err);
     }

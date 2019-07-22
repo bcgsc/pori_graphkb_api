@@ -7,6 +7,8 @@
 const orientjs = require('orientjs');
 const kbSchema = require('@bcgsc/knowledgebase-schema');
 
+const {logger} = require('./logging');
+
 
 class Property extends kbSchema.Property {
     /**
@@ -26,14 +28,19 @@ class Property extends kbSchema.Property {
             dbProperties.linkedClass = model.linkedClass.name;
         }
         if (model.default !== undefined) {
-            dbProperties.default = model.default;
+            // TODO: PENDING https://github.com/orientechnologies/orientjs/issues/379
+            if (model.type !== 'string' || !/\s+/.exec(model.default)) {
+                dbProperties.default = model.default;
+            }
         }
+        /** TODO: PENDING https://github.com/orientechnologies/orientjs/issues/377
         if (model.min !== undefined) {
             dbProperties.min = model.min;
         }
         if (model.max !== undefined) {
             dbProperties.max = model.max;
-        }
+        } */
+
         return dbClass.property.create(dbProperties);
     }
 }
@@ -65,14 +72,33 @@ class ClassModel extends kbSchema.ClassModel {
         }
         if (properties) {
             await Promise.all(Array.from(
-                Object.values(model._properties).filter(prop => !prop.name.startsWith('@')),
+                Object.values(model._properties).filter(prop => !prop.name.startsWith('@') && !model.inheritsProperty(prop.name)),
                 async prop => Property.create(prop, cls)
             ));
         }
         if (indices) {
-            await Promise.all(Array.from(model.indices, i => db.index.create(i)));
+            await Promise.all(
+                model.indices
+                    .filter(i => this.checkDbCanCreateIndex(model, i))
+                    .map(i => db.index.create(i))
+            );
         }
         return cls;
+    }
+
+    static checkDbCanCreateIndex(model, index) {
+        const {properties} = model;
+        if (index.type.toLowerCase() !== 'unique') {
+            return true;
+        }
+        for (const propName of index.properties) {
+            const propModel = properties[propName];
+            if (propModel && propModel.iterable) {
+                logger.log('warn', `Cannot create index (${index.name}) on iterable property (${propModel.name})`);
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

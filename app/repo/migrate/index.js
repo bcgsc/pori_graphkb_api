@@ -5,7 +5,7 @@
 const {RID} = require('orientjs');
 const semver = require('semver');
 
-const {constants, schema: SCHEMA_DEFN, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
+const {constants, schema: {schema: SCHEMA_DEFN}, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
@@ -68,27 +68,27 @@ const migrate17Xto18X = async (db) => {
  */
 const migrate18Xto19X = async (db) => {
     logger.info('Convert Evidence to an abstract class (slow, please wait)');
-    await db.query('ALTER CLASS Evidence SUPERCLASS -Ontology');
-    await db.query('DROP CLASS EvidenceGroup');
-    await db.query('DROP PROPERTY Permissions.EvidenceGroup');
+    await db.command('ALTER CLASS Evidence SUPERCLASS -Ontology').all();
+    await db.command('DROP CLASS EvidenceGroup').all();
+    await db.command('DROP PROPERTY Permissions.EvidenceGroup').all();
     logger.info('Update the existing usergroup permission schemes: remove Permissions.EvidenceGroup');
-    await db.query('UPDATE UserGroup REMOVE permissions.EvidenceGroup');
+    await db.command('UPDATE UserGroup REMOVE permissions.EvidenceGroup').all();
 
 
     for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication']) {
         logger.info(`Remove Evidence as parent from ${subclass}`);
-        await db.query(`ALTER CLASS ${subclass} SUPERCLASS -Evidence`);
+        await db.command(`ALTER CLASS ${subclass} SUPERCLASS -Evidence`).all();
         logger.info(`Add Ontology as parent to ${subclass}`);
-        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Ontology`);
+        await db.command(`ALTER CLASS ${subclass} SUPERCLASS +Ontology`).all();
     }
     logger.info('make evidence abstract');
-    await db.query('ALTER CLASS Evidence ABSTRACT TRUE');
-    await db.query('UPDATE UserGroup set permissions.Evidence = 4 where permissions.Evidence > 4');
+    await db.command('ALTER CLASS Evidence ABSTRACT TRUE').all();
+    await db.command('UPDATE UserGroup set permissions.Evidence = 4 where permissions.Evidence > 4').all();
 
     logger.info('Re-add Evidence as abstract parent');
     for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication', 'Source']) {
         logger.info(`Add Evidence as parent of ${subclass} (slow, please wait)`);
-        await db.query(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`);
+        await db.command(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`).all();
     }
 
 
@@ -99,11 +99,11 @@ const migrate18Xto19X = async (db) => {
 
     logger.info('Create the CuratedContent class');
     await ClassModel.create(SCHEMA_DEFN.CuratedContent, db);
-    await db.query('CREATE PROPERTY Permissions.CuratedContent INTEGER (NOTNULL TRUE, MIN 0, MAX 15)');
+    await db.command('CREATE PROPERTY Permissions.CuratedContent INTEGER (NOTNULL TRUE, MIN 0, MAX 15)').all();
     logger.info('Update the existing usergroup permission schemes: add Permissions.CuratedContent');
-    await db.query('UPDATE UserGroup SET permissions.CuratedContent = 0');
-    await db.query('UPDATE UserGroup SET permissions.CuratedContent = 15 where name = \'admin\' or name = \'regular\'');
-    await db.query('UPDATE UserGroup SET permissions.CuratedContent = 4 where name = \'readonly\'');
+    await db.command('UPDATE UserGroup SET permissions.CuratedContent = 0').all();
+    await db.command('UPDATE UserGroup SET permissions.CuratedContent = 15 where name = \'admin\' or name = \'regular\'').all();
+    await db.command('UPDATE UserGroup SET permissions.CuratedContent = 4 where name = \'readonly\'').all();
 
     logger.info('Add addition Source properties');
     const source = await db.class.get(SCHEMA_DEFN.Source.name);

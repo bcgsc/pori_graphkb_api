@@ -11,18 +11,17 @@ const HTTP_STATUS = require('http-status-codes');
 const {getPortPromise} = require('portfinder');
 
 const {logger} = require('./repo/logging');
-const {selectCounts} = require('./repo/commands');
-const {AttributeError} = require('./repo/error');
 const {
     checkToken
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
 
 const {connectDB} = require('./repo');
+const {getLoadVersion} = require('./repo/migrate/version');
 
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
 const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
-const {addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked} = require('./routes');
+const {addKeywordSearchRoute, addGetRecordsByList, addStatsRoute} = require('./routes');
 const config = require('./config');
 
 const BOOLEAN_FLAGS = [
@@ -140,7 +139,8 @@ class AppServer {
         this.router.get('/version', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({
                 api: process.env.npm_package_version,
-                db: GKB_DB_NAME
+                db: GKB_DB_NAME,
+                schema: getLoadVersion().version
             });
         });
         // read the key file if it wasn't already set
@@ -158,43 +158,15 @@ class AppServer {
 
         this.router.use(checkToken(this.conf.GKB_KEY));
 
+        addKeywordSearchRoute({router: this.router, db, config: this.conf});
+        addGetRecordsByList({router: this.router, db, config: this.conf});
+        addStatsRoute({router: this.router, db});
         // simple routes
         for (const model of Object.values(schema)) {
             addResourceRoutes({
                 router: this.router, model, db, schema
             });
         }
-        addKeywordSearchRoute({router: this.router, db, config: this.conf});
-        addGetRecordsByList({router: this.router, db, config: this.conf});
-        addSearchStatementByLinked({router: this.router, db, config: this.conf});
-        // add the stats route
-        const classList = Object.keys(this.schema).filter(
-            name => !this.schema[name].isAbstract
-                && this.schema[name].subclasses.length === 0 // terminal classes only
-                && !this.schema[name].embedded
-        );
-        this.router.get('/stats', async (req, res) => {
-            let grouping = req.query.grouping || [];
-            if (!(grouping instanceof Array)) {
-                grouping = [grouping];
-            }
-            if (Object.keys(req.query) - !!req.query.grouping > 0) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError({
-                    message: 'only accepts the grouping query parameter',
-                    params: Object.keys(req.query)
-                }));
-            }
-            try {
-                const stats = await selectCounts(this.db, classList, grouping);
-                return res.status(HTTP_STATUS.OK).json(jc.decycle({result: stats}));
-            } catch (err) {
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(jc.decycle(err));
-                }
-                logger.log('error', err || err.message);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(jc.decycle(err));
-            }
-        });
 
         logger.log('info', 'Adding 404 capture');
         // catch any other errors

@@ -1,4 +1,4 @@
-const {RID} = require('orientjs');
+const {RecordID: RID} = require('orientjs');
 
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
@@ -6,7 +6,7 @@ const match = require('./match');
 const {
     PARAM_PREFIX, OPERATORS, MAX_LIMIT, MAX_NEIGHBORS
 } = require('./constants');
-const {castRangeInt, castBoolean} = require('./util');
+const {castRangeInt, castBoolean, nestedProjection} = require('./util');
 const {Traversal} = require('./traversal');
 
 
@@ -53,16 +53,20 @@ class Comparison {
      */
     static parse(schema, model, opt) {
         const {
-            attr, value, operator, negate
-        } = Object.assign({negate: false}, opt);
+            attr, value, operator, negate = false
+        } = opt;
 
         const parsedAttr = Traversal.parse(schema, model, attr);
 
-        if (typeof value === 'object' && value !== null && !(value instanceof Array) && !(value instanceof RID)) {
+        if (typeof value === 'object'
+            && value !== null
+            && !(value instanceof Array)
+            && !(value instanceof RID)
+        ) {
             if (value.class) {
                 // must be a Query.
                 const subModel = schema[value.class] || model;
-                const subquery = Query.parse(schema, subModel, value);
+                const subquery = Query.parse(schema, subModel, {...value, limit: null, skip: null}); // cannot paginate subqueries
                 return new this(parsedAttr, subquery, operator, negate);
             }
             throw new AttributeError('Value for a comparison must be a primitive value or a subquery. Subqueries must contains the `class` attribute');
@@ -234,22 +238,24 @@ class Query {
             neighbors = 0,
             orderBy = null,
             orderByDirection = 'ASC',
-            returnProperties = null,
+            projection = null,
             activeOnly = true,
             skip = null,
-            count = false
+            count = false,
+            edges = []
         } = opt;
         this.modelName = modelName;
         this.where = where || new Clause(OPERATORS.AND); // conditions that make up the terms of the query
         this.skip = skip;
         this.type = match[opt.type] || null;
-        this.returnProperties = returnProperties;
+        this.projection = projection;
         this.neighbors = neighbors;
         this.limit = limit;
         this.activeOnly = activeOnly;
         this.orderBy = orderBy;
         this.orderByDirection = orderByDirection;
         this.count = count;
+        this.edges = edges;
     }
 
     /**
@@ -275,7 +281,7 @@ class Query {
             count = false,
             neighbors = 0,
             type = null,
-            edges = null,
+            edges = [],
             depth = null
         } = opt;
 
@@ -284,6 +290,10 @@ class Query {
             where = !(opt.where instanceof Array)
                 ? [opt.where]
                 : opt.where;
+        }
+        let projection = null;
+        if (returnProperties) {
+            projection = returnProperties.join(', ');
         }
 
         if (!['ASC', 'DESC'].includes(orderByDirection)) {
@@ -327,10 +337,12 @@ class Query {
         return new this(model.name, conditions, {
             skip,
             activeOnly,
-            returnProperties,
+            projection,
             orderBy,
             orderByDirection,
-            limit: castRangeInt(limit, 1, MAX_LIMIT),
+            limit: limit === null
+                ? limit
+                : castRangeInt(limit, 1, MAX_LIMIT),
             neighbors: castRangeInt(neighbors, 0, MAX_NEIGHBORS),
             type,
             edges,
@@ -342,12 +354,41 @@ class Query {
     /**
      * Given the contents of a record, create a query to select it from the DB
      */
-    static parseRecord(schema, model, content = {}, opt = {}) {
+    static parseRecord(schema, model, rawContent = {}, opt = {}) {
+        const {ignoreMissing = true, ...rest} = opt;
         const where = [];
+        const {properties} = model;
+
+        const content = model.formatRecord(rawContent, {addDefaults: false, ignoreMissing: true});
+
         for (const [key, value] of Object.entries(content || {})) {
-            where.push({attr: key, value});
+            const prop = properties[key];
+            if (!prop) {
+                throw new AttributeError(`property (${key}) does not exist on this model (${model.name})`);
+            }
+            if (prop.iterable) {
+                where.push({attr: key, value: prop.validate(value), operator: 'CONTAINSALL'});
+                where.push({attr: `${key}.size()`, value: value.length});
+            } else {
+                where.push({attr: key, value: prop.validate(value)});
+            }
         }
-        return this.parse(schema, model, Object.assign({}, opt, {where}));
+        if (!ignoreMissing) {
+            for (const propName of (model.getActiveProperties() || []).sort()) {
+                if (propName === 'deletedAt') {
+                    continue; // taken care of by activeOnly property
+                }
+                const prop = properties[propName];
+                if (content[propName] === undefined) {
+                    if (prop.iterable) {
+                        where.push({attr: `${propName}.size()`, value: 0});
+                    } else {
+                        where.push({attr: propName, value: null});
+                    }
+                }
+            }
+        }
+        return this.parse(schema, model, {...rest, where});
     }
 
     /**
@@ -365,9 +406,7 @@ class Query {
      * @returns {Object} an object containing the SQL query statment (query) and the parameters (params)
      */
     toString(paramIndex = 0) {
-        const selectionElements = this.returnProperties
-            ? this.returnProperties.join(', ')
-            : '*';
+        const selectionElements = this.projection || nestedProjection(this.neighbors, !this.activeOnly);
 
         let queryString,
             params;
@@ -402,9 +441,12 @@ class Query {
             queryString = `${queryString} ORDER BY ${this.orderBy.map(param => `${param} ${this.orderByDirection}`).join(', ')}`;
         }
         if (this.count) {
-            queryString = `SELECT count(*) FROM (${queryString})`;
+            queryString = `SELECT count(*) as count FROM (${queryString})`;
         } else if (this.skip != null) {
             queryString = `${queryString} SKIP ${this.skip}`;
+        }
+        if (this.limit !== null) {
+            queryString = `${queryString} LIMIT ${this.limit}`;
         }
         return {query: queryString, params};
     }
@@ -509,7 +551,7 @@ class Clause {
             }
             Object.assign(params, result.params);
             components.push(result.query);
-            paramIndex += Object.values(params).length;
+            paramIndex = Object.values(params).length;
         }
         const query = components.join(` ${this.type} `);
         return {query, params};
@@ -517,4 +559,6 @@ class Clause {
 }
 
 
-module.exports = {Query, Comparison, Clause};
+module.exports = {
+    Query, Comparison, Clause, nestedProjection
+};

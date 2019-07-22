@@ -91,22 +91,13 @@ const OPERATORS = {
     AND: 'AND'
 };
 
-/**
- * @constant
- * @type {Array.<string>}
- * @default
- */
-const NEIGHBORHOOD_EDGES = [
-    'AliasOf',
-    'GeneralizationOf',
-    'DeprecatedBy',
-    'CrossReferenceOf',
-    'ElementOf'
-];
 
 const TRAVERSAL_TYPE = {LINK: 'LINK', EDGE: 'EDGE', DIRECT: 'DIRECT'};
 
 const SIZE_COMPUTATION = 'size()';
+
+
+const DEFAULT_PROJECTION = '*, *:{@rid, @class, displayName}';
 
 
 module.exports = {
@@ -115,11 +106,11 @@ module.exports = {
     MAX_LIMIT,
     MAX_NEIGHBORS,
     MAX_TRAVEL_DEPTH,
-    NEIGHBORHOOD_EDGES,
     OPERATORS,
     PARAM_PREFIX,
     DEFAULT_NEIGHBORS,
     SIZE_COMPUTATION,
     SPECIAL_QUERY_ARGS,
-    TRAVERSAL_TYPE
+    TRAVERSAL_TYPE,
+    DEFAULT_PROJECTION
 };

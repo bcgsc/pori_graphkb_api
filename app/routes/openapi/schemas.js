@@ -6,11 +6,11 @@
  * @constant
  * @ignore
  */
-const {schema: SCHEMA_DEFN} = require('@bcgsc/knowledgebase-schema');
+const {schema} = require('@bcgsc/knowledgebase-schema');
 
 const {
     constants: {
-        TRAVERSAL_TYPE, DIRECTIONS, NEIGHBORHOOD_EDGES, OPERATORS
+        TRAVERSAL_TYPE, DIRECTIONS, OPERATORS
     }
 } = require('./../../repo/query');
 const {
@@ -18,17 +18,6 @@ const {
 } = require('./constants');
 
 const PREFIX = '#/components/schemas';
-
-const PutativeEdge = {
-    type: 'object',
-    properties: {
-        target: {$ref: `${PREFIX}/@rid`}
-    },
-    additionalProperties: true,
-    required: ['target'],
-    description: 'An edge to be created',
-    example: {target: '#41:2'}
-};
 
 const dependency = {
     $ref: `${PREFIX}/RecordLink`,
@@ -183,7 +172,7 @@ const BasicQuery = {
         where: {
             type: 'object', $ref: `${PREFIX}/Clause`
         },
-        class: {type: 'string', enum: Object.keys(SCHEMA_DEFN)}
+        class: {type: 'string', enum: schema.getModels().map(m => m.name)}
     }
 };
 
@@ -200,7 +189,7 @@ const TreeQuery = {
             items: {
                 type: 'string',
                 enum: Array.from(
-                    Object.values(SCHEMA_DEFN).filter(model => model.isEdge && !model.isAbstract),
+                    schema.getModels().map(model => model.isEdge && !model.isAbstract),
                     model => model.name
                 )
             },
@@ -219,7 +208,12 @@ const NeighborhoodQuery = {
             enum: ['neighborhood']
         },
         edges: {
-            default: NEIGHBORHOOD_EDGES
+            default: null,
+            type: 'array',
+            items: {
+                type: 'string',
+                enum: schema.getEdgeModels().map(model => model.name)
+            }
         },
         depth: {
             type: 'integer', description: 'maximum depth to follow out from a matched node'
@@ -275,7 +269,6 @@ const Comparison = {
     }
 };
 
-
 module.exports = {
     dependency,
     deprecated,
@@ -284,7 +277,6 @@ module.exports = {
     EdgeTraversal,
     FeatureLink,
     OntologyLink,
-    PutativeEdge,
     RecordLink,
     RecordList,
     source,
