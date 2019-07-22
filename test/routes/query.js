@@ -3,7 +3,7 @@
  */
 const qs = require('qs');
 
-const {schema: SCHEMA_DEFN} = require('@bcgsc/knowledgebase-schema');
+const {schema: {schema: SCHEMA_DEFN}} = require('@bcgsc/knowledgebase-schema');
 
 const DISEASE_PROPS = SCHEMA_DEFN.Disease.queryProperties;
 const SOURCE_PROPS = SCHEMA_DEFN.Source.queryProperties;
@@ -13,7 +13,7 @@ const {
     constants: {TRAVERSAL_TYPE, OPERATORS}, Query, Clause, Comparison, Traversal
 } = require('./../../app/repo/query');
 const {
-    flattenQueryParams, formatTraversal, parseValue, parse, parseCompoundAttr
+    flattenQueryParams, formatTraversal, parseValue, parse, parseCompoundAttr, checkStandardOptions
 } = require('./../../app/routes/query');
 
 
@@ -151,11 +151,11 @@ describe('parseCompoundAttr', () => {
         });
     });
     test('parses edge with classes', () => {
-        const parsed = parseCompoundAttr('out(ImpliedBy, supportedby).vertex.name');
+        const parsed = parseCompoundAttr('out(AliasOf, CrossReferenceOf).vertex.name');
         expect(parsed).toEqual({
             type: 'EDGE',
             direction: 'out',
-            edges: ['ImpliedBy', 'supportedby'],
+            edges: ['AliasOf', 'CrossReferenceOf'],
             child: {
                 attr: 'inV',
                 type: 'LINK',
@@ -183,14 +183,14 @@ describe('parseCompoundAttr', () => {
         });
     });
     test('parses link.edge', () => {
-        const parsed = parseCompoundAttr('source.out(ImpliedBy,supportedby)');
+        const parsed = parseCompoundAttr('source.out(AliasOf,CrossReferenceOf)');
         expect(parsed).toEqual({
             attr: 'source',
             type: 'LINK',
             child: {
                 type: 'EDGE',
                 direction: 'out',
-                edges: ['ImpliedBy', 'supportedby']
+                edges: ['AliasOf', 'CrossReferenceOf']
             }
         });
     });
@@ -210,7 +210,7 @@ describe('parseCompoundAttr', () => {
 describe('parse', () => {
     test('no query parameters', () => {
         const qparams = qs.parse('');
-        const result = parse(qparams);
+        const result = parse(checkStandardOptions(qparams));
         expect(result).toEqual({where: []});
     });
     test('neighbors', () => {
@@ -225,7 +225,7 @@ describe('parse', () => {
     test.todo('error on negative skip');
     test('sourceId OR name', () => {
         const qparams = qs.parse('sourceId=blargh&name=monkeys&or=sourceId,name');
-        const result = parse(qparams);
+        const result = parse(checkStandardOptions(qparams));
         expect(result).toEqual({
             where: [{
                 operator: OPERATORS.OR,
@@ -245,17 +245,17 @@ describe('parse', () => {
         const body = {
             where: [
                 {
-                    attr: 'inE(Impliedby).vertex.reference1.name',
+                    attr: 'inE(Infers).vertex.reference1.name',
                     value: 'KRAS'
                 }
             ]
         };
-        const query = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Statement, body);
+        const query = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Variant, body);
         expect(() => query.validate()).not.toThrow();
     });
     test('similar attr names', () => {
         const qparams = qs.parse('source[name]=disease%20ontology&name=~pediat&neighbors=1');
-        const result = parse(qparams);
+        const result = parse(checkStandardOptions(qparams));
         expect(result).toEqual({
             where: [
                 {
@@ -308,7 +308,7 @@ describe('parse', () => {
     });
     test('returnProperties', () => {
         const qparams = qs.parse('returnProperties=name,sourceId');
-        const result = parse(qparams);
+        const result = parse(checkStandardOptions(qparams));
         expect(result).toEqual({
             where: [],
             returnProperties: ['name', 'sourceId']

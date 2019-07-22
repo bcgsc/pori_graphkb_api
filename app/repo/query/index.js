@@ -14,7 +14,7 @@ const {Traversal} = require('./traversal');
 const match = require('./match');
 const constants = require('./constants');
 const {searchByLinkedRecords} = require('./search');
-const {keywordSearch: generalKeywordSearch} = require('./statement');
+const {keywordSearch} = require('./statement');
 
 const util = require('./util');
 
@@ -27,7 +27,7 @@ module.exports = {
     match,
     constants,
     util,
-    generalKeywordSearch,
+    keywordSearch,
     searchByLinkedRecords,
     nestedProjection
 };

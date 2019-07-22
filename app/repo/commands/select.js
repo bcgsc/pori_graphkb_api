@@ -6,65 +6,69 @@
 /**
  * @ignore
  */
-const {error: {AttributeError}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
+const {error: {AttributeError}, util: {castToRID}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const {variant: {VariantNotation}} = require('@bcgsc/knowledgebase-parser');
 
 const {logger} = require('../logging');
 const {
-    Query, generalKeywordSearch, searchByLinkedRecords
+    Query, keywordSearch, searchByLinkedRecords
 } = require('../query');
 const {
     MultipleRecordsFoundError,
     NoRecordFoundError
 } = require('../error');
-const {
-    groupRecordsBy,
-    trimRecords
-} = require('../util');
+const {trimRecords} = require('../util');
 
 
-const STATS_GROUPING = new Set(['@class', 'source']);
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
 
 
 /**
  * @param {orientjs.Db} db the database connection object
- * @param {Array.<string>} classList list of classes to gather stats for
- * @param {Array.<string>} [extraGrouping=[]] the terms used for grouping the counts into sets (not includeing @class which is always used)
+ * @param {Object} opt
+ * @param {Array.<string>} opt.classList list of classes to gather stats for. Defaults to all
+ * @param {Boolean} [opt.activeOnly=true] ignore deleted records
+ * @param {Boolean} [opt.groupBySource=false] group by class and source instead of class only
  */
-const selectCounts = async (db, classList, extraGrouping = []) => {
-    const grouping = [];
-    grouping.push(...(extraGrouping || []));
-    for (const attr of grouping) {
-        if (!STATS_GROUPING.has(attr)) {
-            throw new AttributeError(`Invalid attribute for grouping (${attr}) is not supported`);
-        }
-    }
-    const clause = grouping.join(', ');
-    const tempCounts = await Promise.all(Array.from(
-        classList,
+const selectCounts = async (db, opt = {}) => {
+    const {
+        groupBySource = false,
+        activeOnly = true,
+        classList = Object.keys(schema)
+    } = opt;
+
+    const tempCounts = await Promise.all(classList.map(
         async (cls) => {
             let statement;
-            if (grouping.length === 0) {
+            if (!groupBySource) {
                 statement = `SELECT count(*) as cnt FROM ${cls}`;
+                if (activeOnly) {
+                    statement = `${statement} WHERE deletedAt IS NULL`;
+                }
+            } else if (activeOnly) {
+                statement = `SELECT source, count(*) as cnt FROM ${cls} WHERE deletedAt IS NULL GROUP BY source`;
             } else {
-                statement = `SELECT ${clause}, count(*) as cnt FROM ${cls} GROUP BY ${clause}`;
+                statement = `SELECT source, count(*) as cnt FROM ${cls} GROUP BY source`;
             }
             logger.log('debug', statement);
             return db.query(statement).all();
         }
     ));
-    const counts = [];
+    const counts = {};
     // nest counts into objects based on the grouping keys
     for (let i = 0; i < classList.length; i++) {
+        const name = classList[i];
+        counts[name] = {};
         for (const record of tempCounts[i]) {
-            record['@class'] = classList[i]; // selecting @prefix removes on return
-            counts.push(record);
+            if (groupBySource) {
+                counts[name][record.source || null] = record.cnt;
+            } else {
+                counts[name] = record.cnt;
+            }
         }
     }
-    grouping.unshift('@class');
-    const result = groupRecordsBy(counts, grouping, {value: 'cnt', aggregate: false});
-    return result;
+    return counts;
 };
 
 
@@ -161,10 +165,9 @@ const select = async (db, query, opt = {}) => {
  * @param {Array.<string>} keywords array of keywords to search for
  * @param {Object} opt Selection options
  */
-const selectByKeyword = async (db, keywords, opt) => {
+const selectByKeyword = async (db, keywords, opt = {}) => {
     const queryObj = Object.assign({
-        toString: () => generalKeywordSearch(keywords, {...opt, skip: opt.skip || 0}),
-        activeOnly: true
+        toString: () => keywordSearch(keywords, {...opt})
     }, opt);
     queryObj.displayString = () => Query.displayString(queryObj);
     return select(db, queryObj);
@@ -174,12 +177,14 @@ const selectByKeyword = async (db, keywords, opt) => {
 /**
  * @param {orientjs.Db} db Database connection from orientjs
  * @param {Object} opt Selection options
+ * @param {ClassModel} opt.model
+ * @param {Object} opt.search filters
  */
-const selectStatementByLinks = async (db, opt) => {
-    const queryObj = Object.assign({
-        toString: () => searchByLinkedRecords(opt),
-        activeOnly: true
-    }, opt);
+const searchSelect = async (db, opt = {}) => {
+    const queryObj = {
+        ...opt,
+        toString: () => searchByLinkedRecords(opt)
+    };
     queryObj.displayString = () => Query.displayString(queryObj);
     return select(db, queryObj);
 };
@@ -191,19 +196,20 @@ const selectStatementByLinks = async (db, opt) => {
  * @param {Object} opt Selection options
  * @param {?Number} opt.neighbors number of related records to fetch
  * @param {?Boolean} opt.activeOnly exclude deleted records
+ * @param {?string} opt.projection project to use from select
  */
-const selectFromList = async (db, recordList, opt) => {
-    const {neighbors = 0, activeOnly = true} = opt;
+const selectFromList = async (db, inputRecordList, opt = {}) => {
+    const {neighbors = 0, activeOnly = true, projection = '*'} = opt;
     const params = {};
-    recordList.forEach((rec) => {
-        const rid = castToRID(rec);
+    const recordList = inputRecordList.map(castToRID);
+    recordList.forEach((rid) => {
         params[`param${Object.keys(params).length}`] = rid;
     });
     if (recordList.length < 1) {
         throw new AttributeError('Must select a minimum of 1 record');
     }
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
-    let query = `SELECT * FROM [${Object.values(params).sort().map(p => `${p}`).join(', ')}]`;
+    let query = `SELECT ${projection} FROM [${recordList.map(p => `${p}`).join(', ')}]`;
 
     if (activeOnly) {
         query = `${query} WHERE deletedAt IS NULL`;
@@ -219,6 +225,40 @@ const selectFromList = async (db, recordList, opt) => {
 };
 
 
+/**
+ * Calculate the display name when it requires a db connection to resolve linked records
+ */
+const fetchDisplayName = async (db, model, content) => {
+    if (model.inherits.includes('Variant')) {
+        const links = [content.type, content.reference1];
+        if (content.reference2) {
+            links.push(content.reference2);
+        }
+        const [type, reference1, reference2] = (await selectFromList(
+            db,
+            links,
+            {projection: 'displayName'}
+        )).map(rec => rec.displayName);
+
+        if (model.name === 'CategoryVariant') {
+            if (reference2) {
+                return `${reference1} and ${reference2} ${type}`;
+            }
+            return `${reference1} ${type}`;
+        } if (model.name === 'PositionalVariant') {
+            const obj = {
+                ...content, multiFeature: Boolean(reference2), reference1, reference2, type
+            };
+            const notation = VariantNotation.toString(obj);
+            return notation;
+        }
+    } if (model.name === 'Statement') {
+        return null;
+    }
+    return content.name;
+};
+
+
 module.exports = {
     getUserByName,
     QUERY_LIMIT,
@@ -227,5 +267,6 @@ module.exports = {
     selectCounts,
     selectByKeyword,
     selectFromList,
-    selectStatementByLinks
+    searchSelect,
+    fetchDisplayName
 };

@@ -34,7 +34,8 @@ module.exports = {
     testPathIgnorePatterns: [
         '/node_modules/',
         'test/repo/query/util.js',
-        'test/util.js'
+        'test/util.js',
+        'test/db_integration/util.js'
     ],
     moduleFileExtensions: [
         'js',

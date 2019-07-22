@@ -147,7 +147,6 @@ const parseValue = (attr, value) => {
     }
     const clause = {operator: 'OR', comparisons: []};
     for (let subValue of value.split('|')) {
-        subValue = decodeURIComponent(subValue); // fix for qs not properly decoding nested components
         let negate = false;
         if (subValue.startsWith('!')) {
             negate = true;
@@ -225,7 +224,7 @@ const parse = (queryParams) => {
             attr = attrList[0];
         }
         if (STD_QUERY_OPTIONS.includes(attr)) {
-            specialArgs[attr] = castRangeInt(value, 0, MAX_NEIGHBORS);
+            specialArgs[attr] = value;
         } else if (attr === 'or') {
             specialArgs[attr] = value.split(',');
         } else if (attr === 'compoundSyntax') {
@@ -270,5 +269,12 @@ const parse = (queryParams) => {
 };
 
 module.exports = {
-    parse, flattenQueryParams, formatTraversal, parseValue, parseCompoundAttr, STD_QUERY_OPTIONS, checkStandardOptions
+    parse,
+    flattenQueryParams,
+    formatTraversal,
+    parseValue,
+    parseCompoundAttr,
+    STD_QUERY_OPTIONS,
+    checkStandardOptions,
+    MIN_WORD_SIZE
 };

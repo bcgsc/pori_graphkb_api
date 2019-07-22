@@ -39,7 +39,7 @@ const activeRidQuery = (schema, model, rid) => {
  * @param {Object.<string,ClassModel>} opt.schema the mapping of class names to models
  *
  */
-const queryRoutes = (opt) => {
+const queryRoute = (opt) => {
     const {
         router, model, db, schema
     } = opt;
@@ -71,39 +71,12 @@ const queryRoutes = (opt) => {
                 return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
             }
         });
+};
 
-    logger.log('verbose', `NEW ROUTE [QUERY] POST ${model.routeName}/query`);
-    router.post(`${model.routeName}/query`,
-        async (req, res) => {
-            if (!_.isEmpty(req.query)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
-                    {message: 'No query parameters are allowed for this query type', params: req.query}
-                ));
-            }
-            let query;
-            try {
-                query = Query.parse(schema, model, checkStandardOptions(req.body));
-                query.validate();
-            } catch (err) {
-                logger.log('debug', err);
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
-            }
-            try {
-                const result = await select(db, query, {user: req.user});
-                return res.json(jc.decycle({result}));
-            } catch (err) {
-                logger.log('debug', err);
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
-            }
-        });
+const searchRoute = (opt) => {
+    const {
+        router, model, db, schema
+    } = opt;
 
     logger.log('verbose', `NEW ROUTE [SEARCH] POST ${model.routeName}/search`);
     router.post(`${model.routeName}/search`,
@@ -113,18 +86,50 @@ const queryRoutes = (opt) => {
                     {message: 'No query parameters are allowed for this query type', params: req.query}
                 ));
             }
-            try {
-                const result = await searchSelect(db, {
-                    ...checkStandardOptions(req.body), model, user: req.user
-                });
-                return res.json(jc.decycle({result}));
-            } catch (err) {
-                logger.log('debug', err);
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+            if (req.body.where && req.body.search) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                    {message: 'Where and search are mutually exclusive', params: req.body}
+                ));
+            } if (req.body.search) {
+                // search
+                try {
+                    const result = await searchSelect(db, {
+                        ...checkStandardOptions(req.body), model, user: req.user
+                    });
+                    return res.json(jc.decycle({result}));
+                } catch (err) {
+                    logger.log('debug', err);
+                    if (err instanceof AttributeError) {
+                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    }
+                    logger.log('error', err.stack || err);
+                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
                 }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+            } else {
+                // default to the complex query
+                let query;
+                try {
+                    query = Query.parse(schema, model, checkStandardOptions(req.body));
+                    query.validate();
+                } catch (err) {
+                    logger.log('debug', err);
+                    if (err instanceof AttributeError) {
+                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    }
+                    logger.log('error', err.stack || err);
+                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                }
+                try {
+                    const result = await select(db, query, {user: req.user});
+                    return res.json(jc.decycle({result}));
+                } catch (err) {
+                    logger.log('debug', err);
+                    if (err instanceof AttributeError) {
+                        return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    }
+                    logger.log('error', err.stack || err);
+                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                }
             }
         });
 };
@@ -146,19 +151,16 @@ const getRoute = (opt) => {
     logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}`);
     router.get(`${model.routeName}/:rid`,
         async (req, res) => {
-            if (!looksLikeRID(req.params.rid, false)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
-                    {message: `rid does not look like a valid record ID: ${req.params.rid}`}
-                ));
+            if (Object.keys(req.query).length > 0) {
+                return res
+                    .status(HTTP_STATUS.BAD_REQUEST)
+                    .json(new AttributeError('query parameters are not accepted for this route'));
             }
-            req.params.rid = `#${req.params.rid.replace(/^#/, '')}`;
-
             let query;
             try {
-                query = parseQueryLanguage(req.query);
-                query = Query.parse(schema, model, Object.assign(query, {
+                query = Query.parse(schema, model, {
                     where: [{attr: {attr: '@rid', cast: castToRID}, value: req.params.rid}]
-                }));
+                });
                 query.validate();
             } catch (err) {
                 if (err instanceof AttributeError) {
@@ -212,7 +214,7 @@ const postRoute = (opt) => {
                 return res.status(HTTP_STATUS.CREATED).json(jc.decycle({result}));
             } catch (err) {
                 logger.log('debug', err.toString());
-                if (err instanceof AttributeError) {
+                if (err instanceof AttributeError || err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                 } if (err instanceof RecordExistsError) {
                     return res.status(HTTP_STATUS.CONFLICT).json(err);
@@ -345,8 +347,11 @@ const addResourceRoutes = (opt) => {
     });
     router.use(model.routeName, checkClassPermissions);
 
+    if (model.expose.QUERY) {
+        queryRoute(opt);
+    }
     if (model.expose.QUERY && !model.isEdge) {
-        queryRoutes(opt);
+        searchRoute(opt);
     }
     if (model.expose.GET) {
         getRoute(opt);

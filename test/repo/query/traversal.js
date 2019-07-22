@@ -1,14 +1,13 @@
 const {
     util: {
-        castDecimalInteger, castToRID
-    }, schema: SCHEMA_DEFN
+        castInteger, castToRID
+    }, schema: {schema: SCHEMA_DEFN}
 } = require('@bcgsc/knowledgebase-schema');
 
 const {Traversal, constants: {TRAVERSAL_TYPE}} = require('./../../../app/repo/query');
 
 const DISEASE_PROPS = SCHEMA_DEFN.Disease.queryProperties;
 const ALL_PROPS = Object.assign(SCHEMA_DEFN.E.queryProperties, SCHEMA_DEFN.V.queryProperties);
-const EVIDENCE_LEVEL = SCHEMA_DEFN.EvidenceLevel.queryProperties;
 
 
 describe('Traversal', () => {
@@ -39,30 +38,30 @@ describe('Traversal', () => {
         test('edge with classes', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
-                edges: ['ImpliedBy', 'SupportedBy']
+                edges: ['AliasOf', 'CrossReferenceOf']
             });
             const exp = new Traversal({
                 type: TRAVERSAL_TYPE.EDGE,
                 cast: castToRID,
-                edges: ['ImpliedBy', 'SupportedBy']
+                edges: ['AliasOf', 'CrossReferenceOf']
             });
             expect(parsed).toEqual(exp);
-            expect(parsed.toString()).toBe('bothE(\'ImpliedBy\', \'SupportedBy\')');
+            expect(parsed.toString()).toBe('bothE(\'AliasOf\', \'CrossReferenceOf\')');
         });
         test('edge with classes and direction', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
-                edges: ['ImpliedBy', 'SupportedBy'],
+                edges: ['AliasOf', 'CrossReferenceOf'],
                 direction: 'out'
             });
             const exp = new Traversal({
                 type: TRAVERSAL_TYPE.EDGE,
                 cast: castToRID,
-                edges: ['ImpliedBy', 'SupportedBy'],
+                edges: ['AliasOf', 'CrossReferenceOf'],
                 direction: 'out'
             });
             expect(parsed).toEqual(exp);
-            expect(parsed.toString()).toBe('outE(\'ImpliedBy\', \'SupportedBy\')');
+            expect(parsed.toString()).toBe('outE(\'AliasOf\', \'CrossReferenceOf\')');
         });
         test('edge with direction', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
@@ -97,7 +96,7 @@ describe('Traversal', () => {
                 direction: 'in',
                 child: {
                     type: TRAVERSAL_TYPE.LINK,
-                    attr: 'level',
+                    attr: 'source',
                     child: 'name'
                 }
             });
@@ -106,14 +105,14 @@ describe('Traversal', () => {
                 direction: 'in',
                 cast: castToRID,
                 child: new Traversal({
-                    attr: 'level',
+                    attr: 'source',
                     type: TRAVERSAL_TYPE.LINK,
-                    property: ALL_PROPS.level,
-                    child: new Traversal({attr: 'name', property: EVIDENCE_LEVEL.name})
+                    property: ALL_PROPS.source,
+                    child: new Traversal({attr: 'name', property: ALL_PROPS.name})
                 })
             });
             expect(parsed).toEqual(exp);
-            expect(parsed.toString()).toBe('inE().level.name');
+            expect(parsed.toString()).toBe('inE().source.name');
         });
         test('edge.outV.direct', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
@@ -150,7 +149,7 @@ describe('Traversal', () => {
                 direction: 'in',
                 child: new Traversal({
                     attr: 'size()',
-                    cast: castDecimalInteger
+                    cast: castInteger
                 })
             });
 
@@ -160,7 +159,7 @@ describe('Traversal', () => {
         test('attributes post edges', () => {
             const parsed = Traversal.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
                 type: TRAVERSAL_TYPE.EDGE,
-                edges: ['ImpliedBy'],
+                edges: ['AliasOf'],
                 direction: 'out',
                 child: {
                     attr: 'inV',
@@ -172,7 +171,7 @@ describe('Traversal', () => {
             });
             const exp = new Traversal({
                 type: 'EDGE',
-                edges: ['ImpliedBy'],
+                edges: ['AliasOf'],
                 direction: 'out',
                 child: new Traversal({
                     attr: 'inV()',
@@ -184,7 +183,7 @@ describe('Traversal', () => {
                 })
             });
             expect(parsed.toString()).toEqual(exp.toString());
-            expect(parsed.toString()).toBe('outE(\'ImpliedBy\').inV().reference1.name');
+            expect(parsed.toString()).toBe('outE(\'AliasOf\').inV().reference1.name');
         });
         test('error on attr for edge', () => {
             expect(() => {

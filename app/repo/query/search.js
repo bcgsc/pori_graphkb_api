@@ -5,7 +5,7 @@
 const {util: {castToRID}, error: {AttributeError: ValidationError}, schema: SCHEMA_DEFN} = require('@bcgsc/knowledgebase-schema');
 
 const {
-    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_STATEMENT_PROJECTION
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_PROJECTION
 } = require('./constants');
 const {reverseDirection} = require('./util');
 
@@ -122,12 +122,10 @@ const edgeSubquery = (edge, recordIdList, {activeOnly = true} = {}) => {
 const searchByLinkedRecords = (opt) => {
     const {
         model,
-        filters = {},
-        activeOnly = true
+        search = {},
+        activeOnly = true,
+        projection = DEFAULT_PROJECTION
     } = opt;
-    const projection = opt.projection || (model.name === 'Statement'
-        ? DEFAULT_STATEMENT_PROJECTION
-        : '*, *:{@rid, @class, displayName}');
 
     const {queryProperties} = model;
 
@@ -142,9 +140,9 @@ const searchByLinkedRecords = (opt) => {
 
     const clauses = [];
 
-    for (const fieldName of Object.keys(filters)) {
+    for (const fieldName of Object.keys(search)) {
         // separate edge queries
-        const values = filters[fieldName];
+        const values = search[fieldName];
         const propModel = queryProperties[fieldName];
         // attr in (SUBQUERY) for links and intersect() > 1 for iterable properties
         if (propModel) {
@@ -155,16 +153,16 @@ const searchByLinkedRecords = (opt) => {
                     clauses.push(`${fieldName} IN (${similarFromRidList(values, {prefix: fieldName, activeOnly})})`);
                 } else {
                     // set of links
-                    clauses.push(`intersect(${fieldName}, (${similarFromRidList(values, {prefix: fieldName, activeOnly})})).size() > 0`);
+                    clauses.push(`${fieldName} CONTAINSANY (${similarFromRidList(values, {prefix: fieldName, activeOnly})})`);
                 }
             } else if (propModel.iterable) {
                 // Positive intersection of lists
-                const paramKey = aliasParameter(propModel.validate(values));
-                clauses.push(`intersect(${fieldName}, :${paramKey}).size() > 0`);
+                const paramKeys = values.map(value => aliasParameter(propModel.validate(value)));
+                clauses.push(`${fieldName} CONTAINSANY [${paramKeys.map(p => `:${p}`).join(', ')}]`);
             } else {
                 // in any of the items from the list
                 const paramKeys = values.map(v => aliasParameter(propModel.validate(v)));
-                clauses.push(`${fieldName} in [${paramKeys.map(p => `:${p}`).join(', ')}]`);
+                clauses.push(`${fieldName} IN [${paramKeys.map(p => `:${p}`).join(', ')}]`);
             }
         } else if (fieldName.startsWith('out_') || fieldName.startsWith('in_')) {
             try {
