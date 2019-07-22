@@ -1,11 +1,11 @@
 # Complex Queries
 
-- [Quick Search Examples](#Quick-Search-Examples)
-  - [Search for statements implied by a vertex or a related vertex](#Search-for-statements-implied-by-a-vertex-or-a-related-vertex)
-- [Query Builder Examples](#Query-Builder-Examples)
-  - [Search by related vertices](#Search-by-related-vertices)
-  - [Search by link in neighborhood](#Search-by-link-in-neighborhood)
-  - [Tree Queries: search Ancestors or Descendants](#Tree-Queries-search-Ancestors-or-Descendants)
+- [Quick Search Examples](#quick-search-examples)
+  - [Search for statements implied by a vertex or a related vertex](#search-for-statements-implied-by-a-vertex-or-a-related-vertex)
+- [Query Builder Examples](#query-builder-examples)
+  - [Search by related vertices](#search-by-related-vertices)
+  - [Search by link in neighborhood](#search-by-link-in-neighborhood)
+  - [Tree Queries: search Ancestors or Descendants](#tree-queries-search-ancestors-or-descendants)
 
 For simple queries, the GET routes and builtin search parameters should suffice. However, for more
 complex queries the user may want to use the search endpoints instead. All exposed models will
@@ -53,7 +53,6 @@ Find all statements which are implied by a variant on the gene KRAS
     ]
 }
 ```
-
 The above example is fairly simple. Where the search endpoint showcases its utitlity is in the pre-boxed queries.
 
 ### Search by link in neighborhood
