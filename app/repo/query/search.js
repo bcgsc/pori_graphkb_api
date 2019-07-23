@@ -45,7 +45,7 @@ const postConditionalQueryOptions = (innerQuery, opt) => {
         query = `${query} ORDER BY ${orderBy.map(param => `${param} ${orderByDirection}`).join(', ')}`;
     }
     if (count) {
-        query = `SELECT count(*) from (${query})`;
+        query = `SELECT count(*) as count from (${query})`;
     } else {
         if (skip && skip > 0) {
             query = `${query} SKIP ${skip}`;
