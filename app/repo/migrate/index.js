@@ -111,6 +111,19 @@ const migrate18Xto19X = async (db) => {
     await Promise.all([license, licenseType, citation].map(prop => Property.create(prop, source)));
 };
 
+/**
+ * Migrate from 2.0.X to 2.1.0
+ */
+const migrate2from0xto1x = async (db) => {
+    // set Biomarker as a superclass of Vocabulary
+    await db.command('ALTER CLASS Vocabulary SUPERCLASS +Biomarker').all();
+    // rename reviewStatus to status on the StatementReview class
+    await db.command('ALTER PROPERTY StatementReview.reviewStatus NAME "status"').all();
+    // alter the statement class to allow appliesTo to be a biomarker
+    await db.command('ALTER PROPERTY Statement.appliesTo LINKEDCLASS Biomarker').all();
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -121,6 +134,7 @@ const logMigration = async (db, name, url, version) => {
     });
     return version;
 };
+
 
 /**
  * Detects the current version of the db, the version of the node module and attempts
@@ -155,6 +169,10 @@ const migrate = async (db, opt = {}) => {
             logger.info(`Migrating from 1.8.X series (${currentVersion}) to v1.9.X series (${targetVersion})`);
             await migrate18Xto19X(db);
             migratedVersion = await logMigration(db, name, url, '1.9.0');
+        } else if (semver.satisfies(migratedVersion, '>=2.0.0 <2.1.0')) {
+            logger.info(`Migrating from 2.0.X series (${currentVersion}) to v2.1.X series (${targetVersion})`);
+            await migrate2from0xto1x(db);
+            migratedVersion = await logMigration(db, name, url, '2.1.0');
         } else {
             throw new Error(`Unable to find migration scripts from ${migratedVersion} to ${targetVersion}`);
         }
