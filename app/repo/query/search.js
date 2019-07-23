@@ -46,11 +46,13 @@ const postConditionalQueryOptions = (innerQuery, opt) => {
     }
     if (count) {
         query = `SELECT count(*) from (${query})`;
-    } else if (skip && skip > 0) {
-        query = `${query} SKIP ${skip}`;
-    }
-    if (limit) {
-        query = `${query} LIMIT ${limit}`;
+    } else {
+        if (skip && skip > 0) {
+            query = `${query} SKIP ${skip}`;
+        }
+        if (limit) {
+            query = `${query} LIMIT ${limit}`;
+        }
     }
     return query;
 };
