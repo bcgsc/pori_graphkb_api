@@ -115,12 +115,27 @@ const migrate18Xto19X = async (db) => {
  * Migrate from 2.0.X to 2.1.0
  */
 const migrate2from0xto1x = async (db) => {
-    // set Biomarker as a superclass of Vocabulary
+    logger.info('set Biomarker as a superclass of Vocabulary');
     await db.command('ALTER CLASS Vocabulary SUPERCLASS +Biomarker').all();
-    // rename reviewStatus to status on the StatementReview class
+
+    logger.info('rename reviewStatus to status on the StatementReview class');
     await db.command('ALTER PROPERTY StatementReview.reviewStatus NAME "status"').all();
-    // alter the statement class to allow appliesTo to be a biomarker
+
+    logger.info('set Biomarker as a superclass of Vocabulary');
     await db.command('ALTER PROPERTY Statement.appliesTo LINKEDCLASS Biomarker').all();
+
+    logger.info('create ClinicalTrial.startDate and ClinicalTrial.completionDate');
+    const {startDate, completionDate} = SCHEMA_DEFN.ClinicalTrial.properties;
+    const trial = await db.class.get(SCHEMA_DEFN.ClinicalTrial.name);
+    await Property.create(startDate, trial);
+    await Property.create(completionDate, trial);
+
+    logger.info('transform year properties to strings');
+    await db.command('UPDATE ClinicalTrial SET startDate = startYear.toString(), completionDate = completionYear.toString()');
+
+    logger.info('Remove the old year properties');
+    await db.command('DROP Property ClinicalTrial.startYear').all();
+    await db.command('DROP Property ClinicalTrial.completionYear').all();
 };
 
 
