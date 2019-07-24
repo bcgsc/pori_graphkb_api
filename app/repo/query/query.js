@@ -442,11 +442,13 @@ class Query {
         }
         if (this.count) {
             queryString = `SELECT count(*) as count FROM (${queryString})`;
-        } else if (this.skip != null) {
-            queryString = `${queryString} SKIP ${this.skip}`;
-        }
-        if (this.limit !== null) {
-            queryString = `${queryString} LIMIT ${this.limit}`;
+        } else {
+            if (this.skip != null) {
+                queryString = `${queryString} SKIP ${this.skip}`;
+            }
+            if (this.limit !== null) {
+                queryString = `${queryString} LIMIT ${this.limit}`;
+            }
         }
         return {query: queryString, params};
     }
