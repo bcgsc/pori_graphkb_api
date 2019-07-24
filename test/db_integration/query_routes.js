@@ -102,6 +102,17 @@ describeWithAuth('api read-only routes', () => {
     });
 
     describe('/statements/search?keyword', () => {
+        test('count ignores limit', async () => {
+            const response = await request({
+                uri: `${app.url}/statements/search`,
+                method: 'GET',
+                headers: {Authorization: mockToken},
+                qs: {keyword: 'kras', limit: 1, count: true}
+            });
+            expect(response.statusCode).toBe(HTTP_STATUS.OK);
+            expect(response.body).toHaveProperty('result');
+            expect(response.body).toEqual({result: [{count: 2}]});
+        });
         test('get from related variant reference', async () => {
             const response = await request({
                 uri: `${app.url}/statements/search`,
@@ -168,6 +179,17 @@ describeWithAuth('api read-only routes', () => {
     });
 
     describe('/:model', () => {
+        test('count ignores limit', async () => {
+            const response = await request({
+                uri: `${app.url}/ontologies`,
+                method: 'GET',
+                qs: {subsets: 'singleSubset', count: true, limit: 1},
+                headers: {Authorization: mockToken}
+            });
+            expect(response.statusCode).toBe(HTTP_STATUS.OK);
+            expect(response.body).toHaveProperty('result');
+            expect(response.body).toEqual({result: [{count: 2}]});
+        });
         test('uses property name query parameter', async () => {
             const response = await request({uri: `${app.url}/users?name=${db.admin.name}`, method: 'GET', headers: {Authorization: mockToken}});
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
@@ -377,6 +399,16 @@ describeWithAuth('api read-only routes', () => {
                     headers: {Authorization: mockToken}
                 });
                 expect(response.body.result).toHaveProperty('length', 3);
+            });
+            test('count ignores limit', async () => {
+                const response = await request({
+                    uri: `${app.url}/diseases/search`,
+                    method: 'POST',
+                    body: {search: {}, count: true, limit: 1},
+                    headers: {Authorization: mockToken}
+                });
+                expect(response.statusCode).toBe(HTTP_STATUS.OK);
+                expect(response.body).toEqual({result: [{count: 3}]});
             });
             test('error on bad std option', async () => {
                 try {
