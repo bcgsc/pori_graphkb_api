@@ -54,7 +54,7 @@ describe('migrate', () => {
     });
 
     test('getLoadVersion', () => {
-        expect(getLoadVersion()).toHaveProperty('version', '2.0.1');
+        expect(getLoadVersion()).toHaveProperty('version', '2.1.0');
     });
 
     describe('requiresMigration', () => {
