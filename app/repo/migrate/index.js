@@ -111,6 +111,34 @@ const migrate18Xto19X = async (db) => {
     await Promise.all([license, licenseType, citation].map(prop => Property.create(prop, source)));
 };
 
+/**
+ * Migrate from 2.0.X to 2.1.0
+ */
+const migrate2from0xto1x = async (db) => {
+    logger.info('set Biomarker as a superclass of Vocabulary');
+    await db.command('ALTER CLASS Vocabulary SUPERCLASS +Biomarker').all();
+
+    logger.info('rename reviewStatus to status on the StatementReview class');
+    await db.command('ALTER PROPERTY StatementReview.reviewStatus NAME "status"').all();
+
+    logger.info('set Biomarker as a superclass of Vocabulary');
+    await db.command('ALTER PROPERTY Statement.appliesTo LINKEDCLASS Biomarker').all();
+
+    logger.info('create ClinicalTrial.startDate and ClinicalTrial.completionDate');
+    const {startDate, completionDate} = SCHEMA_DEFN.ClinicalTrial.properties;
+    const trial = await db.class.get(SCHEMA_DEFN.ClinicalTrial.name);
+    await Property.create(startDate, trial);
+    await Property.create(completionDate, trial);
+
+    logger.info('transform year properties to strings');
+    await db.command('UPDATE ClinicalTrial SET startDate = startYear.toString(), completionDate = completionYear.toString()');
+
+    logger.info('Remove the old year properties');
+    await db.command('DROP Property ClinicalTrial.startYear').all();
+    await db.command('DROP Property ClinicalTrial.completionYear').all();
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -121,6 +149,7 @@ const logMigration = async (db, name, url, version) => {
     });
     return version;
 };
+
 
 /**
  * Detects the current version of the db, the version of the node module and attempts
@@ -155,6 +184,10 @@ const migrate = async (db, opt = {}) => {
             logger.info(`Migrating from 1.8.X series (${currentVersion}) to v1.9.X series (${targetVersion})`);
             await migrate18Xto19X(db);
             migratedVersion = await logMigration(db, name, url, '1.9.0');
+        } else if (semver.satisfies(migratedVersion, '>=2.0.0 <2.1.0')) {
+            logger.info(`Migrating from 2.0.X series (${currentVersion}) to v2.1.X series (${targetVersion})`);
+            await migrate2from0xto1x(db);
+            migratedVersion = await logMigration(db, name, url, '2.1.0');
         } else {
             throw new Error(`Unable to find migration scripts from ${migratedVersion} to ${targetVersion}`);
         }
