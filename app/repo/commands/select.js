@@ -132,8 +132,7 @@ const select = async (db, query, opt = {}) => {
     } catch (err) {
         logger.log('debug', `Error in executing the query statement (${statement})`);
         logger.log('debug', err);
-        // will be listed as connection error but only happens when selecting from non-existent RID (sepcifically bad cluster)
-        throw new NoRecordFoundError({query: statement, message: 'One or more invalid record cluster IDs (<cluster>:#)'});
+        throw new NoRecordFoundError({query: statement, ...err});
     }
 
     logger.log('debug', `selected ${recordList.length} records`);
