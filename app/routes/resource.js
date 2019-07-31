@@ -159,8 +159,10 @@ const getRoute = (opt) => {
             }
             let query;
             try {
+                const target = `[${castToRID(req.params.rid)}]`;
                 query = Query.parse(schema, model, {
-                    where: [{attr: {attr: '@rid', cast: castToRID}, value: req.params.rid}],
+                    where: [],
+                    target,
                     neighbors
                 });
                 query.validate();
