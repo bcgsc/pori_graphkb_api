@@ -95,7 +95,7 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
  * @param {User} [opt.user=null] if the user object is given, will check record-level permissions and trim any non-permitted content
  */
 const trimRecords = async (recordList, opt = {}) => {
-    const {activeOnly = true, user = null, db} = opt;
+    const {activeOnly = true, user = null} = opt;
     const queue = recordList.slice();
     const visited = new Set();
     const readableClasses = new Set();
@@ -166,9 +166,10 @@ const trimRecords = async (recordList, opt = {}) => {
                 // https://github.com/orientechnologies/orientjs/issues/32
                 const arr = [];
                 for (const edge of value) {
-                    let edgeCheck = edge;
-                    if (db && (!edge.out || !edge.in)) {
-                        edgeCheck = await db.record.get(edge);
+                    const edgeCheck = edge;
+                    if (!edge.out || !edge.in) {
+                        arr.push(edge);
+                        continue;
                     }
                     if (edgeCheck.out
                         && edgeCheck.in
