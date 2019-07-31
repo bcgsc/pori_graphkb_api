@@ -151,15 +151,19 @@ const getRoute = (opt) => {
     logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}`);
     router.get(`${model.routeName}/:rid`,
         async (req, res) => {
-            if (Object.keys(req.query).length > 0) {
+            const {neighbors = 0, ...extra} = req.query;
+            if (Object.keys(extra).length > 0) {
                 return res
                     .status(HTTP_STATUS.BAD_REQUEST)
-                    .json(new AttributeError('query parameters are not accepted for this route'));
+                    .json(new AttributeError(`Did not recognize the query parameter: ${Object.keys(extra).sort().join(' ')}`));
             }
             let query;
             try {
+                const target = `[${castToRID(req.params.rid)}]`;
                 query = Query.parse(schema, model, {
-                    where: [{attr: {attr: '@rid', cast: castToRID}, value: req.params.rid}]
+                    where: [],
+                    target,
+                    neighbors
                 });
                 query.validate();
             } catch (err) {

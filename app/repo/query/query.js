@@ -242,7 +242,8 @@ class Query {
             activeOnly = true,
             skip = null,
             count = false,
-            edges = []
+            edges = [],
+            target = null
         } = opt;
         this.modelName = modelName;
         this.where = where || new Clause(OPERATORS.AND); // conditions that make up the terms of the query
@@ -256,6 +257,7 @@ class Query {
         this.orderByDirection = orderByDirection;
         this.count = count;
         this.edges = edges;
+        this.target = target || modelName;
     }
 
     /**
@@ -282,7 +284,8 @@ class Query {
             neighbors = 0,
             type = null,
             edges = [],
-            depth = null
+            depth = null,
+            target = null
         } = opt;
 
         let where = [];
@@ -347,6 +350,7 @@ class Query {
             type,
             edges,
             depth,
+            target,
             count: castBoolean(count)
         });
     }
@@ -406,7 +410,12 @@ class Query {
      * @returns {Object} an object containing the SQL query statment (query) and the parameters (params)
      */
     toString(paramIndex = 0) {
-        const selectionElements = this.projection || nestedProjection(this.neighbors, !this.activeOnly);
+        const selectionElements = this.projection || nestedProjection(
+            this.count
+                ? 0
+                : this.neighbors,
+            !this.activeOnly
+        );
 
         let queryString,
             params;
@@ -427,7 +436,7 @@ class Query {
         } else {
             const {query, params: subParams} = this.where.toString(paramIndex);
             params = subParams;
-            queryString = `SELECT ${selectionElements} FROM ${this.modelName}`;
+            queryString = `SELECT ${selectionElements} FROM ${this.target}`;
             if (query) {
                 queryString = `${queryString} WHERE ${query}`;
                 if (this.activeOnly) {
