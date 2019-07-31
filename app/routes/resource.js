@@ -175,11 +175,11 @@ const getRoute = (opt) => {
             }
 
             try {
-                const result = await select(db, query, {
+                const [result] = await select(db, query, {
                     exactlyN: 1,
                     user: req.user
                 });
-                return res.json(jc.decycle({result: result[0]}));
+                return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.NOT_FOUND).json(err);
