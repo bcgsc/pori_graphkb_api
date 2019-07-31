@@ -406,7 +406,12 @@ class Query {
      * @returns {Object} an object containing the SQL query statment (query) and the parameters (params)
      */
     toString(paramIndex = 0) {
-        const selectionElements = this.projection || nestedProjection(this.neighbors, !this.activeOnly);
+        const selectionElements = this.projection || nestedProjection(
+            this.count
+                ? 0
+                : this.neighbors,
+            !this.activeOnly
+        );
 
         let queryString,
             params;
