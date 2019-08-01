@@ -147,7 +147,10 @@ const addPostToken = ({router, db, config}) => {
             token = await generateToken(db, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
         } catch (err) {
             logger.log('debug', err);
-            return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);
+            if (err instanceof NoRecordFoundError) {
+                return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);
+            }
+            return next(err);
         }
         return res.status(HTTP_STATUS.OK).json({kbToken: token, keyCloakToken});
     });

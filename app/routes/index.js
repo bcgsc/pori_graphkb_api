@@ -20,8 +20,8 @@ const addKeywordSearchRoute = (opt) => {
     } = opt;
     logger.log('verbose', 'NEW ROUTE [GET] /statements/search');
 
-    router.get('/statements/search',
-        async (req, res) => {
+    app.router.get('/statements/search',
+        async (req, res, next) => {
             const {
                 keyword
             } = req.query;
@@ -54,8 +54,7 @@ const addKeywordSearchRoute = (opt) => {
                     logger.log('debug', err);
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                 }
-                logger.log('error', err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                return next(err);
             }
         });
 };
@@ -93,8 +92,7 @@ const addGetRecordsByList = ({router, db}) => {
                     logger.log('debug', err);
                     return res.status(HTTP_STATUS.NOT_FOUND).json(err);
                 }
-                logger.log('error', err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                return next(err);
             }
         });
 };
@@ -116,8 +114,7 @@ const addStatsRoute = ({router, db}) => {
             if (err instanceof AttributeError) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(jc.decycle(err));
             }
-            logger.log('error', err || err.message);
-            return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(jc.decycle(err));
+            return next(err);
         }
     });
 };

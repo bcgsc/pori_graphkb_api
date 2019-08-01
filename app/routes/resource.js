@@ -102,8 +102,7 @@ const searchRoute = (opt) => {
                     if (err instanceof AttributeError) {
                         return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                     }
-                    logger.log('error', err.stack || err);
-                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                    return next(err);
                 }
             } else {
                 // default to the complex query
@@ -116,8 +115,7 @@ const searchRoute = (opt) => {
                     if (err instanceof AttributeError) {
                         return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                     }
-                    logger.log('error', err.stack || err);
-                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                    return next(err);
                 }
                 try {
                     const result = await select(db, query, {user: req.user});
@@ -127,8 +125,7 @@ const searchRoute = (opt) => {
                     if (err instanceof AttributeError) {
                         return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                     }
-                    logger.log('error', err.stack || err);
-                    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                    return next(err);
                 }
             }
         });
@@ -184,8 +181,7 @@ const getRoute = (opt) => {
                 if (err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.NOT_FOUND).json(err);
                 }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                return next(err);
             }
         });
 };
@@ -223,8 +219,7 @@ const postRoute = (opt) => {
                 } if (err instanceof RecordExistsError) {
                     return res.status(HTTP_STATUS.CONFLICT).json(err);
                 }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                return next(err);
             }
         });
 };
@@ -275,8 +270,7 @@ const updateRoute = (opt) => {
                 } if (err instanceof RecordExistsError) {
                     return res.status(HTTP_STATUS.CONFLICT).json(err);
                 }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                return next(err);
             }
         });
 };
@@ -324,8 +318,7 @@ const deleteRoute = (opt) => {
                 } if (err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.NOT_FOUND).json(err);
                 }
-                logger.log('error', err.stack || err);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+                return next(err);
             }
         });
 };
