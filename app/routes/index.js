@@ -13,11 +13,10 @@ const {
 const {selectByKeyword, selectFromList, selectCounts} = require('../repo/commands');
 const {NoRecordFoundError} = require('../repo/error');
 
-
-const addKeywordSearchRoute = (opt) => {
-    const {
-        router, db
-    } = opt;
+/**
+ * @param {AppServer} app the GraphKB app server
+ */
+const addKeywordSearchRoute = (app) => {
     logger.log('verbose', 'NEW ROUTE [GET] /statements/search');
 
     app.router.get('/statements/search',
@@ -47,7 +46,7 @@ const addKeywordSearchRoute = (opt) => {
                 ));
             }
             try {
-                const result = await selectByKeyword(db, wordList, options);
+                const result = await selectByKeyword(app.db, wordList, options);
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof AttributeError) {
@@ -59,10 +58,12 @@ const addKeywordSearchRoute = (opt) => {
         });
 };
 
-
-const addGetRecordsByList = ({router, db}) => {
-    router.get('/records',
-        async (req, res) => {
+/**
+ * @param {AppServer} app the GraphKB app server
+ */
+const addGetRecordsByList = (app) => {
+    app.router.get('/records',
+        async (req, res, next) => {
             let options;
             try {
                 options = {...checkStandardOptions(req.query), user: req.user};
@@ -81,7 +82,7 @@ const addGetRecordsByList = ({router, db}) => {
             }
 
             try {
-                const result = await selectFromList(db, rid.split(',').map(r => r.trim()), options);
+                const result = await selectFromList(app.db, rid.split(',').map(r => r.trim()), options);
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof AttributeError) {
@@ -98,17 +99,17 @@ const addGetRecordsByList = ({router, db}) => {
 };
 
 
-const addStatsRoute = ({router, db}) => {
+const addStatsRoute = (app) => {
     // add the stats route
     const classList = Object.keys(schema).filter(
         name => !schema[name].isAbstract
             && schema[name].subclasses.length === 0 // terminal classes only
             && !schema[name].embedded
     );
-    router.get('/stats', async (req, res) => {
+    app.router.get('/stats', async (req, res, next) => {
         try {
             const {groupBySource = false, activeOnly = true} = checkStandardOptions(req.query);
-            const stats = await selectCounts(db, {groupBySource, activeOnly, classList});
+            const stats = await selectCounts(app.db, {groupBySource, activeOnly, classList});
             return res.status(HTTP_STATUS.OK).json(jc.decycle({result: stats}));
         } catch (err) {
             if (err instanceof AttributeError) {

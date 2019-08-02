@@ -91,19 +91,13 @@ const validateKeyCloakToken = (token, key, role) => {
 /**
  * Add the post token route to the input router
  *
- * @param {orientjs.db} db the database connection
- * @param {express.Router} router the router to add the route to
- * @param {object} config
- * @param {string} config.GKB_KEY the key file contents for generating and signing tokens (private key file)
- * @param {string} config.GKB_KEYCLOAK_ROLE the required keycloak role
- * @param {string} config.GKB_KEYCLOAK_KEY the content of the public key file used for verifying keycloak tokens
- * @param {string} config.GKB_DISABLE_AUTH bypass the authentication server (for testing)
+ * @param {AppServer} app the GraphKB app server
  */
-const addPostToken = ({router, db, config}) => {
+const addPostToken = (app) => {
     const {
         GKB_DISABLE_AUTH, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE, GKB_KEY
-    } = config;
-    router.route('/token').post(async (req, res) => {
+    } = app.conf;
+    app.router.route('/token').post(async (req, res, next) => {
         // generate a token to return to the user
         if ((req.body.username === undefined || req.body.password === undefined) && req.body.keyCloakToken === undefined) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({message: 'body requires both username and password to generate a token or an external keycloak token (keyCloakToken)'});
@@ -117,7 +111,7 @@ const addPostToken = ({router, db, config}) => {
             // get the keyCloakToken
             if (!GKB_DISABLE_AUTH) {
                 try {
-                    keyCloakToken = await fetchKeyCloakToken(req.body.username, req.body.password, config);
+                    keyCloakToken = await fetchKeyCloakToken(req.body.username, req.body.password, app.conf);
                 } catch (err) {
                     logger.log('debug', err);
                     return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);
@@ -144,7 +138,7 @@ const addPostToken = ({router, db, config}) => {
         // kb-level authentication
         let token;
         try {
-            token = await generateToken(db, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
+            token = await generateToken(app.db, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
         } catch (err) {
             logger.log('debug', err);
             if (err instanceof NoRecordFoundError) {
