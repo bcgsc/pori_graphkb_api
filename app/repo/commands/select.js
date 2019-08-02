@@ -18,6 +18,7 @@ const {
     NoRecordFoundError
 } = require('../error');
 const {trimRecords} = require('../util');
+const {wrapIfTypeError} = require('./util');
 
 
 const RELATED_NODE_DEPTH = 3;
@@ -82,12 +83,17 @@ const selectCounts = async (db, opt = {}) => {
 const getUserByName = async (db, username) => {
     logger.debug(`getUserByName: ${username}`);
     // raw SQL to avoid having to load db models in the middleware
-    const user = await db.query(
-        'SELECT *, groups:{*, @rid, @class} from User where name = :param0 AND deletedAt IS NULL',
-        {
-            params: {param0: username}
-        }
-    ).all();
+    let user;
+    try {
+        user = await db.query(
+            'SELECT *, groups:{*, @rid, @class} from User where name = :param0 AND deletedAt IS NULL',
+            {
+                params: {param0: username}
+            }
+        ).all();
+    } catch (err) {
+        throw wrapIfTypeError(err);
+    }
     if (user.length > 1) {
         throw new MultipleRecordsFoundError(`username '${username} is not unique and returned multiple records`);
     } else if (user.length === 0) {

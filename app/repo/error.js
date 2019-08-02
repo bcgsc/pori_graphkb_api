@@ -28,11 +28,15 @@ class RecordExistsError extends ErrorMixin {}
 class NotImplementedError extends ErrorMixin {}
 
 
+class DatabaseConnectionError extends ErrorMixin {}
+
+
 module.exports = {
     RecordExistsError,
     ErrorMixin,
     AttributeError,
     ParsingError,
+    DatabaseConnectionError,
     ControlledVocabularyError,
     NoRecordFoundError,
     MultipleRecordsFoundError,
