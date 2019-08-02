@@ -111,30 +111,41 @@ class AppServer {
         return `http://${this.host}:${this.port}${this.prefix}`;
     }
 
-    /**
-     * Connect to the database, start the API server, and set dynamically built routes
-     */
-    async listen() {
+    async connectToDb() {
         // connect to the database
         const {
             GKB_DB_HOST,
-            GKB_DB_PORT,
-            GKB_KEY_FILE,
-            GKB_DB_NAME,
-            GKB_DISABLE_AUTH,
-            GKB_KEYCLOAK_KEY_FILE
+            GKB_DB_PORT
         } = this.conf;
 
         logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
         const {db, schema} = await connectDB(this.conf);
         this.db = db;
         this.schema = schema;
+    }
+
+    /**
+     * Connect to the database, start the API server, and set dynamically built routes
+     */
+    async listen() {
+        // connect to the database
+        if (!this.db) {
+            await this.connectToDb();
+        }
+        const {
+            GKB_KEY_FILE,
+            GKB_DB_NAME,
+            GKB_DISABLE_AUTH,
+            GKB_KEYCLOAK_KEY_FILE
+        } = this.conf;
+
+
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(schema, {port: this.port, host: this.host});
+        this.spec = generateSwaggerSpec(this.schema, {port: this.port, host: this.host});
         registerSpecEndpoints(this.router, this.spec);
 
         this.router.get('/schema', async (req, res) => {
-            res.status(HTTP_STATUS.OK).json({schema: jc.decycle(schema)});
+            res.status(HTTP_STATUS.OK).json({schema: jc.decycle(this.schema)});
         });
         this.router.get('/version', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({
