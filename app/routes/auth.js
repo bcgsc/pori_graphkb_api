@@ -6,7 +6,7 @@ const HTTP_STATUS = require('http-status-codes');
 
 const {getUserByName} = require('./../repo/commands');
 const {logger} = require('./../repo/logging');
-const {AuthenticationError, PermissionError} = require('./../repo/error');
+const {AuthenticationError, PermissionError, NoRecordFoundError} = require('./../repo/error');
 
 const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
 
