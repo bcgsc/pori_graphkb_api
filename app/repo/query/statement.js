@@ -49,7 +49,7 @@ const keywordSearch = (keywordsIn, opt = {}) => {
             LET $ont = (SELECT * from Ontology WHERE ${
     subContainsClause(['sourceId', 'name'])
 }),
-                $variants = (SELECT * FROM Variant WHERE type IN $ont OR reference1 in $ont OR reference2 IN $ont),
+                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))),
                 $implicable = (SELECT expand(UNIONALL($ont, $variants))),
                 $statements = (SELECT * FROM Statement
                     WHERE
