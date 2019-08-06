@@ -61,7 +61,11 @@ const checkStandardOptions = (opt) => {
         options.skip = castRangeInt(skip, 0);
     }
     if (orderBy) {
-        options.orderBy = orderBy.split(',').map(prop => prop.trim());
+        if (Array.isArray(orderBy)) {
+            options.orderBy = orderBy.map(prop => prop.trim());
+        } else {
+            options.orderBy = orderBy.split(',').map(prop => prop.trim());
+        }
     }
     if (orderByDirection) {
         options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
