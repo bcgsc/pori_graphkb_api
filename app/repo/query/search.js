@@ -7,7 +7,7 @@ const {util: {castToRID}, error: {AttributeError: ValidationError}, schema: SCHE
 const {
     MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_PROJECTION
 } = require('./constants');
-const {reverseDirection} = require('./util');
+const {reverseDirection, nestedProjection} = require('./util');
 
 const {Traversal} = require('./traversal');
 
@@ -126,8 +126,13 @@ const searchByLinkedRecords = (opt) => {
         model,
         search = {},
         activeOnly = true,
-        projection = DEFAULT_PROJECTION
+        neighbors = null
     } = opt;
+
+    let {projection = DEFAULT_PROJECTION} = opt;
+    if (neighbors !== null) {
+        projection = nestedProjection(neighbors);
+    }
 
     const {queryProperties} = model;
 
