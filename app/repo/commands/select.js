@@ -138,7 +138,8 @@ const select = async (db, query, opt = {}) => {
     } catch (err) {
         logger.log('debug', `Error in executing the query statement (${statement})`);
         logger.log('debug', err);
-        throw new NoRecordFoundError({query: statement, ...err});
+        console.error(err);
+        throw wrapIfTypeError({...err, sql: statement});
     }
 
     logger.log('debug', `selected ${recordList.length} records`);

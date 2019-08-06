@@ -23,11 +23,13 @@ const wrapIfTypeError = (err) => {
                 return new RecordExistsError(err);
             } if (type.includes('orecordnotfoundexception')) {
                 return new NoRecordFoundError(err);
+            } if (type.includes('odatabaseexception')) {
+                return new DatabaseConnectionError(err);
             }
         }
         if (err.name) {
             if (err.name.includes('OrientDB.ConnectionError')) {
-                throw new DatabaseConnectionError(err);
+                return new DatabaseConnectionError(err);
             }
         }
     }
