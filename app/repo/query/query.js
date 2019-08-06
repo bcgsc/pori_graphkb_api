@@ -174,11 +174,12 @@ class Comparison {
      * @param {int} [paramIndex=0] the number to append to parameter names
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
-    toString(paramIndex = 0) {
+    toString(initialParamIndex = 0) {
         const params = {};
         let query,
             cast = this.attr.terminalCast();
         const prop = this.attr.terminalProperty();
+        let paramIndex = initialParamIndex;
 
         if (prop && prop.cast) {
             ({cast} = prop);
@@ -545,12 +546,13 @@ class Clause {
     }
 
     /**
-     * @param {int} [paramIndex=0] the number to append to parameter names
+     * @param {int} [initialParamIndex=0] the number to append to parameter names
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
-    toString(paramIndex = 0, listableType = false) {
+    toString(initialParamIndex = 0, listableType = false) {
         const params = {};
         const components = [];
+        let paramIndex = initialParamIndex;
         for (const comp of this.comparisons) {
             const result = comp.toString(
                 paramIndex,
@@ -562,7 +564,7 @@ class Clause {
             }
             Object.assign(params, result.params);
             components.push(result.query);
-            paramIndex = Object.values(params).length;
+            paramIndex = Object.values(params).length + initialParamIndex;
         }
         const query = components.join(` ${this.type} `);
         return {query, params};
