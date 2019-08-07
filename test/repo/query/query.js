@@ -151,6 +151,93 @@ describe('Query.parse', () => {
         );
         expect(parsed).toEqual(expected);
     });
+    test('parses embedded attribute traversal', () => {
+        const content = {
+            where: [
+                {
+                    attr: 'break1Start.refAA',
+                    value: 'G'
+                },
+                {
+                    operator: 'OR',
+                    comparisons: [
+                        {
+                            attr: 'untemplatedSeqSize',
+                            value: 1
+                        },
+                        {
+                            attr: 'untemplatedSeqSize',
+                            value: null
+                        }
+                    ]
+                },
+                {
+                    operator: 'OR',
+                    comparisons: [
+                        {
+                            attr: 'untemplatedSeq',
+                            value: 'V'
+                        },
+                        {
+                            attr: 'untemplatedSeq',
+                            value: 'X'
+                        },
+                        {
+                            attr: 'untemplatedSeq',
+                            value: null
+                        }
+                    ]
+                },
+                {
+                    attr: 'reference1',
+                    value: [
+                        '#68:10108',
+                        '#67:28222',
+                        '#67:92950',
+                        '#67:92946',
+                        '#67:92951',
+                        '#67:92949',
+                        '#67:92947',
+                        '#68:97323',
+                        '#68:97327',
+                        '#67:28223',
+                        '#68:29962',
+                        '#68:29961',
+                        '#67:28220',
+                        '#67:28221',
+                        '#68:29960',
+                        '#68:29959',
+                        '#67:28218',
+                        '#67:28219',
+                        '#68:29958',
+                        '#68:29957',
+                        '#67:28216',
+                        '#67:28217',
+                        '#68:29956',
+                        '#68:29955',
+                        '#68:97325',
+                        '#67:92948'
+                    ],
+                    operator: 'IN'
+                },
+                {
+                    attr: 'break1Start.pos',
+                    value: '12'
+                }
+            ]
+        };
+        const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.PositionalVariant, content);
+        const statement = parsed.displayString();
+        expect(statement).toEqual(stripSQL(`SELECT * FROM (
+            SELECT * FROM PositionalVariant
+            WHERE
+                break1Start.refAA = 'G'
+                AND (untemplatedSeqSize = 1 OR untemplatedSeqSize IS NULL)
+                AND (untemplatedSeq = 'V' OR untemplatedSeq = 'X' OR untemplatedSeq IS NULL)
+                AND reference1 IN ['#68:10108', '#67:28222', '#67:92950', '#67:92946', '#67:92951', '#67:92949', '#67:92947', '#68:97323', '#68:97327', '#67:28223', '#68:29962', '#68:29961', '#67:28220', '#67:28221', '#68:29960', '#68:29959', '#67:28218', '#67:28219', '#68:29958', '#68:29957', '#67:28216', '#67:28217', '#68:29956', '#68:29955', '#68:97325', '#67:92948']
+                AND break1Start.pos = 12
+            ) WHERE deletedAt IS NULL LIMIT 1000`));
+    });
     describe('nested Clause', () => {
         test('AND then OR', () => {
             const parsed = Query.parse(SCHEMA_DEFN, SCHEMA_DEFN.Disease, {
