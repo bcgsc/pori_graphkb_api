@@ -111,6 +111,16 @@ class Comparison {
                         })`
                     );
                 }
+            } else if (this.operator === OPERATORS.IS) {
+                if (this.value !== null) {
+                    throw new AttributeError(`IS operator (${
+                        this.operator
+                    }) can only be used on prop (${
+                        prop.name
+                    }) compared with null (${
+                        this.value
+                    })`);
+                }
             }
         }
 
