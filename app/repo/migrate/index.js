@@ -139,6 +139,19 @@ const migrate2from0xto1x = async (db) => {
 };
 
 
+const migrate2from1xto2x = async (db) => {
+    for (const name of ['Therapy', 'Feature', 'AnatomicalEntity', 'Disease', 'Pathway', 'Signature', 'Vocabulary', 'CatalogueVariant']) {
+        logger.info(`removing Biomarker from superclasses of ${name}`);
+        await db.command(`ALTER CLASS ${name} SUPERCLASS -Biomarker`).all();
+    }
+    logger.info('Set Biomarker as parent class of Ontology');
+    await db.command('ALTER CLASS Biomarker SUPERCLASS +Biomarker').all();
+
+    logger.info('Create the new RnaPostion class');
+    await ClassModel.create(SCHEMA_DEFN.RnaPosition, db);
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -188,6 +201,10 @@ const migrate = async (db, opt = {}) => {
             logger.info(`Migrating from 2.0.X series (${currentVersion}) to v2.1.X series (${targetVersion})`);
             await migrate2from0xto1x(db);
             migratedVersion = await logMigration(db, name, url, '2.1.0');
+        } else if (semver.satisfies(migratedVersion, '>=2.1.0 <2.2.0')) {
+            logger.info(`Migrating from 2.1.X series (${currentVersion}) to v2.2.X series (${targetVersion})`);
+            await migrate2from1xto2x(db);
+            migratedVersion = await logMigration(db, name, url, '2.2.0');
         } else {
             throw new Error(`Unable to find migration scripts from ${migratedVersion} to ${targetVersion}`);
         }
