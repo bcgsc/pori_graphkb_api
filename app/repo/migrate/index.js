@@ -145,7 +145,7 @@ const migrate2from1xto2x = async (db) => {
         await db.command(`ALTER CLASS ${name} SUPERCLASS -Biomarker`).all();
     }
     logger.info('Set Biomarker as parent class of Ontology');
-    await db.command('ALTER CLASS Biomarker SUPERCLASS +Biomarker').all();
+    await db.command('ALTER CLASS Ontology SUPERCLASS +Biomarker').all();
 
     logger.info('Create the new RnaPostion class');
     await ClassModel.create(SCHEMA_DEFN.RnaPosition, db);
