@@ -52,13 +52,19 @@ const generateToken = async (db, username, key, exp = null) => {
  *      session_state: '1ecbceaf-bf4f-4fd8-96e7-...'
  * }
  */
-const fetchKeyCloakToken = async (username, password, {GKB_KEYCLOAK_URI, GKB_KEYCLOAK_CLIENT_ID}) => {
+const fetchKeyCloakToken = async (username, password, {
+    GKB_KEYCLOAK_URI, GKB_KEYCLOAK_CLIENT_ID, GKB_KEYCLOAK_CLIENT_SECRET
+}) => {
     logger.log('debug', `[POST] ${GKB_KEYCLOAK_URI}`);
     const resp = JSON.parse(await request({
         method: 'POST',
         uri: GKB_KEYCLOAK_URI,
         body: form({
-            client_id: GKB_KEYCLOAK_CLIENT_ID, grant_type: 'password', username, password
+            client_id: GKB_KEYCLOAK_CLIENT_ID,
+            grant_type: 'password',
+            username,
+            password,
+            client_secret: GKB_KEYCLOAK_CLIENT_SECRET
         }),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'}
     }));
@@ -97,6 +103,7 @@ const addPostToken = (app) => {
     const {
         GKB_DISABLE_AUTH, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE, GKB_KEY
     } = app.conf;
+
     app.router.route('/token').post(async (req, res, next) => {
         // generate a token to return to the user
         if ((req.body.username === undefined || req.body.password === undefined) && req.body.keyCloakToken === undefined) {
