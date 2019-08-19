@@ -95,7 +95,8 @@ const getUserByName = async (db, username) => {
         throw wrapIfTypeError(err);
     }
     if (user.length > 1) {
-        throw new MultipleRecordsFoundError(`username '${username} is not unique and returned multiple records`);
+        logger.error(`selected multiple users: ${user.map(r => r['@rid']).join(', ')}`);
+        throw new MultipleRecordsFoundError(`username (${username}) is not unique and returned multiple (${user.length}) records`);
     } else if (user.length === 0) {
         throw new NoRecordFoundError(`no user found for the username '${username}'`);
     } else {

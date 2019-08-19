@@ -54,7 +54,9 @@ describe('migrate', () => {
     });
 
     test('getLoadVersion', () => {
-        expect(getLoadVersion()).toHaveProperty('version', '2.1.0');
+        const version = getLoadVersion();
+        expect(version).toHaveProperty('version');
+        expect(version.version).toEqual(expect.stringMatching(/^\d+\.\d+\.\d+$/));
     });
 
     describe('requiresMigration', () => {
