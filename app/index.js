@@ -20,6 +20,8 @@ const {connectDB} = require('./repo');
 const {DatabaseConnectionError} = require('./repo/error');
 const {getLoadVersion} = require('./repo/migrate/version');
 
+const {addExtensionRoutes} = require('./extensions');
+
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
 const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
@@ -178,6 +180,7 @@ class AppServer {
         for (const model of Object.values(this.schema)) {
             addResourceRoutes(this, model);
         }
+        addExtensionRoutes(this);
 
         // catch any other errors
         this.router.use(async (err, req, res, next) => {
@@ -192,8 +195,11 @@ class AppServer {
             if (res.headersSent) {
                 return next(err);
             }
+            const errorContent = err.toJSON
+                ? err.toJSON()
+                : {message: err.toString(), ...err};
 
-            return res.status(err.code || HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+            return res.status(err.code || HTTP_STATUS.INTERNAL_SERVER_ERROR).json(errorContent);
         });
         logger.log('info', 'Adding 404 capture');
         // last catch any errors for undefined routes. all actual routes should be defined above
