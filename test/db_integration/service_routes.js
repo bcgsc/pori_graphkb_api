@@ -273,11 +273,11 @@ describeWithAuth('api crud routes', () => {
                 }
             });
         });
-        test('parse pubmed record', async () => {
+        test('bad pubmed ID', async () => {
             // content retrieved directly from the pubmed API
             util.requestWithRetry.mockResolvedValueOnce({result: {}});
             const res = await request({
-                uri: `${app.url}/extensions/refseq/30016509`,
+                uri: `${app.url}/extensions/pubmed/NM_30016509`,
                 method: 'GET',
                 headers: {
                     Authorization: mockToken
