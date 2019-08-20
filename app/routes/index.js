@@ -3,6 +3,7 @@ const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 
 const {error: {AttributeError}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const {variant: {parse: variantParser}, error: {ParsingError}} = require('@bcgsc/knowledgebase-parser');
 
 const openapi = require('./openapi');
 const resource = require('./resource');
@@ -120,6 +121,27 @@ const addStatsRoute = (app) => {
     });
 };
 
+
+const addParserRoute = (app) => {
+    logger.info('NEW ROUTE [POST] /parse');
+    app.router.post('/parse', async (req, res, next) => {
+        if (!req.body || !req.body.content) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError('body.content is a required input'));
+        }
+        const {content, requireFeatures = true} = req.body;
+        try {
+            const parsed = variantParser(content, requireFeatures);
+            return res.status(HTTP_STATUS.OK).json({result: parsed});
+        } catch (err) {
+            if (err instanceof AttributeError || err instanceof ParsingError) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json(jc.decycle(err));
+            }
+            return next(err);
+        }
+    });
+};
+
+
 module.exports = {
-    openapi, resource, addKeywordSearchRoute, addGetRecordsByList, addStatsRoute
+    openapi, resource, addKeywordSearchRoute, addGetRecordsByList, addStatsRoute, addParserRoute
 };
