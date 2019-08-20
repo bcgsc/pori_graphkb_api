@@ -276,14 +276,19 @@ describeWithAuth('api crud routes', () => {
         test('bad pubmed ID', async () => {
             // content retrieved directly from the pubmed API
             util.requestWithRetry.mockResolvedValueOnce({result: {}});
-            const res = await request({
-                uri: `${app.url}/extensions/pubmed/NM_30016509`,
-                method: 'GET',
-                headers: {
-                    Authorization: mockToken
-                }
-            });
-            expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+            try {
+                await request({
+                    uri: `${app.url}/extensions/pubmed/NM_30016509`,
+                    method: 'GET',
+                    headers: {
+                        Authorization: mockToken
+                    }
+                });
+            } catch ({response}) {
+                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
         });
         test.todo('test clinical trial');
         test.todo('test entrez gene');
