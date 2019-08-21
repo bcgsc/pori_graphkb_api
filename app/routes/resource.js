@@ -52,7 +52,9 @@ const queryRoute = (app, model) => {
                 return next(err);
             }
             try {
-                const result = await select(app.db, query, {user: req.user});
+                const session = await app.pool.acquire();
+                const result = await select(session, query, {user: req.user});
+                session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 logger.log('debug', err);
@@ -84,9 +86,11 @@ const searchRoute = (app, model) => {
             } if (req.body.search) {
                 // search
                 try {
-                    const result = await searchSelect(app.db, {
+                    const session = await app.pool.acquire();
+                    const result = await searchSelect(session, {
                         ...checkStandardOptions(req.body), model, user: req.user
                     });
+                    session.close();
                     return res.json(jc.decycle({result}));
                 } catch (err) {
                     logger.log('debug', err);
@@ -109,7 +113,9 @@ const searchRoute = (app, model) => {
                     return next(err);
                 }
                 try {
-                    const result = await select(app.db, query, {user: req.user});
+                    const session = await app.pool.acquire();
+                    const result = await select(session, query, {user: req.user});
+                    session.close();
                     return res.json(jc.decycle({result}));
                 } catch (err) {
                     logger.log('debug', err);
@@ -157,10 +163,12 @@ const getRoute = (app, model) => {
             }
 
             try {
-                const [result] = await select(app.db, query, {
+                const session = await app.pool.acquire();
+                const [result] = await select(session, query, {
                     exactlyN: 1,
                     user: req.user
                 });
+                session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof NoRecordFoundError) {
@@ -187,9 +195,11 @@ const postRoute = (app, model) => {
                 ));
             }
             try {
-                const result = await create(app.db, {
+                const session = await app.pool.acquire();
+                const result = await create(session, {
                     model, content: req.body, user: req.user, schema: app.schema
                 });
+                session.close();
                 return res.status(HTTP_STATUS.CREATED).json(jc.decycle({result}));
             } catch (err) {
                 logger.log('debug', err.toString());
@@ -220,20 +230,22 @@ const updateRoute = (app, model) => {
                     {message: `ID does not look like a valid record ID: ${req.params.rid}`}
                 ));
             }
-            req.params.rid = `#${req.params.rid.replace(/^#/, '')}`;
+            const rid = `#${req.params.rid.replace(/^#/, '')}`;
             if (!_.isEmpty(req.query)) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
                     {message: 'Query parameters are allowed for this query type', params: req.query}
                 ));
             }
             try {
-                const result = await update(app.db, {
+                const session = await app.pool.acquire();
+                const result = await update(session, {
                     model,
                     changes: req.body,
-                    query: activeRidQuery(app.schema, model, req.params.rid),
+                    query: activeRidQuery(app.schema, model, rid),
                     user: req.user,
                     schema: app.schema
                 });
+                session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof AttributeError) {

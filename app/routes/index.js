@@ -47,7 +47,9 @@ const addKeywordSearchRoute = (app) => {
                 ));
             }
             try {
-                const result = await selectByKeyword(app.db, wordList, options);
+                const session = await app.pool.acquire();
+                const result = await selectByKeyword(session, wordList, options);
+                session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof AttributeError) {
@@ -83,7 +85,9 @@ const addGetRecordsByList = (app) => {
             }
 
             try {
-                const result = await selectFromList(app.db, rid.split(',').map(r => r.trim()), options);
+                const session = await app.pool.acquire();
+                const result = await selectFromList(session, rid.split(',').map(r => r.trim()), options);
+                session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 if (err instanceof AttributeError) {
@@ -110,7 +114,9 @@ const addStatsRoute = (app) => {
     app.router.get('/stats', async (req, res, next) => {
         try {
             const {groupBySource = false, activeOnly = true} = checkStandardOptions(req.query);
-            const stats = await selectCounts(app.db, {groupBySource, activeOnly, classList});
+            const session = await app.pool.acquire();
+            const stats = await selectCounts(session, {groupBySource, activeOnly, classList});
+            session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({result: stats}));
         } catch (err) {
             if (err instanceof AttributeError) {

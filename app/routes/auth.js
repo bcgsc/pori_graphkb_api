@@ -145,7 +145,9 @@ const addPostToken = (app) => {
         // kb-level authentication
         let token;
         try {
-            token = await generateToken(app.db, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
+            const session = await app.pool.acquire();
+            token = await generateToken(session, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
+            session.close();
         } catch (err) {
             logger.log('debug', err);
             if (err instanceof NoRecordFoundError) {

@@ -8,6 +8,7 @@ module.exports = {
         GKB_DB_PASS: 'admin',
         GKB_DB_PORT: 2427,
         GKB_DB_USER: 'admin',
+        GKB_DB_POOL: 25,
         GKB_KEYCLOAK_CLIENT_ID: 'GraphKB',
         GKB_KEYCLOAK_ROLE: 'GraphKB',
         GKB_KEYCLOAK_URI: 'http://keycloakdev01.bcgsc.ca/auth/realms/GSC_posix_syncd/protocol/openid-connect/token',

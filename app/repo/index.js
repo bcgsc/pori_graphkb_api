@@ -75,7 +75,8 @@ const connectDB = async ({
     GKB_DB_USER,
     GKB_DBS_PASS,
     GKB_DBS_USER,
-    GKB_USER_CREATE
+    GKB_USER_CREATE,
+    GKB_DB_POOL
 }) => {
     // set up the database server
     const server = await OrientDBClient.connect({
@@ -91,7 +92,6 @@ const connectDB = async ({
         ? 'exists'
         : 'does not exist'}`);
 
-    let db;
     if (GKB_DB_CREATE) {
         if (!exists) {
             // the db does not exist, create it
@@ -106,20 +106,26 @@ const connectDB = async ({
         }
     }
 
-    if (!db) {
-        logger.log('info', `connecting to the database (${GKB_DB_NAME}) as ${GKB_DB_USER}`);
-        try {
-            db = await server.session({name: GKB_DB_NAME, username: GKB_DB_USER, password: GKB_DB_PASS});
-        } catch (err) {
-            server.close();
-            throw err;
-        }
+    logger.log('info', `connecting to the database (${GKB_DB_NAME}) as ${GKB_DB_USER}`);
+    let pool,
+        session;
+    try {
+        pool = await server.sessions({
+            name: GKB_DB_NAME,
+            username: GKB_DB_USER,
+            password: GKB_DB_PASS,
+            pool: {max: GKB_DB_POOL}
+        });
+        session = await pool.acquire();
+    } catch (err) {
+        server.close();
+        throw err;
     }
 
     if (GKB_USER_CREATE && process.env.USER) {
         try {
             logger.log('info', `create the current user (${process.env.USER}) as admin`);
-            await createUser(db, {
+            await createUser(pool, {
                 userName: process.env.USER,
                 groupNames: ['admin'],
                 existsOk: true
@@ -133,7 +139,7 @@ const connectDB = async ({
 
     // check if migration is required
     try {
-        await migrate(db, {checkOnly: !GKB_DB_MIGRATE});
+        await migrate(session, {checkOnly: !GKB_DB_MIGRATE});
     } catch (err) {
         logger.error(err);
         server.close();
@@ -142,14 +148,15 @@ const connectDB = async ({
 
     let schema;
     try {
-        schema = await loadSchema(db);
+        schema = await loadSchema(session);
     } catch (err) {
         logger.error(err);
-        db.close();
+        session.close();
         throw err;
     }
+    session.close();
     // create the admin user
-    return {server, db, schema};
+    return {server, pool, schema};
 };
 
 
