@@ -42,10 +42,10 @@ describeWithAuth('api read-only routes', () => {
         await session.close();
     });
     afterAll(async () => {
-        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
         if (app) {
             await app.close(); // shut down the http server
         }
+        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
     });
 
     describe('/stats', () => {
