@@ -35,24 +35,27 @@ if (!process.env.GKB_DBS_PASS) {
 }
 
 describeWithAuth('select queries', () => {
-    let db;
+    let db,
+        session;
     beforeAll(async () => {
         db = await createSeededDb();
+        session = await db.pool.acquire();
     });
     afterAll(async () => {
+        await session.close();
         await tearDownDb(db);
     });
     describe('paginate basic query', () => {
         let original;
         beforeAll(async () => {
             const query = Query.parse(schema, schema.Disease, {});
-            original = await select(db.session, query, {user: db.admin});
+            original = await select(session, query, {user: db.admin});
         });
         test('limit', async () => {
             const query = Query.parse(schema, schema.Disease, {
                 limit: 1
             });
-            const records = await select(db.session, query, {user: db.admin});
+            const records = await select(session, query, {user: db.admin});
             expect(records).toHaveProperty('length', 1);
             expect(records[0]).toEqual(original[0]);
         });
@@ -60,7 +63,7 @@ describeWithAuth('select queries', () => {
             const query = Query.parse(schema, schema.Disease, {
                 skip: 2
             });
-            const records = await select(db.session, query, {user: db.admin});
+            const records = await select(session, query, {user: db.admin});
             expect(records).toHaveProperty('length', 1);
             expect(records[0]).toEqual(original[2]);
         });
@@ -69,31 +72,31 @@ describeWithAuth('select queries', () => {
                 skip: 1,
                 limit: 1
             });
-            const records = await select(db.session, query, {user: db.admin});
+            const records = await select(session, query, {user: db.admin});
             expect(records).toHaveProperty('length', 1);
             expect(records[0]).toEqual(original[1]);
         });
     });
     describe('selectCounts', () => {
         test('defaults to all classes', async () => {
-            const counts = await selectCounts(db.session);
+            const counts = await selectCounts(session);
             expect(counts).toHaveProperty('Disease', 3);
             expect(counts).toHaveProperty('User', 1);
         });
         test('with source subgrouping', async () => {
             const source = db.records.source['@rid'];
-            const counts = await selectCounts(db.session, {classList: ['Disease', 'Source'], groupBySource: true});
+            const counts = await selectCounts(session, {classList: ['Disease', 'Source'], groupBySource: true});
             expect(counts).toEqual({Disease: {[source]: 3}, Source: {null: 1}});
         });
     });
     describe('getUserByName', () => {
         test('ok', async () => {
-            const user = await getUserByName(db.session, db.admin.name);
+            const user = await getUserByName(session, db.admin.name);
             expect(user).toHaveProperty('name', db.admin.name);
         });
         test('error on not found', async () => {
             try {
-                await getUserByName(db.session, 'blargh monkeys');
+                await getUserByName(session, 'blargh monkeys');
             } catch (err) {
                 expect(err).toBeInstanceOf(NoRecordFoundError);
                 return;
@@ -103,22 +106,22 @@ describeWithAuth('select queries', () => {
     });
     describe('selectByKeyword', () => {
         test('get from related variant reference', async () => {
-            const result = await selectByKeyword(db.session, ['kras']);
+            const result = await selectByKeyword(session, ['kras']);
             expect(result).toHaveProperty('length', 2);
         });
         test('multiple keywords are co-required', async () => {
             expect(
-                await selectByKeyword(db.session, ['kras', 'resistance'])
+                await selectByKeyword(session, ['kras', 'resistance'])
             ).toHaveProperty('length', 0);
             expect(
-                await selectByKeyword(db.session, ['kras', 'sensitivity'])
+                await selectByKeyword(session, ['kras', 'sensitivity'])
             ).toHaveProperty('length', 0);
         });
     });
     describe('searchSelect', () => {
         test('get gene from related gene', async () => {
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Feature, search: {sourceId: ['kras']}}
             );
             // fetches the related gene kras1
@@ -126,19 +129,19 @@ describeWithAuth('select queries', () => {
         });
         test('OR values given for the same property', async () => {
             const singleValueResult = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Vocabulary, search: {sourceId: ['sensitivity']}}
             );
             expect(singleValueResult).toHaveProperty('length', 1);
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Vocabulary, search: {sourceId: ['sensitivity', 'resistance']}}
             );
             expect(result).toHaveProperty('length', 2);
         });
         test('custom projection', async () => {
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Feature, search: {sourceId: ['kras']}, projection: 'sourceId'}
             );
             // fetches the related gene kras1
@@ -148,7 +151,7 @@ describeWithAuth('select queries', () => {
         });
         test('default to all', async () => {
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Disease, search: {}}
             );
             expect(result).toHaveProperty('length', 3);
@@ -156,7 +159,7 @@ describeWithAuth('select queries', () => {
         test('get variant by related gene', async () => {
             const {kras} = db.records;
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Variant, search: {reference1: [kras]}}
             );
             // fetches the related gene kras1 and then the variants on it
@@ -165,7 +168,7 @@ describeWithAuth('select queries', () => {
         test('select by linkset', async () => {
             const {krasMut} = db.records;
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Statement, search: {impliedBy: [krasMut]}}
             );
             // krasMut is inferred by krasSub
@@ -174,7 +177,7 @@ describeWithAuth('select queries', () => {
         test('select by outgoing edge', async () => {
             const {cancer} = db.records;
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Disease, search: {out_SubClassOf: [cancer]}}
             );
             // krasMut is inferred by krasSub
@@ -183,7 +186,7 @@ describeWithAuth('select queries', () => {
         test('select by incoming edge', async () => {
             const {cancer} = db.records;
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Disease, search: {in_SubClassOf: [cancer]}}
             );
             // krasMut is inferred by krasSub
@@ -191,12 +194,12 @@ describeWithAuth('select queries', () => {
         });
         test('select for embedded iterable', async () => {
             const result = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Disease, search: {subsets: ['wordy', 'singlesubseT']}}
             );
             expect(result).toHaveProperty('length', 3);
             const noResult = await searchSelect(
-                db.session,
+                session,
                 {model: schema.Disease, search: {subsets: ['blargh monkeys']}}
             );
             expect(noResult).toHaveProperty('length', 0);
@@ -206,7 +209,7 @@ describeWithAuth('select queries', () => {
         test('throws error on bad record ID', async () => {
             const {krasMut, krasSub} = db.records;
             try {
-                await selectFromList(db.session, [krasMut, krasSub, '44444:982958']);
+                await selectFromList(session, [krasMut, krasSub, '44444:982958']);
             } catch (err) {
                 expect(err).toBeInstanceOf(AttributeError);
                 return;
@@ -215,12 +218,12 @@ describeWithAuth('select queries', () => {
         });
         test('returns in the original order', async () => {
             const {krasMut, krasSub} = db.records;
-            const result = await selectFromList(db.session, [krasMut, krasSub]);
+            const result = await selectFromList(session, [krasMut, krasSub]);
             expect(result).toHaveProperty('length', 2);
             expect(result[0]['@rid']).toEqual(krasMut['@rid']);
             expect(result[1]['@rid']).toEqual(krasSub['@rid']);
             // now reverse and try again
-            const reverseResult = await selectFromList(db.session, [krasSub, krasMut]);
+            const reverseResult = await selectFromList(session, [krasSub, krasMut]);
             expect(reverseResult).toHaveProperty('length', 2);
             expect(reverseResult[1]['@rid']).toEqual(krasMut['@rid']);
             expect(reverseResult[0]['@rid']).toEqual(krasSub['@rid']);
@@ -229,19 +232,19 @@ describeWithAuth('select queries', () => {
     describe('fetchDisplayName', () => {
         test('PositionalVariant', async () => {
             const name = await fetchDisplayName(
-                db.session, schema.PositionalVariant, db.records.krasSub
+                session, schema.PositionalVariant, db.records.krasSub
             );
             expect(name).toEqual('KRAS1:p.G12D');
         });
         test('CategoryVariant', async () => {
             const name = await fetchDisplayName(
-                db.session, schema.CategoryVariant, db.records.krasMut
+                session, schema.CategoryVariant, db.records.krasMut
             );
             expect(name).toEqual('KRAS mutation');
         });
         test('Statement', async () => {
             const name = await fetchDisplayName(
-                db.session, schema.Statement, db.records.resToDrug
+                session, schema.Statement, db.records.resToDrug
             );
             expect(name).toBeNull;
         });

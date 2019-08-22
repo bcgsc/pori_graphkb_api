@@ -26,28 +26,32 @@ if (!process.env.GKB_DBS_PASS) {
 describeWithAuth('api crud routes', () => {
     let db,
         app,
-        mockToken;
+        mockToken,
+        session;
+
     beforeAll(async () => {
         db = await createEmptyDb();
+        session = await db.pool.acquire();
 
         app = new AppServer({...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true});
 
         await app.listen();
         mockToken = await generateToken(
-            db.session,
+            session,
             db.admin.name,
             app.conf.GKB_KEY,
             REALLY_LONG_TIME
         );
     });
     afterAll(async () => {
-        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
         if (app) {
             await app.close(); // shut down the http server
         }
+        await session.close();
+        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
     });
     afterEach(async () => {
-        await clearDB(db);
+        await clearDB({session, admin: db.admin});
     });
 
     describe('/:model create new record', () => {

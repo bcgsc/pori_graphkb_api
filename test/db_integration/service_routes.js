@@ -39,16 +39,17 @@ describeWithAuth('api crud routes', () => {
         mockToken;
     beforeAll(async () => {
         db = await createEmptyDb();
-
+        const session = await db.pool.acquire();
         app = new AppServer({...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true});
 
         await app.listen();
         mockToken = await generateToken(
-            db.session,
+            session,
             db.admin.name,
             app.conf.GKB_KEY,
             REALLY_LONG_TIME
         );
+        session.close();
     });
     afterAll(async () => {
         await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
