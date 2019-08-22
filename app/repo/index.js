@@ -125,7 +125,7 @@ const connectDB = async ({
     if (GKB_USER_CREATE && process.env.USER) {
         try {
             logger.log('info', `create the current user (${process.env.USER}) as admin`);
-            await createUser(pool, {
+            await createUser(session, {
                 userName: process.env.USER,
                 groupNames: ['admin'],
                 existsOk: true
