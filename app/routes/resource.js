@@ -316,16 +316,23 @@ const deleteRoute = (app, model) => {
                     {message: 'No query parameters are allowed for this query type'}
                 ));
             }
-
+            let session;
+            try {
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
             try {
                 const query = activeRidQuery(app.schema, model, req.params.rid);
                 const result = await remove(
-                    app.db, {
+                    session, {
                         query, user: req.user, model
                     }
                 );
+                session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
+                session.close();
                 logger.log('debug', err);
                 if (err instanceof AttributeError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
