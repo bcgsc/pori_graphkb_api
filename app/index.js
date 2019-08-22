@@ -224,20 +224,22 @@ class AppServer {
     }
 
     async close() {
-        logger.log('info', 'cleaning up');
-        try {
-            if (this.server) {
-                await this.server.close();
-            }
-        } catch (err) {
-            logger.log('error', err);
-        }
+        logger.info('cleaning up');
         try {
             if (this.pool) {
+                logger.error('closing the database pool');
                 await this.pool.close();
             }
         } catch (err) {
-            logger.log('error', err);
+            logger.error(err);
+        }
+        try {
+            if (this.server) {
+                logger.error('closing the database server connection');
+                await this.server.close();
+            }
+        } catch (err) {
+            logger.error(err);
         }
     }
 }

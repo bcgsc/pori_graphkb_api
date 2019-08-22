@@ -46,12 +46,18 @@ const addKeywordSearchRoute = (app) => {
                     } letters after splitting on whitespace characters`
                 ));
             }
+            let session;
             try {
-                const session = await app.pool.acquire();
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+            try {
                 const result = await selectByKeyword(session, wordList, options);
                 session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
+                session.close();
                 if (err instanceof AttributeError) {
                     logger.log('debug', err);
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
@@ -83,13 +89,18 @@ const addGetRecordsByList = (app) => {
                     invalidParams: rest
                 });
             }
-
+            let session;
             try {
-                const session = await app.pool.acquire();
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+            try {
                 const result = await selectFromList(session, rid.split(',').map(r => r.trim()), options);
                 session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
+                session.close();
                 if (err instanceof AttributeError) {
                     logger.log('debug', err);
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
@@ -112,13 +123,19 @@ const addStatsRoute = (app) => {
             && !schema[name].embedded
     );
     app.router.get('/stats', async (req, res, next) => {
+        let session;
+        try {
+            session = await app.pool.acquire();
+        } catch (err) {
+            return next(err);
+        }
         try {
             const {groupBySource = false, activeOnly = true} = checkStandardOptions(req.query);
-            const session = await app.pool.acquire();
             const stats = await selectCounts(session, {groupBySource, activeOnly, classList});
             session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({result: stats}));
         } catch (err) {
+            session.close();
             if (err instanceof AttributeError) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(jc.decycle(err));
             }

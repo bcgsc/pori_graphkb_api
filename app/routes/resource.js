@@ -51,12 +51,18 @@ const queryRoute = (app, model) => {
                 }
                 return next(err);
             }
+            let session;
             try {
-                const session = await app.pool.acquire();
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+            try {
                 const result = await select(session, query, {user: req.user});
                 session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
+                session.close();
                 logger.log('debug', err);
                 if (err instanceof AttributeError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
@@ -85,14 +91,20 @@ const searchRoute = (app, model) => {
                 ));
             } if (req.body.search) {
                 // search
+                let session;
                 try {
-                    const session = await app.pool.acquire();
+                    session = await app.pool.acquire();
+                } catch (err) {
+                    return next(err);
+                }
+                try {
                     const result = await searchSelect(session, {
                         ...checkStandardOptions(req.body), model, user: req.user
                     });
                     session.close();
                     return res.json(jc.decycle({result}));
                 } catch (err) {
+                    session.close();
                     logger.log('debug', err);
                     if (err instanceof AttributeError) {
                         return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
@@ -112,12 +124,18 @@ const searchRoute = (app, model) => {
                     }
                     return next(err);
                 }
+                let session;
                 try {
-                    const session = await app.pool.acquire();
+                    session = await app.pool.acquire();
+                } catch (err) {
+                    return next(err);
+                }
+                try {
                     const result = await select(session, query, {user: req.user});
                     session.close();
                     return res.json(jc.decycle({result}));
                 } catch (err) {
+                    session.close();
                     logger.log('debug', err);
                     if (err instanceof AttributeError) {
                         return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
@@ -161,9 +179,13 @@ const getRoute = (app, model) => {
                 logger.log('error', err.stack || err);
                 return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
             }
-
+            let session;
             try {
-                const session = await app.pool.acquire();
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+            try {
                 const [result] = await select(session, query, {
                     exactlyN: 1,
                     user: req.user
@@ -171,6 +193,7 @@ const getRoute = (app, model) => {
                 session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
+                session.close();
                 if (err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.NOT_FOUND).json(err);
                 }
@@ -194,14 +217,20 @@ const postRoute = (app, model) => {
                     {message: 'No query parameters are allowed for this query type', params: req.query}
                 ));
             }
+            let session;
             try {
-                const session = await app.pool.acquire();
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+            try {
                 const result = await create(session, {
                     model, content: req.body, user: req.user, schema: app.schema
                 });
                 session.close();
                 return res.status(HTTP_STATUS.CREATED).json(jc.decycle({result}));
             } catch (err) {
+                session.close();
                 logger.log('debug', err.toString());
                 if (err instanceof AttributeError || err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
@@ -236,8 +265,13 @@ const updateRoute = (app, model) => {
                     {message: 'Query parameters are allowed for this query type', params: req.query}
                 ));
             }
+            let session;
             try {
-                const session = await app.pool.acquire();
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+            try {
                 const result = await update(session, {
                     model,
                     changes: req.body,
@@ -248,6 +282,7 @@ const updateRoute = (app, model) => {
                 session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {
+                session.close();
                 if (err instanceof AttributeError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                 } if (err instanceof NoRecordFoundError) {
