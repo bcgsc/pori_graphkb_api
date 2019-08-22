@@ -49,13 +49,16 @@ describeWithAuth('api crud routes', () => {
             app.conf.GKB_KEY,
             REALLY_LONG_TIME
         );
-        session.close();
+        await session.close();
     });
     afterAll(async () => {
-        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
         if (app) {
             await app.close(); // shut down the http server
         }
+        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
+        // close the db connections so that you can create more in the app.listen
+        await db.pool.close();
+        await db.server.close();
     });
     afterEach(async () => {
         jest.clearAllMocks();

@@ -38,6 +38,8 @@ describeWithAuth('CRUD operations', () => {
     afterAll(async () => {
         await session.close();
         await tearDownDb(db);
+        await db.pool.close();
+        await db.server.close();
     });
     afterEach(async () => {
         await clearDB({session, admin: db.admin});

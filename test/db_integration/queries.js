@@ -44,6 +44,8 @@ describeWithAuth('select queries', () => {
     afterAll(async () => {
         await session.close();
         await tearDownDb(db);
+        await db.pool.close();
+        await db.server.close();
     });
     describe('paginate basic query', () => {
         let original;
