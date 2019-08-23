@@ -155,7 +155,7 @@ const trimRecords = async (recordList, opt = {}) => {
                 if (value.cluster < 0) { // abstract, remove
                     delete curr[attr];
                 }
-            } else if (typeof value === 'object' && value && value['@rid'] !== undefined) {
+            } else if (typeof value === 'object' && value && value['@rid']) {
                 if (!accessOk(value) || (activeOnly && value.deletedAt)) {
                     delete curr[attr];
                 } else {
