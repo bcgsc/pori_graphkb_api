@@ -18,8 +18,8 @@ let app;
             process.exit(1);
         });
     } catch (err) {
-        logger.log('error', `Failed to start server: ${err}`);
-        logger.log('error', err.stack);
+        logger.error(`Failed to start server: ${err}`);
+        logger.error(err.stack);
         app.close();
         throw err;
     }
