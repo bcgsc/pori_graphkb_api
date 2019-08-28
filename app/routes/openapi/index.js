@@ -14,6 +14,7 @@ const swaggerUi = require('swagger-ui-express');
 
 const {
     POST_TOKEN,
+    POST_PARSE,
     GET_SCHEMA,
     GET_VERSION,
     GET_STATEMENT_BY_KEYWORD,
@@ -39,6 +40,7 @@ const STUB = {
     },
     paths: {
         '/token': {post: POST_TOKEN},
+        '/parse': {post: POST_PARSE},
         '/schema': {get: GET_SCHEMA},
         '/version': {get: GET_VERSION},
         '/statements/search': {get: GET_STATEMENT_BY_KEYWORD},

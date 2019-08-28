@@ -25,7 +25,9 @@ const {addExtensionRoutes} = require('./extensions');
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
 const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
-const {addKeywordSearchRoute, addGetRecordsByList, addStatsRoute} = require('./routes');
+const {
+    addKeywordSearchRoute, addGetRecordsByList, addStatsRoute, addParserRoute
+} = require('./routes');
 const config = require('./config');
 
 const BOOLEAN_FLAGS = [
@@ -158,6 +160,7 @@ class AppServer {
                 schema: getLoadVersion().version
             });
         });
+        addParserRoute(this); // doesn't require any data access so no auth required
         // read the key file if it wasn't already set
         if (!this.conf.GKB_KEY) {
             logger.log('info', `reading the private key file: ${GKB_KEY_FILE}`);
@@ -176,6 +179,7 @@ class AppServer {
         addKeywordSearchRoute(this);
         addGetRecordsByList(this);
         addStatsRoute(this);
+
         // simple routes
         for (const model of Object.values(this.schema)) {
             addResourceRoutes(this, model);

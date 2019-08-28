@@ -65,6 +65,32 @@ const POST_TOKEN = {
 };
 
 
+const POST_PARSE = {
+    summary: 'Parse variant string representation',
+    tags: ['General'],
+    requestBody: {
+        required: true,
+        content: {
+            'application/json': {
+                schema: {
+                    type: 'object',
+                    required: ['content'],
+                    properties: {
+                        content: {type: 'string', description: 'the variant string representation', example: 'KRAS:p.G12D'},
+                        requiredFeatures: {type: 'boolean', description: 'flag to indicate features are not required in the variant string'}
+                    }
+                }
+            }
+        }
+    },
+    responses: {
+        200: {
+            content: {'application/json': {schema: {type: 'object'}}}
+        },
+        400: {$ref: '#/components/responses/BadInput'}
+    }
+};
+
 const GET_SCHEMA = {
     summary: 'Returns a JSON representation of the current database schema',
     tags: ['Metadata'],
@@ -75,6 +101,7 @@ const GET_SCHEMA = {
         200: {
             content: {'application/json': {schema: {type: 'object'}}}
         }
+
     }
 };
 
@@ -260,6 +287,7 @@ const GET_STATS = {
 
 module.exports = {
     POST_TOKEN,
+    POST_PARSE,
     GET_SCHEMA,
     GET_STATS,
     GET_VERSION,
