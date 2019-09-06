@@ -24,10 +24,12 @@ const createEmptyDb = async () => {
         GKB_DB_CREATE: true,
         GKB_USER_CREATE: true
     });
-    const {server, db} = await connectDB(conf);
-    const user = await getUserByName(db, process.env.USER || 'admin');
+    const {server, pool} = await connectDB(conf);
+    const session = await pool.acquire();
+    const user = await getUserByName(session, process.env.USER || 'admin');
+    session.close();
     return {
-        session: db, conf, admin: user, server
+        pool, conf, admin: user, server
     };
 };
 
@@ -37,8 +39,9 @@ const createEmptyDb = async () => {
  */
 const createSeededDb = async () => {
     const db = await createEmptyDb();
-    const {session, admin} = db;
+    const {pool, admin} = db;
     // create a source
+    const session = await pool.acquire();
     const source = await create(
         session,
         {content: {name: 'default source'}, model: schema.Source, user: admin}
@@ -79,7 +82,7 @@ const createSeededDb = async () => {
 
     // update a record so there is something deleted we can test
     const query = `SELECT * FROM [${carcinomas['@rid']}]`;
-    const carcinoma = await update(db.session, {
+    const carcinoma = await update(session, {
         changes: {sourceId: 'carcinoma'},
         user: db.admin,
         model: schema.Disease,
@@ -153,6 +156,7 @@ const createSeededDb = async () => {
             model: schema.Statement
         })
     ]);
+    await session.close();
     return {
         records: {
             source,

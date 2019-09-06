@@ -143,10 +143,18 @@ const addPostToken = (app) => {
         }
 
         // kb-level authentication
-        let token;
+        let token,
+            session;
         try {
-            token = await generateToken(app.db, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
+            session = await app.pool.acquire();
         } catch (err) {
+            return next(err);
+        }
+        try {
+            token = await generateToken(session, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
+            session.close();
+        } catch (err) {
+            session.close();
             logger.log('debug', err);
             if (err instanceof NoRecordFoundError) {
                 return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);

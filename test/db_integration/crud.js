@@ -29,20 +29,25 @@ if (!process.env.GKB_DBS_PASS) {
 }
 
 describeWithAuth('CRUD operations', () => {
-    let db;
+    let db,
+        session;
     beforeAll(async () => {
         db = await createEmptyDb();
+        session = await db.pool.acquire();
     });
     afterAll(async () => {
+        await session.close();
         await tearDownDb(db);
+        await db.pool.close();
+        await db.server.close();
     });
     afterEach(async () => {
-        await clearDB(db);
+        await clearDB({session, admin: db.admin});
     });
 
     test('update error on missing changes argument', async () => {
         try {
-            await update(db.session, {query: {}, user: db.admin, model: schema.User});
+            await update(session, {query: {}, user: db.admin, model: schema.User});
         } catch (err) {
             expect(err.message).toContain('opt.changes is a required argument');
             return;
@@ -60,13 +65,13 @@ describeWithAuth('CRUD operations', () => {
     describe('user', () => {
         describe('create new', () => {
             test('ok', async () => {
-                const record = await create(db.session, {content: {name: 'alice'}, model: schema.User, user: db.admin});
+                const record = await create(session, {content: {name: 'alice'}, model: schema.User, user: db.admin});
                 expect(record).toHaveProperty('name', 'alice');
             });
             test('error on duplicate name', async () => {
-                await create(db.session, {content: {name: 'alice'}, model: schema.User, user: db.admin});
+                await create(session, {content: {name: 'alice'}, model: schema.User, user: db.admin});
                 try {
-                    await create(db.session, {content: {name: 'alice'}, model: schema.User, user: db.admin});
+                    await create(session, {content: {name: 'alice'}, model: schema.User, user: db.admin});
                 } catch (err) {
                     expect(err).toBeInstanceOf(RecordExistsError);
                     return;
@@ -78,14 +83,14 @@ describeWithAuth('CRUD operations', () => {
             let original;
             beforeEach(async () => {
                 original = await create(
-                    db.session,
+                    session,
                     {content: {name: 'alice'}, model: schema.User, user: db.admin}
                 );
             });
             test('update name error on duplicate', async () => {
                 try {
                     await create(
-                        db.session,
+                        session,
                         {content: {name: original.name}, model: schema.User, user: db.admin}
                     );
                 } catch (err) {
@@ -104,7 +109,7 @@ describeWithAuth('CRUD operations', () => {
                         neighbors: 3
                     }
                 );
-                const updated = await update(db.session, {
+                const updated = await update(session, {
                     changes: {name: 'bob'}, query, user: db.admin, model: schema.User
                 });
                 expect(updated).toHaveProperty('name', 'bob');
@@ -122,7 +127,7 @@ describeWithAuth('CRUD operations', () => {
                     }
                 );
                 const deleted = await remove(
-                    db.session,
+                    session,
                     {query, user: db.admin, model: schema.User}
                 );
                 expect(deleted).toHaveProperty('deletedAt');
@@ -141,7 +146,7 @@ describeWithAuth('CRUD operations', () => {
             source;
         beforeEach(async () => {
             source = await create(
-                db.session,
+                session,
                 {content: {name: 'source'}, model: schema.Source, user: db.admin}
             );
             ([srcVertex, tgtVertex] = await Promise.all([
@@ -149,14 +154,14 @@ describeWithAuth('CRUD operations', () => {
                 {sourceId: 'carcinoma'}
             ].map(
                 async content => create(
-                    db.session,
+                    session,
                     {content: {...content, source}, model: schema.Disease, user: db.admin}
                 )
             )));
         });
         describe('create new', () => {
             test('ok', async () => {
-                const edge = await create(db.session, {
+                const edge = await create(session, {
                     model: schema.AliasOf,
                     content: {
                         out: srcVertex,
@@ -172,7 +177,7 @@ describeWithAuth('CRUD operations', () => {
             });
             test('error on src = tgt', async () => {
                 try {
-                    await create(db.session, {
+                    await create(session, {
                         model: schema.AliasOf,
                         content: {
                             out: srcVertex,
@@ -190,7 +195,7 @@ describeWithAuth('CRUD operations', () => {
             });
             test('error on no src (out) vertex', async () => {
                 try {
-                    await create(db.session, {
+                    await create(session, {
                         model: schema.AliasOf,
                         content: {
                             out: null,
@@ -208,7 +213,7 @@ describeWithAuth('CRUD operations', () => {
             });
             test('error on no tgt (in) vertex', async () => {
                 try {
-                    await create(db.session, {
+                    await create(session, {
                         model: schema.AliasOf,
                         content: {
                             out: srcVertex,
@@ -225,7 +230,7 @@ describeWithAuth('CRUD operations', () => {
                 throw new Error('did not throw the expected error');
             });
             test('allows null source', async () => {
-                const record = await create(db.session, {
+                const record = await create(session, {
                     model: schema.AliasOf,
                     content: {
                         out: srcVertex,
@@ -240,7 +245,7 @@ describeWithAuth('CRUD operations', () => {
         describe('modify', () => {
             let original;
             beforeEach(async () => {
-                original = await create(db.session, {
+                original = await create(session, {
                     model: schema.AliasOf,
                     content: {
                         out: srcVertex,
@@ -260,7 +265,7 @@ describeWithAuth('CRUD operations', () => {
                     {ignoreMissing: true}
                 );
                 // now update the edge, both src and target node should have history after
-                const result = await remove(db.session, {
+                const result = await remove(session, {
                     query,
                     user: db.admin,
                     model: schema.AliasOf
@@ -269,7 +274,7 @@ describeWithAuth('CRUD operations', () => {
                 expect(result.createdBy).toEqual(db.admin['@rid']);
                 expect(result).toHaveProperty('deletedAt');
                 expect(result.deletedAt).not.toBeNull();
-                const [newSrcVertex, newTgtVertex] = await db.session.record.get([srcVertex['@rid'], tgtVertex['@rid']]);
+                const [newSrcVertex, newTgtVertex] = await session.record.get([srcVertex['@rid'], tgtVertex['@rid']]);
                 expect(result.out).toEqual(newSrcVertex.history);
                 expect(result.in).toEqual(newTgtVertex.history);
             });
@@ -282,7 +287,7 @@ describeWithAuth('CRUD operations', () => {
                 );
                 // now update the edge, both src and target node should have history after
                 try {
-                    await update(db.session, {
+                    await update(session, {
                         query,
                         user: db.admin,
                         model: schema.AliasOf,
@@ -299,7 +304,7 @@ describeWithAuth('CRUD operations', () => {
     describe('vertices', () => {
         describe('create new', () => {
             test('ok', async () => {
-                const record = await create(db.session, {
+                const record = await create(session, {
                     model: schema.Source,
                     content: {
                         name: 'blargh'
@@ -310,7 +315,7 @@ describeWithAuth('CRUD operations', () => {
             });
             test('missing required property', async () => {
                 try {
-                    await create(db.session, {
+                    await create(session, {
                         model: schema.Source,
                         content: {},
                         user: db.admin
@@ -328,18 +333,18 @@ describeWithAuth('CRUD operations', () => {
                 source;
 
             beforeEach(async () => {
-                source = await create(db.session, {
+                source = await create(session, {
                     model: schema.Source,
                     content: {name: 'blargh'},
                     user: db.admin
                 });
                 ([cancer, carcinoma] = await Promise.all([
-                    create(db.session, {
+                    create(session, {
                         model: schema.Disease,
                         content: {sourceId: 'cancer', source},
                         user: db.admin
                     }),
-                    create(db.session, {
+                    create(session, {
                         model: schema.Disease,
                         content: {sourceId: 'carcinoma', source},
                         user: db.admin
@@ -347,7 +352,7 @@ describeWithAuth('CRUD operations', () => {
                 ]));
                 // add a link
                 await create(
-                    db.session,
+                    session,
                     {content: {out: cancer, in: carcinoma}, model: schema.AliasOf, user: db.admin}
                 );
             });
@@ -363,7 +368,7 @@ describeWithAuth('CRUD operations', () => {
                     }
                 );
                 // change the name
-                const updated = await update(db.session, {
+                const updated = await update(session, {
                     changes: {
                         name: 'new name'
                     },
@@ -378,7 +383,7 @@ describeWithAuth('CRUD operations', () => {
                 expect(updated['@rid']).toEqual(original['@rid']);
                 // select the original node
                 const [reselectedOriginal] = await select(
-                    db.session,
+                    session,
                     Query.parseRecord(
                         schema,
                         schema.Disease,
@@ -409,7 +414,7 @@ describeWithAuth('CRUD operations', () => {
                     }
                 );
                 // change the name
-                const deleted = await remove(db.session, {
+                const deleted = await remove(session, {
                     model: schema.Disease,
                     user: db.admin,
                     query
@@ -433,7 +438,7 @@ describeWithAuth('CRUD operations', () => {
             relevance;
         beforeEach(async () => {
             const source = await create(
-                db.session,
+                session,
                 {content: {name: 'some source'}, model: schema.Source, user: db.admin}
             );
             // set up the dependent records
@@ -442,14 +447,14 @@ describeWithAuth('CRUD operations', () => {
                 {content: {sourceId: 'publication:1234'}, model: schema.Publication},
                 {content: {sourceId: 'relevance:1234'}, model: schema.Vocabulary}
             ].map(async opt => create(
-                db.session,
+                session,
                 {...opt, content: {...opt.content, source}, user: db.admin}
             ))));
         });
         test('enforces psuedo-unique contraint by select', async () => {
             // create the statement
             await create(
-                db.session,
+                session,
                 {
                     content: {
                         impliedBy: [disease],
@@ -464,7 +469,7 @@ describeWithAuth('CRUD operations', () => {
             // throws RecordExistsError on next create call
             try {
                 await create(
-                    db.session,
+                    session,
                     {
                         content: {
                             impliedBy: [disease],

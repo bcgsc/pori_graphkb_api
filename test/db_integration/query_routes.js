@@ -29,22 +29,26 @@ describeWithAuth('api read-only routes', () => {
         mockToken;
     beforeAll(async () => {
         db = await createSeededDb();
-
+        const session = await db.pool.acquire();
         app = new AppServer({...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true});
 
         await app.listen();
         mockToken = await generateToken(
-            db.session,
+            session,
             db.admin.name,
             app.conf.GKB_KEY,
             REALLY_LONG_TIME
         );
+        await session.close();
     });
     afterAll(async () => {
-        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
         if (app) {
             await app.close(); // shut down the http server
         }
+        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
+        // close the db connections so that you can create more in the app.listen
+        await db.pool.close();
+        await db.server.close();
     });
 
     describe('/stats', () => {

@@ -125,8 +125,8 @@ class AppServer {
         } = this.conf;
 
         logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
-        const {db, schema} = await connectDB(this.conf);
-        this.db = db;
+        const {pool, schema} = await connectDB(this.conf);
+        this.pool = pool;
         this.schema = schema;
     }
 
@@ -135,7 +135,7 @@ class AppServer {
      */
     async listen() {
         // connect to the database
-        if (!this.db) {
+        if (!this.pool) {
             await this.connectToDb();
         }
         const {
@@ -224,20 +224,22 @@ class AppServer {
     }
 
     async close() {
-        logger.log('info', 'cleaning up');
+        logger.info('cleaning up');
+        try {
+            if (this.pool) {
+                logger.error('closing the database pool');
+                await this.pool.close();
+            }
+        } catch (err) {
+            logger.error(err);
+        }
         try {
             if (this.server) {
+                logger.error('closing the database server connection');
                 await this.server.close();
             }
         } catch (err) {
-            logger.log('error', err);
-        }
-        try {
-            if (this.db) {
-                await this.db.close();
-            }
-        } catch (err) {
-            logger.log('error', err);
+            logger.error(err);
         }
     }
 }

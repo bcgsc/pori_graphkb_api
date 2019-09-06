@@ -26,28 +26,33 @@ if (!process.env.GKB_DBS_PASS) {
 describeWithAuth('api crud routes', () => {
     let db,
         app,
-        mockToken;
+        mockToken,
+        session;
+
     beforeAll(async () => {
         db = await createEmptyDb();
-
         app = new AppServer({...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true});
-
         await app.listen();
+        session = await app.pool.acquire();
         mockToken = await generateToken(
-            db.session,
+            session,
             db.admin.name,
             app.conf.GKB_KEY,
             REALLY_LONG_TIME
         );
     });
     afterAll(async () => {
-        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
+        await session.close();
         if (app) {
             await app.close(); // shut down the http server
         }
+        await tearDownDb({server: db.server, conf: db.conf}); // destroy the test db
+        // close the db connections so that you can create more in the app.listen
+        await db.pool.close();
+        await db.server.close();
     });
     afterEach(async () => {
-        await clearDB(db);
+        await clearDB({session, admin: db.admin});
     });
 
     describe('/:model create new record', () => {
@@ -88,9 +93,8 @@ describeWithAuth('api crud routes', () => {
                 throw new Error('Did not throw expected error');
             });
             test('error on missing required property', async () => {
-                let res;
                 try {
-                    res = await request({
+                    await request({
                         uri: `${app.url}/users`,
                         body: {
                         },
@@ -99,31 +103,31 @@ describeWithAuth('api crud routes', () => {
                             Authorization: mockToken
                         }
                     });
-                } catch (err) {
-                    res = err.response;
+                } catch ({response}) {
+                    expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                    expect(response.body).toHaveProperty('name', 'ValidationError');
+                    return;
                 }
-                expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                expect(res.body).toHaveProperty('name', 'ValidationError');
+                throw new Error('Did not throw expected error');
             });
             test('error on missing token', async () => {
-                let res;
                 try {
-                    res = await request({
+                    await request({
                         uri: `${app.url}/users`,
                         body: {
                             name: 'blargh monkeys'
                         },
                         method: 'POST'
                     });
-                } catch (err) {
-                    res = err.response;
+                } catch ({response}) {
+                    expect(response.statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
+                    return;
                 }
-                expect(res.statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
+                throw new Error('Did not throw expected error');
             });
             test('error on duplicate record conflict', async () => {
-                let res;
                 try {
-                    res = await request({
+                    await request({
                         uri: `${app.url}/users`,
                         headers: {
                             Authorization: mockToken
@@ -133,10 +137,11 @@ describeWithAuth('api crud routes', () => {
                             name: db.admin.name
                         }
                     });
-                } catch (err) {
-                    res = err.response;
+                } catch ({response}) {
+                    expect(response.statusCode).toBe(HTTP_STATUS.CONFLICT);
+                    return;
                 }
-                expect(res.statusCode).toBe(HTTP_STATUS.CONFLICT);
+                throw new Error('Did not throw expected error');
             });
             test('create record with embedded property', async () => {
                 const {body: {result}} = await request({
