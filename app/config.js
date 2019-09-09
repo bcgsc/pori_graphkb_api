@@ -19,12 +19,14 @@ module.exports = {
         GKB_LOG_LEVEL: 'debug',
         GKB_PORT: 8080,
         GKB_USER_CREATE: true,
+        GKB_CORS_ORIGIN: '*',
         GKB_HOST: process.env.HOSTNAME
     },
     development: {
         GKB_DB_CREATE: false,
         GKB_LOG_MAX_FILES: 7,
-        GKB_DB_NAME: 'next-production'
+        GKB_DB_NAME: 'next-production',
+        GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca'
     },
     local: {},
     production: {
@@ -35,7 +37,8 @@ module.exports = {
         GKB_KEYCLOAK_KEY_FILE: 'keycloak.key',
         GKB_KEYCLOAK_URI: 'https://keycloak.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
         GKB_LOG_LEVEL: 'info',
-        GKB_LOG_MAX_FILES: 28
+        GKB_LOG_MAX_FILES: 28,
+        GKB_CORS_ORIGIN: 'https://graphkb.bcgsc.ca'
     },
     test: {
         GKB_DISABLE_AUTH: true,
