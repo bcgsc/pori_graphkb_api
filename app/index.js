@@ -76,7 +76,7 @@ const checkOriginWhiteList = whitelist => (origin, callback) => {
     if (whitelist.includes('*') || !origin || whitelist.includes(origin)) {
         callback(null, true);
     } else {
-        callback(new Error('Origin not allowed by CORS'));
+        callback(new Error(`Origin ${origin} not allowed by CORS. Expected one of: ${whitelist.join(', ')}`));
     }
 };
 
