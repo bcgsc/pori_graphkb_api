@@ -73,7 +73,7 @@ const createConfig = (overrides = {}) => {
 
 
 const checkOriginWhiteList = whitelist => (origin, callback) => {
-    if (whitelist.includes('*') || !origin || !whitelist.includes(origin)) {
+    if (whitelist.includes('*') || !origin || whitelist.includes(origin)) {
         callback(null, true);
     } else {
         callback(new Error('Origin not allowed by CORS'));
