@@ -30,5 +30,4 @@ doc/README.md
 *.id_rsa.pub
 logs
 pm2_logs
-*.key
 *.cert
