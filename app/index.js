@@ -158,15 +158,19 @@ class AppServer {
 
         this.router.use(checkToken(this.conf.GKB_KEY));
 
+        // special statement routes
+        addKeywordSearchRoute({router: this.router, db, config: this.conf});
+        addSearchStatementByLinked({router: this.router, db, config: this.conf});
+
         // simple routes
         for (const model of Object.values(schema)) {
             addResourceRoutes({
                 router: this.router, model, db, schema
             });
         }
-        addKeywordSearchRoute({router: this.router, db, config: this.conf});
+
         addGetRecordsByList({router: this.router, db, config: this.conf});
-        addSearchStatementByLinked({router: this.router, db, config: this.conf});
+
         // add the stats route
         const classList = Object.keys(this.schema).filter(
             name => !this.schema[name].isAbstract
