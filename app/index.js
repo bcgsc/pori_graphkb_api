@@ -72,14 +72,6 @@ const createConfig = (overrides = {}) => {
 };
 
 
-const checkOriginWhiteList = whitelist => (origin, callback) => {
-    if (whitelist.includes('*') || !origin || whitelist.includes(origin)) {
-        callback(null, true);
-    } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS. Expected one of: ${whitelist.join(', ')}`));
-    }
-};
-
 class AppServer {
     /**
      * @property {express} app the express app instance
@@ -97,8 +89,9 @@ class AppServer {
         this.app.use(bodyParser.urlencoded({extended: true}));
         this.app.use(bodyParser.json());
         // add some basic logging
+        const originWhiteList = (conf.GKB_CORS_ORIGIN || '*').split(/[\s,]+/g);
         this.app.use(cors({
-            origin: checkOriginWhiteList((conf.GKB_CORS_ORIGIN || '*').split(/[\s,]+/g))
+            origin: originWhiteList
         }));
 
         this.db = null;
