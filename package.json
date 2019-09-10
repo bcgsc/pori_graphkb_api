@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc/knowledgebase-api",
   "main": "server.js",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "repository": {
     "type": "git",
     "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
@@ -22,7 +22,7 @@
     "https": "^1.0.0",
     "json-cycle": "^1.2.0",
     "jsonwebtoken": "^8.2.0",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.15",
     "orientjs": "^2.2.11",
     "portfinder": "^1.0.20",
     "request-promise": "^4.2.1",
