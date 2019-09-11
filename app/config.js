@@ -25,7 +25,7 @@ module.exports = {
         GKB_DB_CREATE: false,
         GKB_LOG_MAX_FILES: 7,
         GKB_DB_NAME: 'next-production',
-        GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca http://localhost:3000'
+        GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca http://graphkbdev.bcgsc.ca:5000 http://localhost:3000'
     },
     local: {
         GKB_CORS_ORIGIN: 'http://localhost:3000'
