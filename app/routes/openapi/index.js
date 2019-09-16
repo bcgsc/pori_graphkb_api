@@ -295,7 +295,7 @@ const describeGet = (model) => {
     }
 
     for (const prop of Object.values(model.properties)) {
-        if (prop.name === '@class') {
+        if (prop.name.startsWith('@')) {
             continue;
         }
         const isList = !!/(list|set)/g.exec(prop.type);
@@ -314,8 +314,6 @@ const describeGet = (model) => {
             param.schema.$ref = `${SCHEMA_PREFIX}/RecordList`;
         } else if (isLink) {
             param.schema.$ref = `${SCHEMA_PREFIX}/RecordLink`;
-        } else if (prop.name === '@rid') {
-            param.schema.$ref = `${SCHEMA_PREFIX}/@rid`;
         } else {
             param.schema.type = prop.type;
         }
