@@ -42,7 +42,11 @@ const queryRoute = (app, model) => {
         async (req, res, next) => {
             let query;
             try {
-                query = Query.parse(app.schema, model, parseQueryLanguage(checkStandardOptions(req.query)));
+                if (req.query['@rid'] !== undefined) {
+                    throw new AttributeError('This route does not allow search by @rid. Please use the /records route instead');
+                }
+                const options = parseQueryLanguage(checkStandardOptions(req.query));
+                query = Query.parse(app.schema, model, options);
                 query.validate();
             } catch (err) {
                 logger.log('debug', err);
