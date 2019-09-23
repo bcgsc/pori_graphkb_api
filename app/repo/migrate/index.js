@@ -196,6 +196,18 @@ const migrate2from4xto5x = async (db) => {
     );
 };
 
+const migrate2from5xto6x = async (db) => {
+    logger.info('Adding properties {authors,citation,issue,volume,pages} to Publication class');
+    const {
+        authors, citation, issue, volume, pages
+    } = SCHEMA_DEFN.Publication.properties;
+    const publication = await db.class.get(SCHEMA_DEFN.Publication.name);
+
+    for (const prop of [authors, citation, issue, volume, pages]) {
+        await Property.create(prop, publication);
+    }
+};
+
 
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
@@ -237,7 +249,8 @@ const migrate = async (db, opt = {}) => {
         ['2.1.0', '2.2.0', migrate2from1xto2x],
         ['2.2.0', '2.3.0', migrate2from2xto3x],
         ['2.3.0', '2.4.0', migrate2from3xto4x],
-        ['2.4.0', '2.5.0', migrate2from4xto5x]
+        ['2.4.0', '2.5.0', migrate2from4xto5x],
+        ['2.5.0', '2.6.0', migrate2from5xto6x]
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
