@@ -89,7 +89,12 @@ class AppServer {
         this.app.use(bodyParser.urlencoded({extended: true}));
         this.app.use(bodyParser.json());
         // add some basic logging
-        const originWhiteList = (conf.GKB_CORS_ORIGIN || '*').split(/[\s,]+/g);
+        const originWhiteList = (conf.GKB_CORS_ORIGIN || '.*').split(/[\s,]+/g).map((patt) => {
+            if (patt.startsWith('^') && patt.endsWith('$')) {
+                return new RegExp(patt);
+            }
+            return patt;
+        });
         this.app.use(cors({
             origin: originWhiteList
         }));

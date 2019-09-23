@@ -18,7 +18,7 @@ module.exports = {
         GKB_LOG_LEVEL: 'debug',
         GKB_PORT: 8080,
         GKB_USER_CREATE: true,
-        GKB_CORS_ORIGIN: '*',
+        GKB_CORS_ORIGIN: '^.*$',
         GKB_HOST: process.env.HOSTNAME
     },
     development: {
@@ -28,7 +28,7 @@ module.exports = {
         GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca http://graphkbdev.bcgsc.ca:5000 http://localhost:3000'
     },
     local: {
-        GKB_CORS_ORIGIN: 'http://localhost:3000'
+        GKB_CORS_ORIGIN: '^.*$'
     },
     production: {
         GKB_DB_CREATE: false,
