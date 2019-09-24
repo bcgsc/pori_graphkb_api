@@ -6,7 +6,7 @@ module.exports = {
         GKB_DB_HOST: 'orientdbdev.bcgsc.ca',
         GKB_DB_MIGRATE: true,
         GKB_DB_PASS: 'admin',
-        GKB_DB_PORT: 2427,
+        GKB_DB_PORT: 2424,
         GKB_DB_USER: 'admin',
         GKB_DB_POOL: 25,
         GKB_KEYCLOAK_CLIENT_ID: 'GraphKB',
@@ -24,17 +24,23 @@ module.exports = {
     development: {
         GKB_DB_CREATE: false,
         GKB_LOG_MAX_FILES: 7,
-        GKB_DB_NAME: 'next-production',
+        GKB_DB_NAME: 'production-sync-dev',
         GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca http://graphkbdev.bcgsc.ca:5000 http://localhost:3000'
+    },
+    staging: {
+        GKB_DB_CREATE: false,
+        GKB_LOG_MAX_FILES: 14,
+        GKB_DB_NAME: 'production-sync-staging',
+        GKB_CORS_ORIGIN: 'https://graphkbstaging.bcgsc.ca http://graphkbstaging.bcgsc.ca:5000 http://localhost:3000'
     },
     local: {
         GKB_CORS_ORIGIN: '^.*$'
     },
     production: {
         GKB_DB_CREATE: false,
-        GKB_DB_HOST: 'orientdbdev.bcgsc.ca',
-        GKB_DB_NAME: 'development',
-        GKB_DB_PORT: 2427,
+        GKB_DB_HOST: 'orientdb.bcgsc.ca',
+        GKB_DB_NAME: 'production',
+        GKB_DB_PORT: 2424,
         GKB_KEYCLOAK_KEY_FILE: 'config/keys/keycloak.key',
         GKB_KEYCLOAK_URI: 'https://keycloak.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
         GKB_LOG_LEVEL: 'info',
