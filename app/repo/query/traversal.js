@@ -1,4 +1,4 @@
-const {error: {AttributeError}, util: {castDecimalInteger, castToRID}} = require('@bcgsc/knowledgebase-schema');
+const {error: {AttributeError}, util: {castInteger, castToRID}} = require('@bcgsc/knowledgebase-schema');
 
 const {quoteWrap} = require('./../util');
 
@@ -137,7 +137,7 @@ class Traversal {
         if (prop) {
             optAttr.property = prop;
         } else if (optAttr.attr === SIZE_COMPUTATION) {
-            optAttr.cast = castDecimalInteger;
+            optAttr.cast = castInteger;
         } else if (!/^(out|in|both)[VE]?\(\)$/.exec(optAttr.attr)) {
             throw new AttributeError(`The expected property (${optAttr.attr}) has no property on the current model (${
                 model

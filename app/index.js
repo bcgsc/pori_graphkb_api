@@ -11,18 +11,23 @@ const HTTP_STATUS = require('http-status-codes');
 const {getPortPromise} = require('portfinder');
 
 const {logger} = require('./repo/logging');
-const {selectCounts} = require('./repo/commands');
-const {AttributeError} = require('./repo/error');
 const {
     checkToken
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
 
 const {connectDB} = require('./repo');
 
+const {DatabaseConnectionError} = require('./repo/error');
+const {getLoadVersion} = require('./repo/migrate/version');
+
+const {addExtensionRoutes} = require('./extensions');
+
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
-const {addResourceRoutes} = require('./routes/util');
+const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
-const {addKeywordSearchRoute, addGetRecordsByList, addSearchStatementByLinked} = require('./routes');
+const {
+    addKeywordSearchRoute, addGetRecordsByList, addStatsRoute, addParserRoute
+} = require('./routes');
 const config = require('./config');
 
 const BOOLEAN_FLAGS = [
@@ -66,11 +71,12 @@ const createConfig = (overrides = {}) => {
     return ENV;
 };
 
+
 class AppServer {
     /**
      * @property {express} app the express app instance
-     * @property {?http.Server} server the http server running the API
-     * @property {?orientjs.Db} the orientjs database connection
+     * @property {?http.Server} server server the http server running the API
+     * @property {?orientjs.Db} db the orientjs database connection
      * @property {express.Router} router the main router
      * @property {string} prefix the prefix to use for all routes
      * @property {Object} conf the configuration object
@@ -83,8 +89,14 @@ class AppServer {
         this.app.use(bodyParser.urlencoded({extended: true}));
         this.app.use(bodyParser.json());
         // add some basic logging
+        const originWhiteList = (conf.GKB_CORS_ORIGIN || '.*').split(/[\s,]+/g).map((patt) => {
+            if (patt.startsWith('^') && patt.endsWith('$')) {
+                return new RegExp(patt);
+            }
+            return patt;
+        });
         this.app.use(cors({
-            origin: true
+            origin: originWhiteList
         }));
 
         this.db = null;
@@ -112,37 +124,50 @@ class AppServer {
         return `http://${this.host}:${this.port}${this.prefix}`;
     }
 
+    async connectToDb() {
+        // connect to the database
+        const {
+            GKB_DB_HOST,
+            GKB_DB_PORT
+        } = this.conf;
+
+        logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
+        const {pool, schema} = await connectDB(this.conf);
+        this.pool = pool;
+        this.schema = schema;
+    }
+
     /**
      * Connect to the database, start the API server, and set dynamically built routes
      */
     async listen() {
         // connect to the database
+        if (!this.pool) {
+            await this.connectToDb();
+        }
         const {
-            GKB_DB_HOST,
-            GKB_DB_PORT,
             GKB_KEY_FILE,
             GKB_DB_NAME,
             GKB_DISABLE_AUTH,
             GKB_KEYCLOAK_KEY_FILE
         } = this.conf;
 
-        logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
-        const {db, schema} = await connectDB(this.conf);
-        this.db = db;
-        this.schema = schema;
+
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(schema, {port: this.port, host: this.host});
+        this.spec = generateSwaggerSpec(this.schema, {port: this.port, host: this.host});
         registerSpecEndpoints(this.router, this.spec);
 
         this.router.get('/schema', async (req, res) => {
-            res.status(HTTP_STATUS.OK).json({schema: jc.decycle(schema)});
+            res.status(HTTP_STATUS.OK).json({schema: jc.decycle(this.schema)});
         });
         this.router.get('/version', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({
                 api: process.env.npm_package_version,
-                db: GKB_DB_NAME
+                db: GKB_DB_NAME,
+                schema: getLoadVersion().version
             });
         });
+        addParserRoute(this); // doesn't require any data access so no auth required
         // read the key file if it wasn't already set
         if (!this.conf.GKB_KEY) {
             logger.log('info', `reading the private key file: ${GKB_KEY_FILE}`);
@@ -154,58 +179,40 @@ class AppServer {
             this.conf.GKB_KEYCLOAK_KEY = fs.readFileSync(GKB_KEYCLOAK_KEY_FILE);
         }
         // add the addPostToken
-        addPostToken({router: this.router, db, config: this.conf});
+        addPostToken(this);
 
         this.router.use(checkToken(this.conf.GKB_KEY));
 
-        // special statement routes
-        addKeywordSearchRoute({router: this.router, db, config: this.conf});
-        addSearchStatementByLinked({router: this.router, db, config: this.conf});
+        addKeywordSearchRoute(this);
+        addGetRecordsByList(this);
+        addStatsRoute(this);
 
         // simple routes
-        for (const model of Object.values(schema)) {
-            addResourceRoutes({
-                router: this.router, model, db, schema
-            });
+        for (const model of Object.values(this.schema)) {
+            addResourceRoutes(this, model);
         }
+        addExtensionRoutes(this);
 
-        addGetRecordsByList({router: this.router, db, config: this.conf});
-
-        // add the stats route
-        const classList = Object.keys(this.schema).filter(
-            name => !this.schema[name].isAbstract
-                && this.schema[name].subclasses.length === 0 // terminal classes only
-                && !this.schema[name].embedded
-        );
-        this.router.get('/stats', async (req, res) => {
-            let grouping = req.query.grouping || [];
-            if (!(grouping instanceof Array)) {
-                grouping = [grouping];
-            }
-            if (Object.keys(req.query) - !!req.query.grouping > 0) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError({
-                    message: 'only accepts the grouping query parameter',
-                    params: Object.keys(req.query)
-                }));
-            }
-            try {
-                const stats = await selectCounts(this.db, classList, grouping);
-                return res.status(HTTP_STATUS.OK).json(jc.decycle({result: stats}));
-            } catch (err) {
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(jc.decycle(err));
-                }
-                logger.log('error', err || err.message);
-                return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(jc.decycle(err));
-            }
-        });
-
-        logger.log('info', 'Adding 404 capture');
         // catch any other errors
-        this.router.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+        this.router.use(async (err, req, res, next) => {
+            logger.info('unexpected error');
             logger.log('error', err.stack);
-            return res.status(err.code || HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
+            if (err instanceof DatabaseConnectionError) {
+                logger.warn('connection error, attempting to restart the database connection');
+                try {
+                    await this.connectToDb();
+                } catch (secondErr) {}
+            }
+            if (res.headersSent) {
+                return next(err);
+            }
+            const errorContent = err.toJSON
+                ? err.toJSON()
+                : {message: err.toString(), ...err};
+
+            return res.status(err.code || HTTP_STATUS.INTERNAL_SERVER_ERROR).json(errorContent);
         });
+        logger.log('info', 'Adding 404 capture');
         // last catch any errors for undefined routes. all actual routes should be defined above
         this.app.use((req, res) => res.status(HTTP_STATUS.NOT_FOUND).json({
             error: `Not Found: ${req.route}`,
@@ -224,20 +231,22 @@ class AppServer {
     }
 
     async close() {
-        logger.log('info', 'cleaning up');
+        logger.info('cleaning up');
+        try {
+            if (this.pool) {
+                logger.error('closing the database pool');
+                await this.pool.close();
+            }
+        } catch (err) {
+            logger.error(err);
+        }
         try {
             if (this.server) {
+                logger.error('closing the database server connection');
                 await this.server.close();
             }
         } catch (err) {
-            logger.log('error', err);
-        }
-        try {
-            if (this.db) {
-                await this.db.close();
-            }
-        } catch (err) {
-            logger.log('error', err);
+            logger.error(err);
         }
     }
 }

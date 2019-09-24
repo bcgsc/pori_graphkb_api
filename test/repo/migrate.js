@@ -24,8 +24,10 @@ describe('migrate', () => {
 
     beforeAll(() => {
         createRecordMock = jest.fn();
+        const queryMock = jest.fn().mockReturnValue({all: jest.fn(), one: jest.fn()});
         db = {
-            query: jest.fn(),
+            query: queryMock,
+            command: queryMock,
             index: {
                 create: jest.fn()
             },
@@ -45,14 +47,16 @@ describe('migrate', () => {
     });
 
     test('getCurrentVersion', async () => {
-        db.query.mockResolvedValueOnce([{version: '1.6.2'}]);
+        db.query.mockReturnValue({all: jest.fn().mockResolvedValueOnce([{version: '1.6.2'}])});
         const version = await getCurrentVersion(db);
-        expect(db.query).toHaveBeenCalledWith('SELECT * FROM SchemaHistory ORDER BY createdAt DESC', {limit: 1});
+        expect(db.query).toHaveBeenCalledWith('SELECT * FROM SchemaHistory ORDER BY createdAt DESC LIMIT 1');
         expect(version).toEqual('1.6.2');
     });
 
     test('getLoadVersion', () => {
-        expect(getLoadVersion()).toHaveProperty('version', '1.9.2');
+        const version = getLoadVersion();
+        expect(version).toHaveProperty('version');
+        expect(version.version).toEqual(expect.stringMatching(/^\d+\.\d+\.\d+$/));
     });
 
     describe('requiresMigration', () => {
@@ -102,7 +106,7 @@ describe('migrate', () => {
             _version.getCurrentVersion = jest.fn().mockResolvedValue('1.8.0');
             _version.getLoadVersion = jest.fn().mockReturnValue({version: '1.9.0'});
             await migrate(db);
-            expect(db.query).toHaveBeenCalledTimes(15);
+            expect(db.query).toHaveBeenCalledTimes(20);
             expect(db.class.get).toHaveBeenCalledTimes(3);
             expect(propertyMock).toHaveBeenCalledTimes(4);
             expect(modelMock).toHaveBeenCalledTimes(1);
@@ -125,7 +129,7 @@ describe('migrate', () => {
         test('incompatible check only', async () => {
             _version.getCurrentVersion = jest.fn().mockResolvedValue('1.8.0');
             _version.getLoadVersion = jest.fn().mockReturnValue({version: '1.9.1'});
-            expect(migrate(db, {checkOnly: true})).rejects.toContain('are no compatible');
+            expect(migrate(db, {checkOnly: true})).rejects.toContain('are not compatible');
             expect(db.query).not.toHaveBeenCalled();
             expect(db.class.get).not.toHaveBeenCalled();
         });
@@ -134,7 +138,7 @@ describe('migrate', () => {
             _version.getLoadVersion = jest.fn().mockReturnValue({version: '1.9.2'});
             await migrate(db);
             expect(createRecordMock).toHaveBeenCalledTimes(4); // logged 4 times
-            expect(db.query).toHaveBeenCalledTimes(15); // 1.8 to 1.9
+            expect(db.query).toHaveBeenCalledTimes(20); // 1.8 to 1.9
             expect(db.index.create).toHaveBeenCalledTimes(3); // 1.6 to 1.7
             expect(propertyMock).toHaveBeenCalledTimes(5); // mixed
         });

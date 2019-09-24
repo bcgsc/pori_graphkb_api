@@ -28,7 +28,7 @@ describe('neighborhood', () => {
             depth: 1
         });
         expect(stripSQL(query)).toBe(
-            'SELECT * FROM (MATCH {class: Disease, WHERE: (name = :param0)}.both(\'AliasOf\'){WHILE: ($depth < 1)} RETURN $pathElements)'
+            'SELECT * FROM (MATCH {class: Disease, WHERE: (name = :param0)}.both(\'AliasOf\'){WHILE: ($depth < 1)} RETURN DISTINCT $pathElements)'
         );
         expect(params).toEqual({param0: 'blargh'});
     });

@@ -6,11 +6,11 @@
  * @constant
  * @ignore
  */
-const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
+const {error: {AttributeError}, schema} = require('@bcgsc/knowledgebase-schema');
 const {quoteWrap} = require('./../util');
 
 const {
-    NEIGHBORHOOD_EDGES, MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS
 } = require('./constants');
 const {castRangeInt} = require('./util');
 
@@ -52,16 +52,21 @@ const treeQuery = (opt) => {
  */
 const neighborhood = (opt) => {
     const {
-        whereClause, modelName, paramIndex = 0
+        whereClause, modelName, paramIndex = 0, edges = []
     } = opt;
-    const edges = opt.edges || NEIGHBORHOOD_EDGES;
+    // check the edges are valid edge names
+    for (const edge of edges) {
+        if (!schema.get(edge)) {
+            throw new AttributeError(`Invalid edge parameter (${edge})`);
+        }
+    }
     const depth = castRangeInt(opt.depth || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);
 
     const {query, params} = whereClause.toString(paramIndex);
     const statement = `SELECT * FROM (MATCH
     {class: ${modelName}, WHERE: (${query})}
-        .both(${Array.from(edges, quoteWrap).join(', ')}){WHILE: ($depth < ${depth})}
-RETURN $pathElements)`;
+        .both(${edges.map(quoteWrap).join(', ')}){WHILE: ($depth < ${depth})}
+RETURN DISTINCT $pathElements)`;
     return {query: statement, params};
 };
 

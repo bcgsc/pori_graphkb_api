@@ -1,10 +1,33 @@
 const {
     error: {AttributeError},
-    util: {castDecimalInteger}
+    util: {castInteger}
 } = require('@bcgsc/knowledgebase-schema');
 
 
 const {TRAVERSAL_TYPE} = require('./constants');
+
+
+/**
+ * Given some depth level, calculates the nested projection required
+ * to expand all associated links and edges
+ */
+const nestedProjection = (initialDepth, excludeHistory = true) => {
+    const recursiveNestedProjection = (depth) => {
+        let current = '*';
+        if (depth !== initialDepth) {
+            current = `${current}, @rid, @class`;
+            if (excludeHistory) {
+                current = `${current}, !history`;
+            }
+        }
+        if (depth <= 0) {
+            return current;
+        }
+        const inner = recursiveNestedProjection(depth - 1);
+        return `${current}, *:{${inner}}`;
+    };
+    return recursiveNestedProjection(initialDepth);
+};
 
 /**
  * @param {string} compoundAttr the shorthand attr notation
@@ -64,7 +87,7 @@ const parseCompoundAttr = (compoundAttr) => {
  * @throws {AttributeError} on bad input
  */
 const castRangeInt = (value, min, max) => {
-    const castValue = castDecimalInteger(value);
+    const castValue = castInteger(value);
     if (min !== null && castValue < min) {
         throw new AttributeError(`value (${castValue}) must be greater than or equal to ${min}`);
     }
@@ -94,6 +117,12 @@ const generateSqlParams = (items, paramStart) => {
     return params;
 };
 
+
+const reverseDirection = direction => (direction === 'out'
+    ? 'in'
+    : 'out');
+
+
 module.exports = {
-    parseCompoundAttr, castRangeInt, castBoolean, generateSqlParams
+    parseCompoundAttr, castRangeInt, castBoolean, generateSqlParams, nestedProjection, reverseDirection
 };

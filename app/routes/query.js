@@ -26,6 +26,65 @@ const {
 
 const MIN_WORD_SIZE = 4;
 
+const STD_QUERY_OPTIONS = [
+    'activeOnly',
+    'count',
+    'limit',
+    'neighbors',
+    'orderBy',
+    'orderByDirection',
+    'returnProperties',
+    'skip'
+];
+
+/**
+ * @param {object} opt the query options
+ * @param {Number} opt.skip the number of records to skip (for paginating)
+ * @param {Array.<string>} opt.orderBy the properties used to determine the sort order of the results
+ * @param {string} opt.orderByDirection the direction to order (ASC or DESC)
+ * @param {boolean} opt.count count the records instead of returning them
+ * @param {Number} opt.neighbors the number of neighboring record levels to fetch
+ */
+const checkStandardOptions = (opt) => {
+    const {
+        limit, neighbors, skip, orderBy, orderByDirection, count, returnProperties, activeOnly
+    } = opt;
+
+    const options = {};
+    if (limit !== undefined) {
+        options.limit = castRangeInt(limit, 1, MAX_LIMIT);
+    }
+    if (neighbors !== undefined) {
+        options.neighbors = castRangeInt(neighbors, 0, MAX_NEIGHBORS);
+    }
+    if (skip !== undefined) {
+        options.skip = castRangeInt(skip, 0);
+    }
+    if (orderBy) {
+        if (Array.isArray(orderBy)) {
+            options.orderBy = orderBy.map(prop => prop.trim());
+        } else {
+            options.orderBy = orderBy.split(',').map(prop => prop.trim());
+        }
+    }
+    if (orderByDirection) {
+        options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
+        if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
+            throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
+        }
+    }
+    if (returnProperties) {
+        options.returnProperties = returnProperties.split(',');
+    }
+    if (activeOnly !== undefined) {
+        options.activeOnly = castBoolean(activeOnly);
+    }
+    if (count) {
+        options.count = castBoolean(count);
+    }
+    return {...opt, ...options};
+};
+
 
 /**
  * Given objects representing collapsed traversals. Return individual lists representing the
@@ -92,7 +151,6 @@ const parseValue = (attr, value) => {
     }
     const clause = {operator: 'OR', comparisons: []};
     for (let subValue of value.split('|')) {
-        subValue = decodeURIComponent(subValue); // fix for qs not properly decoding nested components
         let negate = false;
         if (subValue.startsWith('!')) {
             negate = true;
@@ -169,30 +227,12 @@ const parse = (queryParams) => {
         if (attrList.length === 1) {
             attr = attrList[0];
         }
-        if (attr === 'neighbors') {
-            specialArgs[attr] = castRangeInt(value, 0, MAX_NEIGHBORS);
-        } else if (attr === 'limit') {
-            specialArgs[attr] = castRangeInt(value, 1, MAX_LIMIT);
-        } else if (attr === 'skip') {
-            specialArgs[attr] = castRangeInt(value, 0, null);
-        } else if (attr === 'or' || attr === 'returnProperties' || attr === 'orderBy') {
+        if (STD_QUERY_OPTIONS.includes(attr)) {
+            specialArgs[attr] = value;
+        } else if (attr === 'or') {
             specialArgs[attr] = value.split(',');
-        } else if (attr === 'activeOnly' || attr === 'count') {
-            specialArgs[attr] = castBoolean(value);
-        } else if (attr === 'orderByDirection') {
-            if (!['ASC', 'DESC'].includes(`${value}`.toUpperCase())) {
-                throw new AttributeError(`Bad value (${value}) for orderByDirection. Must be one of DESC or ASC`);
-            }
-            specialArgs[attr] = `${value}`.toUpperCase();
         } else if (attr === 'compoundSyntax') {
             compoundSyntax = value;
-        } else if (attr === 'orderByDirection') {
-            specialArgs[attr] = value.toString().toUpperCase();
-            if (!['ASC', 'DESC'].includes(specialArgs[attr])) {
-                throw new AttributeError(`Invalid direction value ${value} expected ASC or DESC`);
-            }
-        } else if (attr === 'orderBy') {
-            specialArgs[attr] = value.split(',');
         } else {
             if (!attr) {
                 attr = formatTraversal(attrList);
@@ -233,5 +273,12 @@ const parse = (queryParams) => {
 };
 
 module.exports = {
-    parse, flattenQueryParams, formatTraversal, parseValue, parseCompoundAttr
+    parse,
+    flattenQueryParams,
+    formatTraversal,
+    parseValue,
+    parseCompoundAttr,
+    STD_QUERY_OPTIONS,
+    checkStandardOptions,
+    MIN_WORD_SIZE
 };

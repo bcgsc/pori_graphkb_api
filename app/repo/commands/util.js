@@ -6,7 +6,8 @@ const {util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
 
 const {
     NoRecordFoundError,
-    RecordExistsError
+    RecordExistsError,
+    DatabaseConnectionError
 } = require('../error');
 
 
@@ -15,12 +16,21 @@ const {
  * corresponding error class
  */
 const wrapIfTypeError = (err) => {
-    if (err && err.type) {
-        const type = err.type.toLowerCase();
-        if (type.includes('orecordduplicatedexception')) {
-            return new RecordExistsError(err);
-        } if (type.includes('orecordnotfoundexception')) {
-            return new NoRecordFoundError(err);
+    if (err) {
+        if (err.type) {
+            const type = err.type.toLowerCase();
+            if (type.includes('orecordduplicatedexception')) {
+                return new RecordExistsError(err);
+            } if (type.includes('orecordnotfoundexception')) {
+                return new NoRecordFoundError(err);
+            } if (type.includes('odatabaseexception')) {
+                return new DatabaseConnectionError(err);
+            }
+        }
+        if (err.name) {
+            if (err.name.includes('OrientDB.ConnectionError')) {
+                return new DatabaseConnectionError(err);
+            }
         }
     }
     return err;
@@ -59,4 +69,6 @@ const hasRecordAccess = (user, record) => {
     return false;
 };
 
-module.exports = {wrapIfTypeError, omitDBAttributes, hasRecordAccess};
+module.exports = {
+    wrapIfTypeError, omitDBAttributes, hasRecordAccess
+};

@@ -12,7 +12,15 @@ const HTTP_STATUS = require('http-status-codes');
 const swaggerUi = require('swagger-ui-express');
 
 
-const routes = require('./routes');
+const {
+    POST_TOKEN,
+    POST_PARSE,
+    GET_SCHEMA,
+    GET_VERSION,
+    GET_STATEMENT_BY_KEYWORD,
+    GET_RECORDS,
+    GET_STATS
+} = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
 const {GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS} = require('./params');
@@ -31,13 +39,12 @@ const STUB = {
         version: process.env.npm_package_version
     },
     paths: {
-        '/statements': {post: routes.POST_STATEMENT},
-        '/token': {post: routes.POST_TOKEN},
-        '/schema': {get: routes.GET_SCHEMA},
-        '/version': {get: routes.GET_VERSION},
-        '/statements/search': {get: routes.GET_STATEMENT_BY_KEYWORD},
-        '/statements/search-links': {post: routes.SEARCH_STATEMENT_BY_LINKS},
-        '/records': {get: routes.GET_RECORDS},
+        '/token': {post: POST_TOKEN},
+        '/parse': {post: POST_PARSE},
+        '/schema': {get: GET_SCHEMA},
+        '/version': {get: GET_VERSION},
+        '/statements/search': {get: GET_STATEMENT_BY_KEYWORD},
+        '/records': {get: GET_RECORDS},
         '/spec': {
             get: {
                 summary: 'Returns this specification',
@@ -66,7 +73,7 @@ const STUB = {
                 }
             }
         },
-        '/stats': {get: routes.GET_STATS}
+        '/stats': {get: GET_STATS}
     },
     components: {
         schemas: Object.assign({
@@ -288,7 +295,7 @@ const describeGet = (model) => {
     }
 
     for (const prop of Object.values(model.properties)) {
-        if (prop.name === '@class') {
+        if (prop.name.startsWith('@')) {
             continue;
         }
         const isList = !!/(list|set)/g.exec(prop.type);
@@ -307,8 +314,6 @@ const describeGet = (model) => {
             param.schema.$ref = `${SCHEMA_PREFIX}/RecordList`;
         } else if (isLink) {
             param.schema.$ref = `${SCHEMA_PREFIX}/RecordLink`;
-        } else if (prop.name === '@rid') {
-            param.schema.$ref = `${SCHEMA_PREFIX}/@rid`;
         } else {
             param.schema.type = prop.type;
         }
@@ -372,30 +377,84 @@ const describeOperationByID = (model, operation = 'delete') => {
 
 
 /**
- * Describe the main search endpoint for complex queries using POST
+ * Given a class model, generate the swagger documentation for the search routes
+ * @param {ClassModel} model
  */
 const describePostSearch = (model) => {
+    const searchable = {};
+    for (const prop of Object.values(model.properties)) {
+        if ((prop.linkedClass && prop.linkedClass.embedded) || prop.name === '@class') {
+            continue;
+        }
+        const defn = {
+            type: 'array',
+            items: {},
+            description: 'search for records with any of the following'
+        };
+
+        if (prop.linkedClass) {
+            defn.items = linkOrModel(prop.linkedClass.name);
+            defn.description = 'search for records related to any of the following';
+        } else if (prop.linkedType) {
+            defn.items = {type: prop.linkedType};
+        } else {
+            defn.items = {type: prop.type};
+        }
+        searchable[prop.name] = defn;
+    }
+
     const body = {
         type: 'object',
         properties: {
-            skip: {$ref: '#/components/schemas/skip'},
             activeOnly: {$ref: '#/components/schemas/activeOnly'},
-            where: {type: 'array', items: {$ref: `${SCHEMA_PREFIX}/Comparison`}},
-            returnProperties: {$ref: '#/components/schemas/returnProperties'},
-            limit: {$ref: '#/components/schemas/limit'},
-            neighbors: {$ref: '#/components/schemas/neighbors'},
             count: {$ref: '#/components/schemas/count'},
+            limit: {$ref: '#/components/schemas/limit'},
             orderBy: {$ref: '#/components/schemas/orderBy'},
-            orderByDirection: {$ref: '#/components/schemas/orderByDirection'}
-        }
+            orderByDirection: {$ref: '#/components/schemas/orderByDirection'},
+            skip: {$ref: '#/components/schemas/skip'}
+        },
+        oneOf: [
+            {
+                description: 'Build queries in JSON',
+                type: 'object',
+                required: ['where'],
+                properties: {
+                    where: {type: 'array', items: {$ref: `${SCHEMA_PREFIX}/Comparison`}},
+                    returnProperties: {$ref: '#/components/schemas/returnProperties'},
+                    neighbors: {$ref: '#/components/schemas/neighbors'}
+                }
+            },
+            {
+                description: 'Quick search properties and related records',
+                type: 'object',
+                required: ['search'],
+                properties: {
+                    search: {
+                        description: 'Arrays of possible values for properties of this class',
+                        type: 'object',
+                        properties: searchable
+                    }
+                }
+            }
+        ]
     };
+
     const description = {
-        summary: `Query ${model.name} records using complex query objects`,
+        summary: `Search or Query ${model.name} records`,
+        description: `There are two main ways to query records. Using the query-builder ("where") where
+            the user has full control over specifying the operations at each level, and the quick search option
+            ("search") where the user inputs direct attributes which are OR'd for each attribute and related records
+            are also searched. The search and where properties are mutually exclusive. The former will
+            try the quick search method and the latter uses the query builder`,
         tags: [model.name],
         parameters: Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({$ref: `#/components/parameters/${p.name}`})),
         requestBody: {
             required: true,
-            content: {'application/json': {schema: body}}
+            content: {
+                'application/json': {
+                    schema: body
+                }
+            }
         },
         responses: {
             200: {
@@ -450,7 +509,7 @@ const tagsSorter = (tag1, tag2) => {
  * @returns {Object} the JSON object representing the swagger API specification
  */
 const generateSwaggerSpec = (schema, metadata) => {
-    const docs = Object.assign({}, STUB);
+    const docs = {...STUB};
     docs.servers = [{
         url: `http://${metadata.host}:${metadata.port}/api`
     }];
@@ -482,9 +541,15 @@ const generateSwaggerSpec = (schema, metadata) => {
         if (Object.values(model.expose).some(x => x) && docs.paths[model.routeName] === undefined) {
             docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
-        if (model.expose.QUERY && !docs.paths[model.routeName].get) {
-            docs.paths[model.routeName].get = describeGet(model);
-            docs.paths[`${model.routeName}/search`] = {post: describePostSearch(model)};
+        if (model.expose.QUERY) {
+            docs.paths[model.routeName].get = docs.paths[model.routeName].get || describeGet(model);
+            if (!model.isEdge) {
+                // cannot complex search edge classes
+                docs.paths[`${model.routeName}/search`] = {
+                    ...docs.paths[`${model.routeName}/search`] || {},
+                    post: describePostSearch(model)
+                };
+            }
         }
         if (model.expose.POST && !docs.paths[model.routeName].post) {
             docs.paths[model.routeName].post = describePost(model);
@@ -531,7 +596,7 @@ const generateSwaggerSpec = (schema, metadata) => {
 
             if (isList) {
                 propDefn.type = 'array';
-                propDefn.items = {};
+                propDefn.items = {minItems: prop.minItems, maxItems: prop.maxItems};
                 propDefn = propDefn.items;
             }
             if (prop.name === 'subsets') {

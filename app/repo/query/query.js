@@ -1,4 +1,4 @@
-const {RID} = require('orientjs');
+const {RecordID: RID} = require('orientjs');
 
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
@@ -6,7 +6,7 @@ const match = require('./match');
 const {
     PARAM_PREFIX, OPERATORS, MAX_LIMIT, MAX_NEIGHBORS
 } = require('./constants');
-const {castRangeInt, castBoolean} = require('./util');
+const {castRangeInt, castBoolean, nestedProjection} = require('./util');
 const {Traversal} = require('./traversal');
 
 
@@ -53,16 +53,20 @@ class Comparison {
      */
     static parse(schema, model, opt) {
         const {
-            attr, value, operator, negate
-        } = Object.assign({negate: false}, opt);
+            attr, value, operator, negate = false
+        } = opt;
 
         const parsedAttr = Traversal.parse(schema, model, attr);
 
-        if (typeof value === 'object' && value !== null && !(value instanceof Array) && !(value instanceof RID)) {
+        if (typeof value === 'object'
+            && value !== null
+            && !(value instanceof Array)
+            && !(value instanceof RID)
+        ) {
             if (value.class) {
                 // must be a Query.
                 const subModel = schema[value.class] || model;
-                const subquery = Query.parse(schema, subModel, value);
+                const subquery = Query.parse(schema, subModel, {...value, limit: null, skip: null}); // cannot paginate subqueries
                 return new this(parsedAttr, subquery, operator, negate);
             }
             throw new AttributeError('Value for a comparison must be a primitive value or a subquery. Subqueries must contains the `class` attribute');
@@ -107,6 +111,16 @@ class Comparison {
                         })`
                     );
                 }
+            } else if (this.operator === OPERATORS.IS) {
+                if (this.value !== null) {
+                    throw new AttributeError(`IS operator (${
+                        this.operator
+                    }) can only be used on prop (${
+                        prop.name
+                    }) compared with null (${
+                        this.value
+                    })`);
+                }
             }
         }
 
@@ -119,7 +133,7 @@ class Comparison {
                 }
             }
             if (prop) {
-                if (this.operator === OPERATORS.EQ && !prop.iterable) {
+                if (this.operator === OPERATORS.EQ && !prop.iterable && !this.attr.iterable()) {
                     throw new AttributeError(
                         `Using a direct comparison (${
                             this.operator
@@ -139,7 +153,7 @@ class Comparison {
             this.value = validateValue(this.value);
 
             if (this.operator === OPERATORS.CONTAINS) {
-                if (prop && !prop.iterable) {
+                if (prop && !prop.iterable && !this.attr.iterable()) {
                     throw new AttributeError(
                         `CONTAINS can only be used with iterable properties (${
                             prop.name
@@ -149,7 +163,7 @@ class Comparison {
             } if (this.operator === OPERATORS.IN) {
                 throw new AttributeError('IN should only be used with iterable values');
             } if (this.operator === OPERATORS.EQ) {
-                if (prop && prop.iterable) {
+                if (prop && (prop.iterable || this.attr.iterable())) {
                     throw new AttributeError(
                         `A direct comparison (${
                             this.operator
@@ -170,11 +184,12 @@ class Comparison {
      * @param {int} [paramIndex=0] the number to append to parameter names
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
-    toString(paramIndex = 0) {
+    toString(initialParamIndex = 0) {
         const params = {};
         let query,
             cast = this.attr.terminalCast();
         const prop = this.attr.terminalProperty();
+        let paramIndex = initialParamIndex;
 
         if (prop && prop.cast) {
             ({cast} = prop);
@@ -234,22 +249,26 @@ class Query {
             neighbors = 0,
             orderBy = null,
             orderByDirection = 'ASC',
-            returnProperties = null,
+            projection = null,
             activeOnly = true,
             skip = null,
-            count = false
+            count = false,
+            edges = [],
+            target = null
         } = opt;
         this.modelName = modelName;
         this.where = where || new Clause(OPERATORS.AND); // conditions that make up the terms of the query
         this.skip = skip;
         this.type = match[opt.type] || null;
-        this.returnProperties = returnProperties;
+        this.projection = projection;
         this.neighbors = neighbors;
         this.limit = limit;
         this.activeOnly = activeOnly;
         this.orderBy = orderBy;
         this.orderByDirection = orderByDirection;
         this.count = count;
+        this.edges = edges;
+        this.target = target || modelName;
     }
 
     /**
@@ -275,8 +294,9 @@ class Query {
             count = false,
             neighbors = 0,
             type = null,
-            edges = null,
-            depth = null
+            edges = [],
+            depth = null,
+            target = null
         } = opt;
 
         let where = [];
@@ -284,6 +304,10 @@ class Query {
             where = !(opt.where instanceof Array)
                 ? [opt.where]
                 : opt.where;
+        }
+        let projection = null;
+        if (returnProperties) {
+            projection = returnProperties.join(', ');
         }
 
         if (!['ASC', 'DESC'].includes(orderByDirection)) {
@@ -327,14 +351,17 @@ class Query {
         return new this(model.name, conditions, {
             skip,
             activeOnly,
-            returnProperties,
+            projection,
             orderBy,
             orderByDirection,
-            limit: castRangeInt(limit, 1, MAX_LIMIT),
+            limit: limit === null
+                ? limit
+                : castRangeInt(limit, 1, MAX_LIMIT),
             neighbors: castRangeInt(neighbors, 0, MAX_NEIGHBORS),
             type,
             edges,
             depth,
+            target,
             count: castBoolean(count)
         });
     }
@@ -342,12 +369,41 @@ class Query {
     /**
      * Given the contents of a record, create a query to select it from the DB
      */
-    static parseRecord(schema, model, content = {}, opt = {}) {
+    static parseRecord(schema, model, rawContent = {}, opt = {}) {
+        const {ignoreMissing = true, ...rest} = opt;
         const where = [];
+        const {properties} = model;
+
+        const content = model.formatRecord(rawContent, {addDefaults: false, ignoreMissing: true});
+
         for (const [key, value] of Object.entries(content || {})) {
-            where.push({attr: key, value});
+            const prop = properties[key];
+            if (!prop) {
+                throw new AttributeError(`property (${key}) does not exist on this model (${model.name})`);
+            }
+            if (prop.iterable) {
+                where.push({attr: key, value: prop.validate(value), operator: 'CONTAINSALL'});
+                where.push({attr: `${key}.size()`, value: value.length});
+            } else {
+                where.push({attr: key, value: prop.validate(value)});
+            }
         }
-        return this.parse(schema, model, Object.assign({}, opt, {where}));
+        if (!ignoreMissing) {
+            for (const propName of (model.getActiveProperties() || []).sort()) {
+                if (propName === 'deletedAt') {
+                    continue; // taken care of by activeOnly property
+                }
+                const prop = properties[propName];
+                if (content[propName] === undefined) {
+                    if (prop.iterable) {
+                        where.push({attr: `${propName}.size()`, value: 0});
+                    } else {
+                        where.push({attr: propName, value: null});
+                    }
+                }
+            }
+        }
+        return this.parse(schema, model, {...rest, where});
     }
 
     /**
@@ -365,9 +421,12 @@ class Query {
      * @returns {Object} an object containing the SQL query statment (query) and the parameters (params)
      */
     toString(paramIndex = 0) {
-        const selectionElements = this.returnProperties
-            ? this.returnProperties.join(', ')
-            : '*';
+        const selectionElements = this.projection || nestedProjection(
+            this.count
+                ? 0
+                : this.neighbors,
+            !this.activeOnly
+        );
 
         let queryString,
             params;
@@ -388,7 +447,7 @@ class Query {
         } else {
             const {query, params: subParams} = this.where.toString(paramIndex);
             params = subParams;
-            queryString = `SELECT ${selectionElements} FROM ${this.modelName}`;
+            queryString = `SELECT ${selectionElements} FROM ${this.target}`;
             if (query) {
                 queryString = `${queryString} WHERE ${query}`;
                 if (this.activeOnly) {
@@ -402,9 +461,14 @@ class Query {
             queryString = `${queryString} ORDER BY ${this.orderBy.map(param => `${param} ${this.orderByDirection}`).join(', ')}`;
         }
         if (this.count) {
-            queryString = `SELECT count(*) FROM (${queryString})`;
-        } else if (this.skip != null) {
-            queryString = `${queryString} SKIP ${this.skip}`;
+            queryString = `SELECT count(*) as count FROM (${queryString})`;
+        } else {
+            if (this.skip != null) {
+                queryString = `${queryString} SKIP ${this.skip}`;
+            }
+            if (this.limit !== null) {
+                queryString = `${queryString} LIMIT ${this.limit}`;
+            }
         }
         return {query: queryString, params};
     }
@@ -492,12 +556,13 @@ class Clause {
     }
 
     /**
-     * @param {int} [paramIndex=0] the number to append to parameter names
+     * @param {int} [initialParamIndex=0] the number to append to parameter names
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
-    toString(paramIndex = 0, listableType = false) {
+    toString(initialParamIndex = 0, listableType = false) {
         const params = {};
         const components = [];
+        let paramIndex = initialParamIndex;
         for (const comp of this.comparisons) {
             const result = comp.toString(
                 paramIndex,
@@ -509,7 +574,7 @@ class Clause {
             }
             Object.assign(params, result.params);
             components.push(result.query);
-            paramIndex += Object.values(params).length;
+            paramIndex = Object.values(params).length + initialParamIndex;
         }
         const query = components.join(` ${this.type} `);
         return {query, params};
@@ -517,4 +582,6 @@ class Clause {
 }
 
 
-module.exports = {Query, Comparison, Clause};
+module.exports = {
+    Query, Comparison, Clause, nestedProjection
+};
