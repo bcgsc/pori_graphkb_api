@@ -1,9 +1,7 @@
 const {error: {AttributeError}, schema: {schema: SCHEMA_DEFN}} = require('@bcgsc/knowledgebase-schema');
 
 const {logger} = require('../logging');
-const {
-    Query
-} = require('../query');
+const {parseRecord} = require('../query_builder');
 const {
     RecordExistsError
 } = require('../error');
@@ -93,18 +91,7 @@ const create = async (db, opt) => {
     } if (model.getActiveProperties()) {
         // try select before create if active properties are defined (as they may not be db enforceable)
         try {
-            const query = {};
-            for (const pname of model.getActiveProperties()) {
-                if (content[pname]) {
-                    query[pname] = content[pname];
-                }
-            }
-            const records = await select(db, Query.parseRecord(
-                SCHEMA_DEFN,
-                model,
-                query,
-                {ignoreMissing: false, activeOnly: true}
-            ));
+            const records = await select(db, parseRecord(model, content, {activeIndexOnly: true}));
             if (records.length) {
                 throw new RecordExistsError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
             }
@@ -123,6 +110,7 @@ const create = async (db, opt) => {
             record.displayName = await fetchDisplayName(db, model, record);
         }
         const result = await db.insert().into(model.name).set(omitDBAttributes(record)).one();
+
         logger.debug(`created ${result['@rid']}`);
         return result;
     } catch (err) {

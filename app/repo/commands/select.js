@@ -126,7 +126,10 @@ const select = async (db, query, opt = {}) => {
     logger.log('debug', query.displayString());
 
     // send the query statement to the database
-    const {params, query: statement} = query.toString();
+    const {params, query: statement} = query.toString
+        ? query.toString()
+        : query;
+
     const queryOpt = {
         params
     };
