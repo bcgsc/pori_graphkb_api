@@ -83,7 +83,7 @@ const postRoute = (app, model) => {
     app.router.post(model.routeName,
         async (req, res, next) => {
             if (!_.isEmpty(req.query)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                return next(new AttributeError(
                     {message: 'No query parameters are allowed for this query type', params: req.query}
                 ));
             }
@@ -168,13 +168,13 @@ const deleteRoute = (app, model) => {
         async (req, res, next) => {
             let {rid} = req.params;
             if (!looksLikeRID(rid, false)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                return next(new AttributeError(
                     {message: `ID does not look like a valid record ID: ${rid}`}
                 ));
             }
             rid = `#${rid.replace(/^#/, '')}`;
             if (!_.isEmpty(req.query)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                return next(new AttributeError(
                     {message: 'No query parameters are allowed for this query type'}
                 ));
             }
