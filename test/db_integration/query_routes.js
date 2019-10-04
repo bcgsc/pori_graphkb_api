@@ -68,7 +68,7 @@ describeWithAuth('api read-only routes', () => {
         test('include deleted records when activeOnly flag is false', async () => {
             const response = await request({
                 uri: `${app.url}/stats`,
-                qs: {activeOnly: false},
+                qs: {history: true},
                 method: 'GET',
                 headers: {Authorization: mockToken}
             });
@@ -279,7 +279,7 @@ describeWithAuth('api read-only routes', () => {
             const resWithDeleted = await request({
                 uri: `${app.url}/diseases`,
                 method: 'GET',
-                qs: {neighbors: 2, activeOnly: false},
+                qs: {neighbors: 2, history: true},
                 headers: {Authorization: mockToken}
             });
             expect(resWithDeleted.body.result).toHaveProperty('length', 4);
@@ -464,7 +464,7 @@ describeWithAuth('api read-only routes', () => {
                 const response = await request({
                     uri: `${app.url}/diseases/search`,
                     method: 'POST',
-                    body: {search: {}, activeOnly: false},
+                    body: {search: {}, history: true},
                     headers: {Authorization: mockToken}
                 });
                 expect(response.body.result).toHaveProperty('length', 4);
@@ -708,7 +708,7 @@ describeWithAuth('api read-only routes', () => {
                 method: 'GET',
                 qs: {
                     rid: `${record1},${record2},${deletedRecord}`,
-                    activeOnly: false
+                    history: true
                 },
                 headers: {Authorization: mockToken}
             });

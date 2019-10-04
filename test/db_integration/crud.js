@@ -10,8 +10,8 @@ const {
     RecordExistsError, AttributeError, NotImplementedError
 } = require('../../app/repo/error');
 const {
-    Query
-} = require('../../app/repo/query');
+    parseRecord
+} = require('../../app/repo/query_builder');
 
 
 const {clearDB, createEmptyDb, tearDownDb} = require('./util');
@@ -100,12 +100,11 @@ describeWithAuth('CRUD operations', () => {
                 throw new Error('Did not throw expected error');
             });
             test('update ok', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.User,
                     original,
                     {
-                        activeOnly: false,
+                        history: true,
                         neighbors: 3
                     }
                 );
@@ -117,12 +116,11 @@ describeWithAuth('CRUD operations', () => {
                 expect(update.history).not.toBeNull;
             });
             test('delete', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.User,
                     original,
                     {
-                        activeOnly: false,
+                        history: true,
                         neighbors: 3
                     }
                 );
@@ -258,8 +256,7 @@ describeWithAuth('CRUD operations', () => {
             });
 
             test('delete duplicates immediate vertices and creates history links', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.AliasOf,
                     {'@rid': original['@rid'].toString(), createdAt: original.createdAt},
                     {ignoreMissing: true}
@@ -279,8 +276,7 @@ describeWithAuth('CRUD operations', () => {
                 expect(result.in).toEqual(newTgtVertex.history);
             });
             test('update is not allowed', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.AliasOf,
                     {'@rid': original['@rid'].toString(), createdAt: original.createdAt},
                     {ignoreMissing: true}
@@ -358,12 +354,11 @@ describeWithAuth('CRUD operations', () => {
             });
             test('update copies node and creates history link', async () => {
                 const original = cancer;
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.Disease,
                     {sourceId: original.sourceId, source},
                     {
-                        activeOnly: false,
+                        history: true,
                         neighbors: 3
                     }
                 );
@@ -384,12 +379,11 @@ describeWithAuth('CRUD operations', () => {
                 // select the original node
                 const [reselectedOriginal] = await select(
                     session,
-                    Query.parseRecord(
-                        schema,
+                    parseRecord(
                         schema.Disease,
                         {sourceId: original.sourceId, source, name: null},
                         {
-                            activeOnly: false,
+                            history: true,
                             neighbors: 3
                         }
                     ),
@@ -404,12 +398,11 @@ describeWithAuth('CRUD operations', () => {
             });
             test('delete also deletes linked edges', async () => {
                 const original = cancer;
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.Disease,
                     {sourceId: original.sourceId, source},
                     {
-                        activeOnly: false,
+                        history: true,
                         neighbors: 3
                     }
                 );

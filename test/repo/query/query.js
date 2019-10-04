@@ -6,11 +6,11 @@ const {
 const {
     Clause,
     Comparison,
-    Query,
+    parseRecord,
     Traversal,
     constants: {OPERATORS},
     nestedProjection
-} = require('./../../../app/repo/query');
+} = require('./../../../app/repo/query_builder');
 
 const SOURCE_PROPS = SCHEMA_DEFN.Source.queryProperties;
 const DISEASE_PROPS = SCHEMA_DEFN.Disease.queryProperties;
@@ -430,8 +430,7 @@ describe('Query.parse', () => {
 
 describe('Query.parseRecord', () => {
     test('adds size check to iterable properties', () => {
-        const parsed = Query.parseRecord(
-            SCHEMA_DEFN,
+        const parsed = parseRecord(
             SCHEMA_DEFN.Statement,
             {
                 impliedBy: ['#33:0', '#44:0']
@@ -448,8 +447,7 @@ describe('Query.parseRecord', () => {
         expect(params).toEqual({param0: '#33:0', param1: '#44:0', param2: 2});
     });
     test('adds null check to missing properties', () => {
-        const parsed = Query.parseRecord(
-            SCHEMA_DEFN,
+        const parsed = parseRecord(
             SCHEMA_DEFN.Statement,
             {
                 impliedBy: ['#33:0', '#44:0']
