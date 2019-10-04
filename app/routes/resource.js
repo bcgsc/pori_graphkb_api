@@ -5,7 +5,7 @@ const _ = require('lodash');
 const {util: {looksLikeRID}, error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 
 const {
-    NoRecordFoundError, RecordExistsError
+    NoRecordFoundError
 } = require('./../repo/error');
 const {logger} = require('./../repo/logging');
 const {
@@ -40,16 +40,14 @@ const getRoute = (app, model) => {
         async (req, res, next) => {
             const {neighbors = 0, ...extra} = req.query;
             if (Object.keys(extra).length > 0) {
-                return res
-                    .status(HTTP_STATUS.BAD_REQUEST)
-                    .json(new AttributeError(`Did not recognize the query parameter: ${Object.keys(extra).sort().join(' ')}`));
+                return next(new AttributeError(`Did not recognize the query parameter: ${Object.keys(extra).sort().join(' ')}`));
             }
             let query;
             try {
                 query = activeRidQuery(model, req.params.rid, {neighbors});
             } catch (err) {
                 if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
+                    return next(err);
                 }
                 logger.log('error', err.stack || err);
                 return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
@@ -69,9 +67,6 @@ const getRoute = (app, model) => {
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 session.close();
-                if (err instanceof NoRecordFoundError) {
-                    return res.status(HTTP_STATUS.NOT_FOUND).json(err);
-                }
                 return next(err);
             }
         });
@@ -107,10 +102,8 @@ const postRoute = (app, model) => {
             } catch (err) {
                 session.close();
                 logger.log('debug', err.toString());
-                if (err instanceof AttributeError || err instanceof NoRecordFoundError) {
+                if (err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                } if (err instanceof RecordExistsError) {
-                    return res.status(HTTP_STATUS.CONFLICT).json(err);
                 }
                 return next(err);
             }
@@ -130,13 +123,13 @@ const updateRoute = (app, model) => {
     app.router.patch(`${model.routeName}/:rid`,
         async (req, res, next) => {
             if (!looksLikeRID(req.params.rid, false)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                return next(new AttributeError(
                     {message: `ID does not look like a valid record ID: ${req.params.rid}`}
                 ));
             }
             const rid = `#${req.params.rid.replace(/^#/, '')}`;
             if (!_.isEmpty(req.query)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
+                return next(new AttributeError(
                     {message: 'Query parameters are allowed for this query type', params: req.query}
                 ));
             }
@@ -158,13 +151,6 @@ const updateRoute = (app, model) => {
                 return res.json(jc.decycle({result}));
             } catch (err) {
                 session.close();
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                } if (err instanceof NoRecordFoundError) {
-                    return res.status(HTTP_STATUS.NOT_FOUND).json(err);
-                } if (err instanceof RecordExistsError) {
-                    return res.status(HTTP_STATUS.CONFLICT).json(err);
-                }
                 return next(err);
             }
         });
@@ -211,11 +197,6 @@ const deleteRoute = (app, model) => {
             } catch (err) {
                 session.close();
                 logger.log('debug', err);
-                if (err instanceof AttributeError) {
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                } if (err instanceof NoRecordFoundError) {
-                    return res.status(HTTP_STATUS.NOT_FOUND).json(err);
-                }
                 return next(err);
             }
         });
