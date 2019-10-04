@@ -10,6 +10,8 @@ const {logger} = require('./../repo/logging');
 
 /**
  * Main error handling for responding to the request
+ *
+ * @param {AppServer} app the main application server
  */
 const addErrorRoute = (app) => {
     app.router.use(async (err, req, res, next) => {
@@ -26,7 +28,7 @@ const addErrorRoute = (app) => {
         } else if (err instanceof DatabaseConnectionError) {
             logger.warn('connection error, attempting to restart the database connection');
             try {
-                await this.connectToDb();
+                await app.connectToDb();
             } catch (secondErr) {}
         }
         if (res.headersSent) {
