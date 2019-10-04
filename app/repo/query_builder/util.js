@@ -191,6 +191,7 @@ const displayQuery = ({query: statement, params = {}}) => {
 module.exports = {
     checkStandardOptions,
     propsToProjection,
+    parsePropertyList,
     displayQuery,
     getQueryableProps,
     nestedProjection,
