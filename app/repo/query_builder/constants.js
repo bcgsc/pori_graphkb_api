@@ -1,9 +1,4 @@
-/**
- * @constant
- * @type {Number}
- * @default
- */
-const DEFAULT_NEIGHBORS = 3;
+
 /**
  * @constant
  * @type {Number}
@@ -22,44 +17,14 @@ const MAX_TRAVEL_DEPTH = 50;
  * @default
  */
 const MAX_LIMIT = 1000;
+
 /**
  * @constant
  * @type {string}
  * @default
  */
 const PARAM_PREFIX = 'param';
-/**
- * @constant
- * @type {Array.<string>}
- * @default
- */
-const FUZZY_CLASSES = ['AliasOf', 'DeprecatedBy'];
-/**
- * @constant
- * @type {Set.<string>}
- * @default
- */
-const SPECIAL_QUERY_ARGS = new Set([
-    'fuzzyMatch', // follow deprecatedby/aliasof links
-    'ancestors', // follow outgoing edges
-    'descendants', // follow incoming edges
-    'returnProperties', // return select properties only
-    'limit', // limit the number of records to return
-    'skip',
-    'neighbors',
-    'activeOnly',
-    'v',
-    'direction',
-    'or'
-]);
-/**
- * @namespace
- */
-const DIRECTIONS = {
-    OUT: 'out',
-    IN: 'in',
-    BOTH: 'both'
-};
+
 /**
  * operators to be used in generating SQL statements
  * @namespace
@@ -93,25 +58,6 @@ const OPERATORS = {
 };
 
 
-const TRAVERSAL_TYPE = {LINK: 'LINK', EDGE: 'EDGE', DIRECT: 'DIRECT'};
-
-const SIZE_COMPUTATION = 'size()';
-
-
-const DEFAULT_PROJECTION = '*, *:{@rid, @class, displayName}';
-
-
 module.exports = {
-    DIRECTIONS,
-    FUZZY_CLASSES,
-    MAX_LIMIT,
-    MAX_NEIGHBORS,
-    MAX_TRAVEL_DEPTH,
-    OPERATORS,
-    PARAM_PREFIX,
-    DEFAULT_NEIGHBORS,
-    SIZE_COMPUTATION,
-    SPECIAL_QUERY_ARGS,
-    TRAVERSAL_TYPE,
-    DEFAULT_PROJECTION
+    MAX_LIMIT, MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, OPERATORS, PARAM_PREFIX, DEFAULT_NEIGHBORS: 3
 };
