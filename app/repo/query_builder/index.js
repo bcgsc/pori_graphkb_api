@@ -111,5 +111,29 @@ class WrapperQuery {
 
 const parse = query => WrapperQuery.parse(query);
 
+/**
+ * Given some input record, create a query to find it
+ *
+ * @param {ClassModel} model the model/class to query
+ * @param {object} record the record content
+ *
+ */
+const parseRecord = (model, record, {history = false, activeIndexOnly = false} = {}) => {
+    const query = {target: model.name, filters: {AND: []}, history};
+    const filters = query.filters.AND;
 
-module.exports = {WrapperQuery, parse};
+    const properties = activeIndexOnly
+        ? model.getActiveProperties()
+        : Object.values(model.properties);
+
+    for (const pname of properties) {
+        if (record[pname] !== undefined) {
+            filters.push({pname: record[pname]});
+        }
+    }
+
+    return parse(query);
+};
+
+
+module.exports = {WrapperQuery, parse, parseRecord};
