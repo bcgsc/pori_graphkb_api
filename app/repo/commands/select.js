@@ -6,13 +6,11 @@
 /**
  * @ignore
  */
-const {error: {AttributeError}, util: {castToRID}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const {schema: {schema}} = require('@bcgsc/knowledgebase-schema');
 const {variant: {VariantNotation}} = require('@bcgsc/knowledgebase-parser');
 
 const {logger} = require('../logging');
-const {
-    Query, keywordSearch, searchByLinkedRecords
-} = require('../query');
+const {parse} = require('../query_builder');
 const {
     MultipleRecordsFoundError,
     NoRecordFoundError
@@ -169,72 +167,6 @@ const select = async (db, query, opt = {}) => {
     }
 };
 
-
-/**
- * @param {orientjs.Db} db Database connection from orientjs
- * @param {Array.<string>} keywords array of keywords to search for
- * @param {Object} opt Selection options
- */
-const selectByKeyword = async (db, keywords, opt = {}) => {
-    const queryObj = Object.assign({
-        toString: () => keywordSearch(keywords, {...opt})
-    }, opt);
-    queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj);
-};
-
-
-/**
- * @param {orientjs.Db} db Database connection from orientjs
- * @param {Object} opt Selection options
- * @param {ClassModel} opt.model
- * @param {Object} opt.search filters
- */
-const searchSelect = async (db, opt = {}) => {
-    const queryObj = {
-        ...opt,
-        toString: () => searchByLinkedRecords(opt)
-    };
-    queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj);
-};
-
-
-/**
- * @param {orientjs.Db} db Database connection from orientjs
- * @param {Array.<string|RID>} recordList array of record IDs to select from
- * @param {Object} opt Selection options
- * @param {?Number} opt.neighbors number of related records to fetch
- * @param {?Boolean} opt.activeOnly exclude deleted records
- * @param {?string} opt.projection project to use from select
- */
-const selectFromList = async (db, inputRecordList, opt = {}) => {
-    const {neighbors = 0, activeOnly = true, projection = '*'} = opt;
-    const params = {};
-    const recordList = inputRecordList.map(castToRID);
-    recordList.forEach((rid) => {
-        params[`param${Object.keys(params).length}`] = rid;
-    });
-    if (recordList.length < 1) {
-        throw new AttributeError('Must select a minimum of 1 record');
-    }
-    // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
-    let query = `SELECT ${projection} FROM [${recordList.map(p => `${p}`).join(', ')}]`;
-
-    if (activeOnly) {
-        query = `${query} WHERE deletedAt IS NULL`;
-    }
-    const queryObj = Object.assign({
-        toString: () => ({query, params}),
-        activeOnly,
-        neighbors,
-        params
-    }, opt);
-    queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj, {exactlyN: recordList.length});
-};
-
-
 /**
  * Calculate the display name when it requires a db connection to resolve linked records
  */
@@ -244,11 +176,14 @@ const fetchDisplayName = async (db, model, content) => {
         if (content.reference2) {
             links.push(content.reference2);
         }
-        const [type, reference1, reference2] = (await selectFromList(
+        const query = parse({
+            target: links,
+            returnProperties: ['displayName']
+        });
+        const [type, reference1, reference2] = (await select(
             db,
-            links,
-            {projection: 'displayName'}
-        )).map(rec => rec.displayName);
+            query
+        ).map(rec => rec.displayName));
 
         if (model.name === 'CategoryVariant') {
             if (reference2) {
@@ -275,8 +210,5 @@ module.exports = {
     RELATED_NODE_DEPTH,
     select,
     selectCounts,
-    selectByKeyword,
-    selectFromList,
-    searchSelect,
     fetchDisplayName
 };
