@@ -151,6 +151,83 @@ const descendants = (opt) => {
 };
 
 
+const keywordSearch = ({target, keyword, ...opt}) => {
+    // circular dependency unavoidable
+    const {Subquery} = require('./fragment'); // eslint-disable-line global-require
+
+    const model = schema[target];
+    if (!model) {
+        throw new AttributeError('Invalid target class');
+    }
+    if (model.isEdge) {
+        throw new AttributeError(`Cannot keyword search edge classes (${target})`);
+    }
+
+    // remove any duplicate words
+    const wordList = keyword.split(/\s+/).map(word => word.trim().toLowerCase());
+    if (wordList.some(word => word.length < MIN_WORD_SIZE)) {
+        const shortWords = wordList.filter(word => word.length < MIN_WORD_SIZE);
+        throw new AttributeError(
+            `Keywords (${shortWords.join(', ')}) are too short to query with. Must be at least ${
+                MIN_WORD_SIZE
+            } letters after splitting on whitespace characters`
+        );
+    }
+    if (wordList.length < 1) {
+        throw new AttributeError('missing keywords');
+    }
+    const keywords = Array.from(new Set(wordList));
+
+
+    // each queryword must be found but it can be in any of the prop
+    const subContainsClause = (props) => {
+        const filters = [];
+        // must contains all words but words can exist in any prop
+        for (const word of keywords) {
+            let clause;
+            if (props.length === 1) {
+                const [prop] = props;
+                clause = {[prop]: word, operator: OPERATORS.CONTAINSTEXT};
+            } else {
+                clause = {OR: []};
+                for (const prop of props) {
+                    clause.OR.push({[prop]: word, operator: OPERATORS.CONTAINSTEXT});
+                }
+            }
+            filters.push(clause);
+        }
+        return {AND: filters};
+    };
+
+    if (model.inherits.includes('Ontology')) {
+        return Subquery.parse({...opt, target: model.name, filters: subContainsClause(['sourceId', 'name'])});
+    } if (model.name === 'Statement') {
+        const {query: subquery, params} = Subquery.parse({...opt, target: 'Ontology', filters: subContainsClause(['sourceId', 'name'])});
+        const query = `SELECT expand($statements)
+            LET $ont = (SELECT * from Ontology WHERE ${subquery}),
+                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))),
+                $implicable = (SELECT expand(UNIONALL($ont, $variants))),
+                $statements = (SELECT * FROM Statement
+                    WHERE
+                        impliedBy CONTAINSANY (SELECT expand($implicable))
+                        OR supportedBy CONTAINSANY (SELECT expand($ont))
+                        OR appliesTo IN (SELECT expand($implicable))
+                        OR relevance IN (SELECT expand($ont))
+                )
+        )`;
+        return {query, params};
+    } if (model.inherits.includes('Variant')) {
+        const {query: subquery, params} = Subquery.parse({...opt, target: 'Ontology', filters: subContainsClause(['sourceId', 'name'])});
+        const query = `SELECT expand($variants)
+            LET $ont = (SELECT * from Ontology WHERE ${subquery}),
+                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont)))
+        )`;
+        return {query, params};
+    }
+    return Subquery.parse({...opt, target: model.name, filters: subContainsClause(['name'])});
+};
+
+
 class FixedSubquery {
     constructor(queryType, queryBuilder, opt = {}) {
         this.queryType = queryType;
@@ -172,6 +249,8 @@ class FixedSubquery {
             return new this(queryType, neighborhood, opt);
         } if (queryType === 'similarTo') {
             return new this(queryType, similarTo, opt);
+        } if (queryType === 'keyword') {
+            return new this(queryType, keywordSearch, opt);
         }
         throw new AttributeError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
     }
