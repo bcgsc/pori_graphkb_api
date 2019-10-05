@@ -10,7 +10,7 @@ const {util: {castToRID}, error: {AttributeError}, schema: {schema}} = require('
 const {quoteWrap} = require('./../util');
 
 const {
-    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE
 } = require('./constants');
 const {castRangeInt} = require('./util');
 
@@ -40,6 +40,9 @@ const treeQuery = (opt) => {
     const edges = opt.edges || ['SubclassOf'];
     const depth = castRangeInt(opt.depth || MAX_TRAVEL_DEPTH, 1, MAX_TRAVEL_DEPTH);
 
+    if (schema[target] === undefined) {
+        throw new AttributeError(`Invalid target class (${target})`);
+    }
     if (!['out', 'in'].includes(direction)) {
         throw new AttributeError(`direction (${direction}) must be in or out`);
     }
@@ -68,6 +71,9 @@ const neighborhood = ({
         if (!schema.get(edge)) {
             throw new AttributeError(`Invalid edge parameter (${edge})`);
         }
+    }
+    if (schema[target] === undefined) {
+        throw new AttributeError(`Invalid target class (${target})`);
     }
     const depth = castRangeInt(depthIn || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);
 

@@ -6,7 +6,9 @@ const {
     propsToProjection, checkStandardOptions, nestedProjection, displayQuery
 } = require('./util');
 const {Subquery} = require('./fragment');
-const {MAX_LIMIT} = require('./constants');
+const constants = require('./constants');
+
+const {MAX_LIMIT} = constants;
 
 /**
  * Top level query class
@@ -136,4 +138,6 @@ const parseRecord = (model, record, {history = false, activeIndexOnly = false} =
 };
 
 
-module.exports = {WrapperQuery, parse, parseRecord};
+module.exports = {
+    WrapperQuery, parse, parseRecord, constants
+};
