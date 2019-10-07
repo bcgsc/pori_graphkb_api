@@ -2,7 +2,7 @@
 
 const {RecordID: RID} = require('orientjs');
 
-const {error: {AttributeError}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const {error: {AttributeError}, schema: {schema}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
 
 
 const {OPERATORS, PARAM_PREFIX} = require('./constants');
@@ -299,8 +299,18 @@ class Subquery {
 
     toString(paramIndex = 0, prefix = '') {
         const {filters, history, target} = this;
-        let statement = `SELECT * FROM ${target}`,
+        let targetString = target,
             params = {};
+
+        if (Array.isArray(target)) {
+            targetString = `[${target.map(rid => rid.toString()).join(', ')}]`;
+        } else if (target.isSubquery) {
+            const {query: subQuery, params: subParams} = target.toString(paramIndex, prefix);
+            paramIndex += Object.keys(subParams).length;
+            targetString = subQuery;
+            Object.assign(params, subParams);
+        }
+        let statement = `SELECT * FROM ${targetString}`;
 
         if (filters) {
             const {query: clause, params: filterParams} = filters.toString(paramIndex, prefix);
@@ -318,13 +328,16 @@ class Subquery {
         return {query: statement, params};
     }
 
-    static parse({
-        target: rawTarget, history = false, filters: rawFilters = {}, queryType, ...rest
-    }) {
+    static parse(opt) {
+        const {
+            target: rawTarget, history = false, filters: rawFilters = null, queryType, ...rest
+        } = opt;
         let target = rawTarget,
             filters = null;
 
-        if (queryType) {
+        if (Array.isArray(rawTarget)) {
+            target = rawTarget.map(castToRID);
+        } else if (queryType) {
             // fixed query. pre-parse the target and filters
             if (typeof rawTarget !== 'string') {
                 target = this.parse(rawTarget);
@@ -332,13 +345,16 @@ class Subquery {
         } else if (Object.keys(rest).length) {
             throw new AttributeError(`Unrecognized query arguments: ${Object.keys(rest).join(',')}`);
         }
-        const model = schema[target];
+        const model = schema[target.isSubquery
+            ? null
+            : target
+        ];
 
-        if (!model && (!target || !target.isSubquery)) {
+        if (!model && (!target || !target.isSubquery) && !Array.isArray(target)) {
             throw new AttributeError(`Invalid target class (${target})`);
         }
 
-        if (Object.keys(rawFilters).length) {
+        if (rawFilters) {
             if (!model) {
                 throw new AttributeError('Target class (not subquery) is required to apply filters');
             }
@@ -352,8 +368,13 @@ class Subquery {
             filters = Clause.parse(model, filters);
         }
         if (queryType) {
+            if (!filters) {
+                return FixedSubquery.parse({
+                    ...rest, queryType, target, history
+                });
+            }
             return FixedSubquery.parse({
-                queryType, filters, target, history, ...rest
+                ...rest, queryType, filters, target, history
             });
         }
         return new this({
