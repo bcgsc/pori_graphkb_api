@@ -179,6 +179,7 @@ class AppServer {
 
         this.router.use(checkToken(this.conf.GKB_KEY));
 
+        addQueryRoute(this);
         addKeywordSearchRoute(this);
         addGetRecordsByList(this);
         addStatsRoute(this);
