@@ -23,19 +23,9 @@ All classes in the knowledgebase follow a similar pattern where there are the fo
         <th>Description</th>
     </tr>
     <tr>
-        <td>GET</td>
-        <td> <code>/api/CLASSNAME</code> </td>
-        <td> Get multiple records. Can be filtered using query parameters </td>
-    </tr>
-    <tr>
         <td> GET </td>
         <td> <code>/api/CLASSNAME/{id}</code> </td>
         <td> Get a particular record by its database ID </td>
-    </tr>
-    <tr>
-        <td> POST </td>
-        <td> <code>/api/CLASSNAME/search</code> </td>
-        <td> Search a class of records. Can create complex queries using the body </td>
     </tr>
     <tr>
         <td> POST </td>
