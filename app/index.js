@@ -14,19 +14,14 @@ const {logger} = require('./repo/logging');
 const {
     checkToken
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
-
 const {connectDB} = require('./repo');
-
-const {DatabaseConnectionError} = require('./repo/error');
 const {getLoadVersion} = require('./repo/migrate/version');
-
 const {addExtensionRoutes} = require('./extensions');
-
 const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi');
 const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
 const {
-    addKeywordSearchRoute, addGetRecordsByList, addStatsRoute, addParserRoute
+    addKeywordSearchRoute, addGetRecordsByList, addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute
 } = require('./routes');
 const config = require('./config');
 
@@ -168,6 +163,7 @@ class AppServer {
             });
         });
         addParserRoute(this); // doesn't require any data access so no auth required
+
         // read the key file if it wasn't already set
         if (!this.conf.GKB_KEY) {
             logger.log('info', `reading the private key file: ${GKB_KEY_FILE}`);
@@ -194,24 +190,7 @@ class AppServer {
         addExtensionRoutes(this);
 
         // catch any other errors
-        this.router.use(async (err, req, res, next) => {
-            logger.info('unexpected error');
-            logger.log('error', err.stack);
-            if (err instanceof DatabaseConnectionError) {
-                logger.warn('connection error, attempting to restart the database connection');
-                try {
-                    await this.connectToDb();
-                } catch (secondErr) {}
-            }
-            if (res.headersSent) {
-                return next(err);
-            }
-            const errorContent = err.toJSON
-                ? err.toJSON()
-                : {message: err.toString(), ...err};
-
-            return res.status(err.code || HTTP_STATUS.INTERNAL_SERVER_ERROR).json(errorContent);
-        });
+        addErrorRoute(this);
         logger.log('info', 'Adding 404 capture');
         // last catch any errors for undefined routes. all actual routes should be defined above
         this.app.use((req, res) => res.status(HTTP_STATUS.NOT_FOUND).json({
