@@ -17,8 +17,7 @@ const {
     POST_PARSE,
     GET_SCHEMA,
     GET_VERSION,
-    GET_STATEMENT_BY_KEYWORD,
-    GET_RECORDS,
+    QUERY,
     GET_STATS
 } = require('./routes');
 const responses = require('./responses');
@@ -43,8 +42,7 @@ const STUB = {
         '/parse': {post: POST_PARSE},
         '/schema': {get: GET_SCHEMA},
         '/version': {get: GET_VERSION},
-        '/statements/search': {get: GET_STATEMENT_BY_KEYWORD},
-        '/records': {get: GET_RECORDS},
+        '/query': {post: QUERY},
         '/spec': {
             get: {
                 summary: 'Returns this specification',
@@ -82,7 +80,8 @@ const STUB = {
                 pattern: '^#\\d+:\\d+$',
                 description: 'Record ID',
                 example: '#44:0'
-            }
+            },
+            RecordId: {$ref: '#/components/schemas/@rid'}
         }, schemas),
         parameters: {
             in: {
