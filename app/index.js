@@ -21,7 +21,7 @@ const {generateSwaggerSpec, registerSpecEndpoints} = require('./routes/openapi')
 const {addResourceRoutes} = require('./routes/resource');
 const {addPostToken} = require('./routes/auth');
 const {
-    addKeywordSearchRoute, addGetRecordsByList, addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute
+    addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute
 } = require('./routes');
 const config = require('./config');
 
@@ -180,8 +180,6 @@ class AppServer {
         this.router.use(checkToken(this.conf.GKB_KEY));
 
         addQueryRoute(this);
-        addKeywordSearchRoute(this);
-        addGetRecordsByList(this);
         addStatsRoute(this);
 
         // simple routes
