@@ -87,21 +87,23 @@ RETURN DISTINCT $pathElements)`;
 
 
 const similarTo = ({
-    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES
+    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, ...rest
 } = {}) => {
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
     let initialQuery,
         params = {};
+    if (Object.keys(rest).length) {
+        throw new AttributeError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
+    }
     if (Array.isArray(target)) {
         initialQuery = `[${target.map(p => castToRID(p).toString()).join(', ')}]`;
     } else {
-        const {query: initialStatement, params: initialParams} = target.toString
-            ? target.toString(paramIndex)
-            : target;
+        const {query: initialStatement, params: initialParams} = target.toString(paramIndex, prefix);
 
         initialQuery = `(${initialStatement})`; // recordIdList is a subquery instead of a list of record IDs
         params = {...initialParams};
     }
+
     const disambiguationClause = cond => `TRAVERSE both(${edges.map(e => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
     // disambiguate
     const innerQuery = `SELECT expand($${prefix}Result)
@@ -151,7 +153,9 @@ const descendants = (opt) => {
 };
 
 
-const keywordSearch = ({target, keyword, ...opt}) => {
+const keywordSearch = ({
+    target, keyword, paramIndex, prefix, ...opt
+}) => {
     // circular dependency unavoidable
     const {Subquery} = require('./fragment'); // eslint-disable-line global-require
 
@@ -199,10 +203,19 @@ const keywordSearch = ({target, keyword, ...opt}) => {
         return {AND: filters};
     };
 
-    if (model.inherits.includes('Ontology')) {
-        return Subquery.parse({...opt, target: model.name, filters: subContainsClause(['sourceId', 'name'])});
+    if (model.inherits.includes('Ontology') || model.name === 'Ontology') {
+        return Subquery.parse({
+            ...opt,
+            target: model.name,
+            filters: subContainsClause(['sourceId', 'name'])
+        }).toString(paramIndex, prefix);
     } if (model.name === 'Statement') {
-        const {query: subquery, params} = Subquery.parse({...opt, target: 'Ontology', filters: subContainsClause(['sourceId', 'name'])});
+        const {query: subquery, params} = Subquery.parse({
+            ...opt,
+            target: 'Ontology',
+            filters: subContainsClause(['sourceId', 'name'])
+        }).toString(paramIndex, prefix);
+
         const query = `SELECT expand($statements)
             LET $ont = (SELECT * from Ontology WHERE ${subquery}),
                 $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))),
@@ -216,15 +229,20 @@ const keywordSearch = ({target, keyword, ...opt}) => {
                 )
         )`;
         return {query, params};
-    } if (model.inherits.includes('Variant')) {
-        const {query: subquery, params} = Subquery.parse({...opt, target: 'Ontology', filters: subContainsClause(['sourceId', 'name'])});
+    } if (model.inherits.includes('Variant') || model.name === 'Variant') {
+        const {query: subquery, params} = Subquery.parse({
+            ...opt,
+            target: 'Ontology',
+            filters: subContainsClause(['sourceId', 'name'])
+        }).toString(paramIndex, prefix);
+
         const query = `SELECT expand($variants)
-            LET $ont = (SELECT * from Ontology WHERE ${subquery}),
-                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont)))
+            LET $ont = (${subquery}),
+                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
         )`;
         return {query, params};
     }
-    return Subquery.parse({...opt, target: model.name, filters: subContainsClause(['name'])});
+    return Subquery.parse({...opt, target: model.name, filters: subContainsClause(['name'])}).toString(paramIndex, prefix);
 };
 
 
@@ -237,7 +255,8 @@ class FixedSubquery {
     }
 
     toString(paramIndex = 0, prefix = '') {
-        return this.queryBuilder({...this.opt, paramIndex, prefix: prefix || this.opt.prefix});
+        const query = this.queryBuilder({...this.opt, paramIndex, prefix: prefix || this.opt.prefix});
+        return query;
     }
 
     static parse({queryType, ...opt}) {

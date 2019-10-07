@@ -79,10 +79,11 @@ class WrapperQuery {
             ...rest
         } = checkStandardOptions(opt);
 
-        const query = Subquery.parse({target, ...rest, history});
+        console.log('static WrapperQuery.parse', rest.queryType, opt);
+        const query = Subquery.parse({target, history, ...rest});
         const model = schema[target];
-        if (!model) {
-            throw new AttributeError(`Invalid target class (${target})`);
+        if (!model && (orderBy || returnProperties)) {
+            throw new AttributeError(`Invalid target class (${target}). Must be a class to use orderBy or returnProperties arguments`);
         }
         // try to project the ordering to ensure they are valid properties
         if (orderBy) {
