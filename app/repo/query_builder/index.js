@@ -3,7 +3,7 @@
 const {error: {AttributeError}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
 
 const {
-    propsToProjection, checkStandardOptions, nestedProjection, displayQuery
+    propsToProjection, checkStandardOptions, nestedProjection, displayQuery, getQueryableProps
 } = require('./util');
 const {Subquery} = require('./fragment');
 const constants = require('./constants');
@@ -128,12 +128,23 @@ const parseRecord = (model, record, {history = false, activeIndexOnly = false} =
         ? model.getActiveProperties()
         : Object.values(model.properties);
 
-    for (const pname of properties) {
-        if (record[pname] !== undefined) {
-            filters.push({pname: record[pname]});
+    for (const prop of properties.sort((a, b) => a.name.localeCompare(b.name))) {
+        if (record[prop.name] === undefined) {
+            continue;
+        }
+        if (prop.type.includes('embedded') && prop.linkedClass && record[prop.name]) {
+            for (const [propKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass)).sort()) {
+                const propChain = `${prop.name}.${propKey}`;
+                const value = record[prop.name][subprop.name];
+
+                if (value !== undefined) {
+                    filters.push({[propChain]: value});
+                }
+            }
+        } else {
+            filters.push({[prop.name]: record[prop.name]});
         }
     }
-
     return parse(query);
 };
 
