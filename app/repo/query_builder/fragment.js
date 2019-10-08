@@ -257,6 +257,9 @@ class Clause {
             }
             parsedFilters.push(parsed);
         }
+        if (parsedFilters.length === 0) {
+            throw new AttributeError('Clause must contain filters. Cannot be an empty array');
+        }
 
         return new this(model, operator, parsedFilters);
     }
@@ -312,7 +315,7 @@ class Subquery {
         }
         let statement = `SELECT * FROM ${targetString}`;
 
-        if (filters) {
+        if (filters && Object.keys(filters).length) {
             const {query: clause, params: filterParams} = filters.toString(paramIndex, prefix);
             if (filters.isSubquery) {
                 statement = `${statement} WHERE (${clause})`;
