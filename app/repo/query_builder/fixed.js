@@ -35,23 +35,33 @@ const SIMILARITY_EDGES = [
  */
 const treeQuery = (opt) => {
     const {
-        filters, target, paramIndex = 0, direction
+        filters, target: rawTarget, paramIndex = 0, direction, history = false
     } = opt;
     const edges = opt.edges || ['SubclassOf'];
     const depth = castRangeInt(opt.depth || MAX_TRAVEL_DEPTH, 1, MAX_TRAVEL_DEPTH);
 
-    if (schema[target] === undefined) {
+    let params = {},
+        target = rawTarget;
+
+    if (Array.isArray(rawTarget)) {
+        target = `[${rawTarget.map(castToRID).map(rid => rid.toString()).join(', ')}]`;
+    } else if (schema[target] === undefined) {
         throw new AttributeError(`Invalid target class (${target})`);
+    } else {
+        const {query, params: whereParams} = filters.toString(paramIndex);
+        target = `(SELECT * FROM ${target} WHERE ${query})`;
+        params = whereParams;
     }
+
     if (!['out', 'in'].includes(direction)) {
         throw new AttributeError(`direction (${direction}) must be in or out`);
     }
 
-    const {query, params} = filters.toString(paramIndex);
     const edgeList = Array.from(edges, quoteWrap).join(', ');
-    const statement = `TRAVERSE ${direction}(${edgeList}) FROM (
-        SELECT * FROM ${target} WHERE ${query}
-    ) MAXDEPTH ${depth}`;
+    let statement = `TRAVERSE ${direction}(${edgeList}) FROM ${target} MAXDEPTH ${depth}`;
+    if (!history) {
+        statement = `SELECT * FROM (${statement}) WHERE deletedAt IS NULL`;
+    }
     return {query: statement, params};
 };
 
