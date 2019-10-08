@@ -79,7 +79,6 @@ class WrapperQuery {
             ...rest
         } = checkStandardOptions(opt);
 
-        console.log('static WrapperQuery.parse', rest.queryType, opt);
         const query = Subquery.parse({target, history, ...rest});
         const model = schema[target];
         if (!model && (orderBy || returnProperties)) {
