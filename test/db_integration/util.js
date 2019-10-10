@@ -129,7 +129,7 @@ const createSeededDb = async () => {
             content: {
                 relevance: sensitivity,
                 subject: drug,
-                conditions: [cancer, krasMut],
+                conditions: [cancer, krasMut, drug],
                 evidence: [publication],
             },
             user: admin,
@@ -139,7 +139,7 @@ const createSeededDb = async () => {
             content: {
                 relevance: resistance,
                 subject: drug,
-                conditions: [carcinoma],
+                conditions: [carcinoma, drug],
                 evidence: [publication],
             },
             user: admin,
@@ -149,7 +149,7 @@ const createSeededDb = async () => {
             content: {
                 relevance: gof,
                 subject: kras,
-                conditions: [proliferation, krasMut],
+                conditions: [proliferation, krasMut, kras],
                 evidence: [publication],
             },
             user: admin,
