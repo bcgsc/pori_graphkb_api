@@ -102,7 +102,7 @@ describe('trimRecords', () => {
             {name: 'bob'},
             {name: 'alice', link: {name: 'george', '@rid': '#44:0'}}
         ];
-        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {history: true, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual(records);
     });
     test('removes protected records (explicit group)', async () => {
@@ -110,7 +110,7 @@ describe('trimRecords', () => {
             {name: 'bob', groupRestrictions: [{'@rid': '#2:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
         ];
-        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {history: true, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual([{name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}]);
     });
     test('removes protected edges (default ok)', async () => {
@@ -122,7 +122,7 @@ describe('trimRecords', () => {
                 groupRestrictions: [{'@rid': '#1:0'}]
             }
         ];
-        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {history: true, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual([
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
@@ -133,7 +133,7 @@ describe('trimRecords', () => {
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', out_link: {'@rid': '44:1', groupRestrictions: [{'@rid': '#2:0'}]}, groupRestrictions: [{'@rid': '#1:0'}]}
         ];
-        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}]}});
+        const trimmed = await trimRecords(records, {history: true, user: {groups: [{'@rid': '#1:0'}]}});
         expect(trimmed).toEqual([
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {name: 'alice', groupRestrictions: [{'@rid': '#1:0'}]}
@@ -150,7 +150,7 @@ describe('trimRecords', () => {
                 groupRestrictions: [{'@rid': '#1:0'}]
             }
         ];
-        const trimmed = await trimRecords(records, {activeOnly: false, user: {groups: [{'@rid': '#1:0'}, {'@rid': '#2:0'}]}});
+        const trimmed = await trimRecords(records, {history: true, user: {groups: [{'@rid': '#1:0'}, {'@rid': '#2:0'}]}});
         expect(trimmed).toEqual([
             {name: 'bob', groupRestrictions: [{'@rid': '#1:0'}]},
             {

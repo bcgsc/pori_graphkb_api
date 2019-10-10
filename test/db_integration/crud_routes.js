@@ -83,7 +83,7 @@ describeWithAuth('api crud routes', () => {
                         headers: {
                             Authorization: mockToken
                         },
-                        qs: {activeOnly: true}
+                        qs: {history: true}
                     });
                 } catch (err) {
                     const res = err.response;
@@ -248,11 +248,12 @@ describeWithAuth('api crud routes', () => {
                 group;
             beforeEach(async () => {
                 const res = await request({
-                    uri: `${app.url}/usergroups`,
+                    uri: `${app.url}/query`,
                     headers: {
                         Authorization: mockToken
                     },
-                    method: 'GET'
+                    body: {target: 'UserGroup'},
+                    method: 'POST'
                 });
                 readyOnly = res.body.result.find(g => g.name === 'readonly');
                 adminGroup = res.body.result.find(g => g.name === 'admin');
@@ -374,10 +375,12 @@ describeWithAuth('api crud routes', () => {
                 user;
             beforeEach(async () => {
                 const res = await request({
-                    uri: `${app.url}/usergroups`,
+                    uri: `${app.url}/query`,
                     headers: {
                         Authorization: mockToken
-                    }
+                    },
+                    method: 'POST',
+                    body: {target: 'UserGroup'}
                 });
                 for (const group of res.body.result) {
                     if (group.name === 'readonly') {
@@ -445,7 +448,7 @@ describeWithAuth('api crud routes', () => {
                     await request({
                         uri: `${app.url}/diseases/456:0`,
                         method: 'DELETE',
-                        qs: {activeOnly: true},
+                        qs: {history: true},
                         headers: {Authorization: mockToken}
                     });
                 } catch ({response: res}) {
