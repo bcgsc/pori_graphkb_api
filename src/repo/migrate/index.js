@@ -210,6 +210,26 @@ const migrate2from5xto6x = async (db) => {
     }
 };
 
+const migrate2to3From6xto0x = async (db) => {
+    const renames = [
+        ['appliesTo', 'subject'],
+        ['impliedBy', 'conditions'],
+        ['supportedBy', 'evidence'],
+    ];
+
+    for (const [oldName, newName] of renames) {
+        logger.info(`Rename Statement.${oldName} to Statement.${newName}`);
+        await db.command(`ALTER PROPERTY Statement.${oldName} NAME ${newName}`).all();
+    }
+    // ensure appliesTo/subject is also in impliedBy/conditions for all statements
+    const statements = await db.query('SELECT * FROM Statement WHERE subject NOT IN conditions').all();
+    logger.info(`${statements.length} statements require updating`);
+
+    for (const { '@rid': rid, conditions, subject } of statements) {
+        await db.command(`UPDATE ${rid} SET conditions = [${conditions.join(', ')}, ${subject}]`).all();
+    }
+};
+
 
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
@@ -253,6 +273,7 @@ const migrate = async (db, opt = {}) => {
         ['2.3.0', '2.4.0', migrate2from3xto4x],
         ['2.4.0', '2.5.0', migrate2from4xto5x],
         ['2.5.0', '2.6.0', migrate2from5xto6x],
+        ['2.6.0', '3.0.0', migrate2to3From6xto0x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
