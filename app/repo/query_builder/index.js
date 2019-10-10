@@ -15,7 +15,7 @@ const {MAX_LIMIT} = constants;
  */
 class WrapperQuery {
     constructor({
-        target, limit, skip, projection, query, orderByDirection, orderBy, count = false
+        target, limit, skip, projection, query, orderByDirection, orderBy, count = false, history = false
     }) {
         this.target = target;
         this.limit = limit;
@@ -117,7 +117,8 @@ class WrapperQuery {
             orderBy,
             orderByDirection,
             count,
-            query
+            query,
+            history
         });
     }
 }
