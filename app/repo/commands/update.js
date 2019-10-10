@@ -210,7 +210,8 @@ const deleteNodeTx = async (db, opt) => {
             }
 
             // move the current edge to point to the copied node
-            commit.let(`edge${edgeCount++}`, tx => tx.update(castToRID(value))
+            edgeCount += 1;
+            commit.let(`edge${edgeCount}`, tx => tx.update(castToRID(value))
                 .set({ deletedAt: timeStampNow(), deletedBy: userRID })
                 .set(`${direction} = $${updatedVertices[target.toString()]}[0]`)
                 .where({ createdAt: value.createdAt })
