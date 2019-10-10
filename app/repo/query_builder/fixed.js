@@ -227,7 +227,7 @@ const keywordSearch = ({
         }).toString(paramIndex, prefix);
 
         const query = `SELECT expand($statements)
-            LET $ont = (SELECT * from Ontology WHERE ${subquery}),
+            LET $ont = (${subquery}),
                 $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))),
                 $implicable = (SELECT expand(UNIONALL($ont, $variants))),
                 $statements = (SELECT * FROM Statement
@@ -237,7 +237,7 @@ const keywordSearch = ({
                         OR appliesTo IN (SELECT expand($implicable))
                         OR relevance IN (SELECT expand($ont))
                 )
-        )`;
+        `;
         return {query, params};
     } if (model.inherits.includes('Variant') || model.name === 'Variant') {
         const {query: subquery, params} = Subquery.parse({
