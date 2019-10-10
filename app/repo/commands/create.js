@@ -91,7 +91,9 @@ const create = async (db, opt) => {
     } if (model.getActiveProperties()) {
         // try select before create if active properties are defined (as they may not be db enforceable)
         try {
-            const records = await select(db, parseRecord(model, content, {activeIndexOnly: true}));
+            const query = parseRecord(model, content, {activeIndexOnly: true});
+
+            const records = await select(db, query);
             if (records.length) {
                 throw new RecordExistsError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
             }

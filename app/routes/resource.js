@@ -130,7 +130,7 @@ const updateRoute = (app, model) => {
             const rid = `#${req.params.rid.replace(/^#/, '')}`;
             if (!_.isEmpty(req.query)) {
                 return next(new AttributeError(
-                    {message: 'Query parameters are allowed for this query type', params: req.query}
+                    {message: 'Query parameters are not allowed for this query type', params: req.query}
                 ));
             }
             let session;

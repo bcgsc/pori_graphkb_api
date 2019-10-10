@@ -1,6 +1,6 @@
 
 
-const {error: {AttributeError}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const {schema: {schema}} = require('@bcgsc/knowledgebase-schema');
 
 const {
     propsToProjection, checkStandardOptions, nestedProjection, displayQuery, getQueryableProps
@@ -54,7 +54,7 @@ class WrapperQuery {
         if (projection !== '*') {
             statement = `SELECT ${projection} FROM (${query})`;
         } else if (count) {
-            statement = `SELECT count(*) as count FROM (${query})`;
+            statement = `SELECT count(*) AS count FROM (${query})`;
         }
 
         if (!count) {

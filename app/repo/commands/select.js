@@ -11,6 +11,7 @@ const {variant: {VariantNotation}} = require('@bcgsc/knowledgebase-parser');
 
 const {logger} = require('../logging');
 const {parse} = require('../query_builder');
+
 const {
     MultipleRecordsFoundError,
     NoRecordFoundError
