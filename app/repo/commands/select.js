@@ -184,7 +184,7 @@ const fetchDisplayName = async (db, model, content) => {
         const [type, reference1, reference2] = (await select(
             db,
             query
-        ).map(rec => rec.displayName));
+        )).map(rec => rec.displayName);
 
         if (model.name === 'CategoryVariant') {
             if (reference2) {
