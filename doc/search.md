@@ -16,7 +16,7 @@ All queries use the `/query` endpoint.
 
 ## Patterns
 
-Query are build with 4 repeating patterns
+Queries are build with 4 repeating patterns
 
 - [SubQuery](#subquery)
 - [Clause](#clause)
@@ -25,12 +25,11 @@ Query are build with 4 repeating patterns
 
 ### SubQuery
 
-A subquery is build with a target and filters. Where filters are the class being queries and filters represent the
-filtering conditions to be applied
+A subquery is built with a target and filters. Where targets are the class being queried and filters represent the filtering conditions to be applied
 
 ### Clause
 
-A clause is a group of conditions that must be applied AND or OR.
+A clause is a group of conditions that must be applied such as AND or OR.
 
 ### Comparison
 
