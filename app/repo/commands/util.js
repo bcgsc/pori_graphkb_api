@@ -7,7 +7,8 @@ const {util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
 const {
     NoRecordFoundError,
     RecordExistsError,
-    DatabaseConnectionError
+    DatabaseConnectionError,
+    DatabaseRequestError
 } = require('../error');
 
 
@@ -30,6 +31,16 @@ const wrapIfTypeError = (err) => {
         if (err.name) {
             if (err.name.includes('OrientDB.ConnectionError')) {
                 return new DatabaseConnectionError(err);
+            }
+            if (err.name.includes('OrientDB.RequestError')) {
+                const {
+                    name, type, message, sql
+                } = err;
+                // error messages exceed 500 lines and are unreadable
+                const trimmed = message.split('\n').filter(line => !/^\s*[<"].*\s*\.\.\.\s*$/.exec(line)).join('\n');
+                return new DatabaseRequestError({
+                    name, type, message: trimmed, sql
+                });
             }
         }
     }
