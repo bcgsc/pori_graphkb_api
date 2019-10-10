@@ -128,9 +128,9 @@ const createSeededDb = async () => {
         create(session, {
             content: {
                 relevance: sensitivity,
-                appliesTo: drug,
-                impliedBy: [cancer, krasMut],
-                supportedBy: [publication],
+                subject: drug,
+                conditions: [cancer, krasMut],
+                evidence: [publication],
             },
             user: admin,
             model: schema.Statement,
@@ -138,9 +138,9 @@ const createSeededDb = async () => {
         create(session, {
             content: {
                 relevance: resistance,
-                appliesTo: drug,
-                impliedBy: [carcinoma],
-                supportedBy: [publication],
+                subject: drug,
+                conditions: [carcinoma],
+                evidence: [publication],
             },
             user: admin,
             model: schema.Statement,
@@ -148,9 +148,9 @@ const createSeededDb = async () => {
         create(session, {
             content: {
                 relevance: gof,
-                appliesTo: kras,
-                impliedBy: [proliferation, krasMut],
-                supportedBy: [publication],
+                subject: kras,
+                conditions: [proliferation, krasMut],
+                evidence: [publication],
             },
             user: admin,
             model: schema.Statement,

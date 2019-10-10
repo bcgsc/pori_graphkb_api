@@ -204,7 +204,7 @@ describeWithAuth('query builder', () => {
                 parse({
                     target: 'Statement',
                     filters: {
-                        impliedBy: {
+                        conditions: {
                             queryType: 'similarTo',
                             target: [krasSub],
                         },
