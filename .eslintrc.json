@@ -10,24 +10,22 @@
         "plugin:jest/recommended",
         "plugin:jest-formatting/recommended"
     ],
+    "plugins": [
+        "jest",
+        "jest-formatting"
+    ],
     "rules": {
-        "array-bracket-spacing": [
-            "error",
-            "never"
-        ],
-        "comma-dangle": [
-            "error",
-            "never"
-        ],
-        "computed-property-spacing": [
-            "error",
-            "never"
-        ],
         "indent": [
             "error",
             4,
             {
                 "SwitchCase": 1
+            }
+        ],
+        "jest/consistent-test-it": [
+            "error",
+            {
+                "fn": "test"
             }
         ],
         "linebreak-style": [
@@ -42,7 +40,15 @@
         "no-await-in-loop": "off",
         "no-bitwise": "off",
         "no-cond-assign": "off",
-        "no-console": 0,
+        "no-console": [
+            "error",
+            {
+                "allow": [
+                    "warn",
+                    "error"
+                ]
+            }
+        ],
         "no-continue": "off",
         "no-empty": [
             "error",
@@ -52,29 +58,34 @@
         ],
         "no-mixed-spaces-and-tabs": "error",
         "no-multi-assign": "off",
-        "no-param-reassign": [
-            "warn",
+        "no-param-reassign": "warn",
+        "no-plusplus": [
+            "error",
             {
-                "ignorePropertyModificationsFor": [
-                    "opt"
-                ],
-                "props": true
+                "allowForLoopAfterthoughts": true
             }
         ],
-        "no-plusplus": "off",
         "no-restricted-syntax": "off",
         "no-underscore-dangle": "off",
-        "no-unused-expressions": "off",
         "no-use-before-define": "warn",
         "no-whitespace-before-property": "error",
-        "object-curly-spacing": [
-            "error",
-            "never"
-        ],
         "one-var": [
             "error",
             {
                 "let": "consecutive"
+            }
+        ],
+        "padding-line-between-statements": [
+            "error",
+            {
+                "blankLine": "always",
+                "next": "block-like",
+                "prev": "*"
+            },
+            {
+                "blankLine": "any",
+                "next": "if",
+                "prev": "if"
             }
         ],
         "prefer-const": [
@@ -83,22 +94,7 @@
                 "destructuring": "all"
             }
         ],
-        "prefer-destructuring": [
-            "warn",
-            {
-                "AssignmentExpression": {
-                    "array": false,
-                    "object": true
-                },
-                "VariableDeclarator": {
-                    "array": true,
-                    "object": true
-                }
-            },
-            {
-                "enforceForRenamedProperties": false
-            }
-        ],
+        "prefer-destructuring": "warn",
         "quotes": [
             "error",
             "single"
