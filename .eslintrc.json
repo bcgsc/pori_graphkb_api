@@ -103,7 +103,6 @@
             "error",
             "single"
         ],
-        "react/destructuring-assignment": "off",
         "semi": [
             "error",
             "always"
