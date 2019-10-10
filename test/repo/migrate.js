@@ -126,10 +126,10 @@ describe('migrate', () => {
             expect(db.class.get).not.toHaveBeenCalled();
         });
 
-        test('error on no transition', () => {
+        test('error on no transition', async () => {
             _version.getCurrentVersion = jest.fn().mockResolvedValue('1.6.0');
             _version.getLoadVersion = jest.fn().mockReturnValue({ version: '1.8.1' });
-            expect(migrate(db)).rejects.toContain('Unable to find migration scripts');
+            await expect(migrate(db)).rejects.toContain('Unable to find migration scripts');
             expect(db.query).not.toHaveBeenCalled();
             expect(db.class.get).not.toHaveBeenCalled();
         });
@@ -137,7 +137,7 @@ describe('migrate', () => {
         test('incompatible check only', async () => {
             _version.getCurrentVersion = jest.fn().mockResolvedValue('1.8.0');
             _version.getLoadVersion = jest.fn().mockReturnValue({ version: '1.9.1' });
-            expect(migrate(db, { checkOnly: true })).rejects.toContain('are not compatible');
+            await expect(migrate(db, { checkOnly: true })).rejects.toContain('are not compatible');
             expect(db.query).not.toHaveBeenCalled();
             expect(db.class.get).not.toHaveBeenCalled();
         });
