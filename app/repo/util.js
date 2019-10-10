@@ -91,11 +91,10 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
  *
  * @param {Array.<Object>} recordList list of records to be trimmed
  * @param {Object} opt options
- * @param {boolean} [opt.activeOnly=true] trim deleted records
+ * @param {boolean} [opt.history=false] include deleted records
  * @param {User} [opt.user=null] if the user object is given, will check record-level permissions and trim any non-permitted content
  */
-const trimRecords = async (recordList, opt = {}) => {
-    const {activeOnly = true, user = null} = opt;
+const trimRecords = async (recordList, {history = false, user = null} = {}) => {
     const queue = recordList.slice();
     const visited = new Set();
     const readableClasses = new Set();
@@ -149,14 +148,14 @@ const trimRecords = async (recordList, opt = {}) => {
             const value = curr[attr];
             if (attr === '@type' || attr === '@version') {
                 delete curr[attr];
-            } else if (attr === 'history' && activeOnly) {
+            } else if (attr === 'history' && history) {
                 curr[attr] = castToRID(value);
             } else if (value instanceof RID) {
                 if (value.cluster < 0) { // abstract, remove
                     delete curr[attr];
                 }
             } else if (typeof value === 'object' && value && value['@rid']) {
-                if (!accessOk(value) || (activeOnly && value.deletedAt)) {
+                if (!accessOk(value) || (!history && value.deletedAt)) {
                     delete curr[attr];
                 } else {
                     queue.push(value);
@@ -190,8 +189,10 @@ const trimRecords = async (recordList, opt = {}) => {
     // remove the top level elements last
     const result = [];
     for (const record of recordList) {
-        if (accessOk(record) && (!activeOnly || !record.deletedAt)) {
-            result.push(record);
+        if (accessOk(record)) {
+            if (history || !record.deletedAt) {
+                result.push(record);
+            }
         }
     }
     return result;

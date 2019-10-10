@@ -17,15 +17,14 @@ const {
     POST_PARSE,
     GET_SCHEMA,
     GET_VERSION,
-    GET_STATEMENT_BY_KEYWORD,
-    GET_RECORDS,
+    QUERY,
     GET_STATS
 } = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
 const {GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS} = require('./params');
 const {
-    ABOUT_FILE, SEARCH_ABOUT, QUERY_ABOUT
+    ABOUT_FILE, QUERY_ABOUT
 } = require('./constants');
 
 
@@ -43,8 +42,7 @@ const STUB = {
         '/parse': {post: POST_PARSE},
         '/schema': {get: GET_SCHEMA},
         '/version': {get: GET_VERSION},
-        '/statements/search': {get: GET_STATEMENT_BY_KEYWORD},
-        '/records': {get: GET_RECORDS},
+        '/query': {post: QUERY},
         '/spec': {
             get: {
                 summary: 'Returns this specification',
@@ -82,7 +80,8 @@ const STUB = {
                 pattern: '^#\\d+:\\d+$',
                 description: 'Record ID',
                 example: '#44:0'
-            }
+            },
+            RecordId: {$ref: '#/components/schemas/@rid'}
         }, schemas),
         parameters: {
             in: {
@@ -214,116 +213,6 @@ const describePost = (model) => {
     return post;
 };
 
-/**
- * Given a class model, generate the swagger documentation for the GET route
- *
- * @param {ClassModel} model the model to build the route for
- * @returns {Object} json representing the openapi spec defn
- */
-const describeGet = (model) => {
-    const get = {
-        summary: `get a list of ${model.name} records`,
-        tags: [model.name],
-        parameters: Array.from(_.concat(
-            model.inherits.includes('Ontology') || model.name === 'Ontology'
-                ? Object.values(ONTOLOGY_QUERY_PARAMS)
-                : [],
-            Object.values(GENERAL_QUERY_PARAMS),
-            Object.values(BASIC_HEADER_PARAMS)
-        ), p => ({$ref: `#/components/parameters/${p.name}`})),
-        responses: {
-            200: {
-                content: {
-                    'application/json': {
-                        schema: {
-                            type: 'object',
-                            properties: {
-                                result: {
-                                    type: 'array',
-                                    items: {$ref: `${SCHEMA_PREFIX}/${model.name}`}
-                                }
-                            }
-                        }
-                    }
-                },
-                links: {}
-            },
-            401: {$ref: '#/components/responses/NotAuthorized'},
-            400: {$ref: '#/components/responses/BadInput'},
-            403: {$ref: '#/components/responses/Forbidden'}
-        }
-    };
-
-    if (model.expose.GET) {
-        get.responses[200].links.getById = {
-            parameters: {rid: '$response.body#/result[].@rid'},
-            operationId: `get_${model.routeName.slice(1)}__rid_`,
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [GET \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/get_${
-                model.routeName.slice(1)
-            }__rid_) requests`
-        };
-    }
-    if (model.expose.PATCH) {
-        get.responses[200].links.patchById = {
-            parameters: {rid: '$response.body#/result[].@rid'},
-            operationId: `patch_${model.routeName.slice(1)}__rid_`,
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [PATCH \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/patch_${
-                model.routeName.slice(1)
-            }__rid_) requests`
-        };
-    }
-    if (model.expose.DELETE) {
-        get.responses[200].links.deleteById = {
-            parameters: {rid: '$response.body#/result[].@rid'},
-            operationId: `delete_${model.routeName.slice(1)}__rid_`,
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [DELETE \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/delete_${
-                model.routeName.slice(1)
-            }__rid_) requests`
-        };
-    }
-
-    for (const prop of Object.values(model.properties)) {
-        if (prop.name.startsWith('@')) {
-            continue;
-        }
-        const isList = !!/(list|set)/g.exec(prop.type);
-        const isLink = !!prop.type.includes('link');
-
-        const param = {
-            name: prop.name,
-            in: 'query',
-            schema: {}
-        };
-        if (prop.description) {
-            param.description = prop.description;
-        }
-        get.parameters.push(param);
-        if (isLink && isList) {
-            param.schema.$ref = `${SCHEMA_PREFIX}/RecordList`;
-        } else if (isLink) {
-            param.schema.$ref = `${SCHEMA_PREFIX}/RecordLink`;
-        } else {
-            param.schema.type = prop.type;
-        }
-        if (prop.choices) {
-            param.schema.enum = prop.choices;
-        }
-    }
-
-    return get;
-};
 
 /**
  * Given a class model, generate the swagger documentation for the OPERATION/:id route where
@@ -376,111 +265,6 @@ const describeOperationByID = (model, operation = 'delete') => {
 };
 
 
-/**
- * Given a class model, generate the swagger documentation for the search routes
- * @param {ClassModel} model
- */
-const describePostSearch = (model) => {
-    const searchable = {};
-    for (const prop of Object.values(model.properties)) {
-        if ((prop.linkedClass && prop.linkedClass.embedded) || prop.name === '@class') {
-            continue;
-        }
-        const defn = {
-            type: 'array',
-            items: {},
-            description: 'search for records with any of the following'
-        };
-
-        if (prop.linkedClass) {
-            defn.items = linkOrModel(prop.linkedClass.name);
-            defn.description = 'search for records related to any of the following';
-        } else if (prop.linkedType) {
-            defn.items = {type: prop.linkedType};
-        } else {
-            defn.items = {type: prop.type};
-        }
-        searchable[prop.name] = defn;
-    }
-
-    const body = {
-        type: 'object',
-        properties: {
-            activeOnly: {$ref: '#/components/schemas/activeOnly'},
-            count: {$ref: '#/components/schemas/count'},
-            limit: {$ref: '#/components/schemas/limit'},
-            orderBy: {$ref: '#/components/schemas/orderBy'},
-            orderByDirection: {$ref: '#/components/schemas/orderByDirection'},
-            skip: {$ref: '#/components/schemas/skip'}
-        },
-        oneOf: [
-            {
-                description: 'Build queries in JSON',
-                type: 'object',
-                required: ['where'],
-                properties: {
-                    where: {type: 'array', items: {$ref: `${SCHEMA_PREFIX}/Comparison`}},
-                    returnProperties: {$ref: '#/components/schemas/returnProperties'},
-                    neighbors: {$ref: '#/components/schemas/neighbors'}
-                }
-            },
-            {
-                description: 'Quick search properties and related records',
-                type: 'object',
-                required: ['search'],
-                properties: {
-                    search: {
-                        description: 'Arrays of possible values for properties of this class',
-                        type: 'object',
-                        properties: searchable
-                    }
-                }
-            }
-        ]
-    };
-
-    const description = {
-        summary: `Search or Query ${model.name} records`,
-        description: `There are two main ways to query records. Using the query-builder ("where") where
-            the user has full control over specifying the operations at each level, and the quick search option
-            ("search") where the user inputs direct attributes which are OR'd for each attribute and related records
-            are also searched. The search and where properties are mutually exclusive. The former will
-            try the quick search method and the latter uses the query builder`,
-        tags: [model.name],
-        parameters: Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({$ref: `#/components/parameters/${p.name}`})),
-        requestBody: {
-            required: true,
-            content: {
-                'application/json': {
-                    schema: body
-                }
-            }
-        },
-        responses: {
-            200: {
-                content: {
-                    'application/json': {
-                        schema: {
-                            type: 'object',
-                            properties: {
-                                result: {
-                                    type: 'array',
-                                    items: {$ref: `${SCHEMA_PREFIX}/${model.name}`}
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            401: {$ref: '#/components/responses/NotAuthorized'},
-            400: {$ref: '#/components/responses/BadInput'},
-            403: {$ref: '#/components/responses/Forbidden'}
-        }
-    };
-    return description;
-};
-
-
 const tagsSorter = (tag1, tag2) => {
     const starterTags = ['Metadata', 'General', 'Statement'];
     tag1 = tag1.name || tag1;
@@ -522,7 +306,7 @@ const generateSwaggerSpec = (schema, metadata) => {
     // Add the MD about section
 
     const about = Array.from(
-        [ABOUT_FILE, QUERY_ABOUT, SEARCH_ABOUT],
+        [ABOUT_FILE, QUERY_ABOUT],
         filename => fs.readFileSync(filename).toString()
     ).join('\n\n');
     docs.info.description = about;
@@ -540,16 +324,6 @@ const generateSwaggerSpec = (schema, metadata) => {
 
         if (Object.values(model.expose).some(x => x) && docs.paths[model.routeName] === undefined) {
             docs.paths[model.routeName] = docs.paths[model.routeName] || {};
-        }
-        if (model.expose.QUERY) {
-            docs.paths[model.routeName].get = docs.paths[model.routeName].get || describeGet(model);
-            if (!model.isEdge) {
-                // cannot complex search edge classes
-                docs.paths[`${model.routeName}/search`] = {
-                    ...docs.paths[`${model.routeName}/search`] || {},
-                    post: describePostSearch(model)
-                };
-            }
         }
         if (model.expose.POST && !docs.paths[model.routeName].post) {
             docs.paths[model.routeName].post = describePost(model);

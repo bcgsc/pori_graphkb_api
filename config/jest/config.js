@@ -33,7 +33,7 @@ module.exports = {
     testEnvironment: 'node',
     testPathIgnorePatterns: [
         '/node_modules/',
-        'test/repo/query/util.js',
+        'test/repo/query_builder/util.js',
         'test/util.js',
         'test/db_integration/util.js'
     ],

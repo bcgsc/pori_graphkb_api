@@ -10,8 +10,8 @@ const {
     RecordExistsError, AttributeError, NotImplementedError
 } = require('../../app/repo/error');
 const {
-    Query
-} = require('../../app/repo/query');
+    parseRecord
+} = require('../../app/repo/query_builder');
 
 
 const {clearDB, createEmptyDb, tearDownDb} = require('./util');
@@ -100,12 +100,11 @@ describeWithAuth('CRUD operations', () => {
                 throw new Error('Did not throw expected error');
             });
             test('update ok', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.User,
                     original,
                     {
-                        activeOnly: false,
+                        history: true,
                         neighbors: 3
                     }
                 );
@@ -117,12 +116,11 @@ describeWithAuth('CRUD operations', () => {
                 expect(update.history).not.toBeNull;
             });
             test('delete', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.User,
                     original,
                     {
-                        activeOnly: false,
+                        history: true,
                         neighbors: 3
                     }
                 );
@@ -258,11 +256,9 @@ describeWithAuth('CRUD operations', () => {
             });
 
             test('delete duplicates immediate vertices and creates history links', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.AliasOf,
                     {'@rid': original['@rid'].toString(), createdAt: original.createdAt},
-                    {ignoreMissing: true}
                 );
                 // now update the edge, both src and target node should have history after
                 const result = await remove(session, {
@@ -279,11 +275,9 @@ describeWithAuth('CRUD operations', () => {
                 expect(result.in).toEqual(newTgtVertex.history);
             });
             test('update is not allowed', async () => {
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.AliasOf,
                     {'@rid': original['@rid'].toString(), createdAt: original.createdAt},
-                    {ignoreMissing: true}
                 );
                 // now update the edge, both src and target node should have history after
                 try {
@@ -357,16 +351,16 @@ describeWithAuth('CRUD operations', () => {
                 );
             });
             test('update copies node and creates history link', async () => {
-                const original = cancer;
-                const query = Query.parseRecord(
-                    schema,
+                const {name = null, sourceId, '@rid': rid} = cancer;
+                const query = parseRecord(
                     schema.Disease,
-                    {sourceId: original.sourceId, source},
+                    {sourceId, source, name},
                     {
-                        activeOnly: false,
+                        history: false,
                         neighbors: 3
                     }
                 );
+
                 // change the name
                 const updated = await update(session, {
                     changes: {
@@ -376,40 +370,39 @@ describeWithAuth('CRUD operations', () => {
                     user: db.admin,
                     query
                 });
-
                 // check that a history link has been added to the node
                 expect(updated).toHaveProperty('name', 'new name');
                 // check that the 'old'/copy node has the original details
-                expect(updated['@rid']).toEqual(original['@rid']);
+                expect(updated['@rid']).toEqual(rid);
                 // select the original node
-                const [reselectedOriginal] = await select(
-                    session,
-                    Query.parseRecord(
-                        schema,
-                        schema.Disease,
-                        {sourceId: original.sourceId, source, name: null},
-                        {
-                            activeOnly: false,
-                            neighbors: 3
-                        }
-                    ),
-                    {exactlyN: 1}
+                const reselectQuery = parseRecord(
+                    schema.Disease,
+                    {sourceId, source, name},
+                    {
+                        history: true,
+                        neighbors: 3
+                    }
                 );
-                expect(updated.history).toEqual(reselectedOriginal['@rid']);
-                expect(reselectedOriginal.deletedBy['@rid']).toEqual(db.admin['@rid']);
+
+                const [reselected] = await select(
+                    session,
+                    reselectQuery,
+                    {user: db.admin, exactlyN: 1}
+                );
+                expect(updated.history).toEqual(reselected['@rid']);
+                expect(reselected.deletedBy['@rid']).toEqual(db.admin['@rid']);
                 expect(updated.createdBy).toEqual(db.admin['@rid']);
 
                 // check that the edges were not also copied
-                expect(reselectedOriginal).not.toHaveProperty('out_AliasOf');
+                expect(reselected).not.toHaveProperty('out_AliasOf');
             });
             test('delete also deletes linked edges', async () => {
                 const original = cancer;
-                const query = Query.parseRecord(
-                    schema,
+                const query = parseRecord(
                     schema.Disease,
                     {sourceId: original.sourceId, source},
                     {
-                        activeOnly: false,
+                        history: true,
                         neighbors: 3
                     }
                 );

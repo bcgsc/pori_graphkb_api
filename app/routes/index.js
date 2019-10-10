@@ -9,110 +9,11 @@ const openapi = require('./openapi');
 const resource = require('./resource');
 const {logger} = require('./../repo/logging');
 const {
-    MIN_WORD_SIZE, checkStandardOptions
-} = require('./query');
-const {selectByKeyword, selectFromList, selectCounts} = require('../repo/commands');
-const {NoRecordFoundError} = require('../repo/error');
-
-/**
- * @param {AppServer} app the GraphKB app server
- */
-const addKeywordSearchRoute = (app) => {
-    logger.log('verbose', 'NEW ROUTE [GET] /statements/search');
-
-    app.router.get('/statements/search',
-        async (req, res, next) => {
-            const {
-                keyword
-            } = req.query;
-
-            const options = {user: req.user};
-            try {
-                Object.assign(options, checkStandardOptions(req.query));
-            } catch (err) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-            }
-            if (keyword === undefined) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                    message: 'keyword query parameter is required'
-                });
-            }
-            const wordList = keyword.split(/\s+/);
-
-            if (wordList.some(word => word.length < MIN_WORD_SIZE)) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError(
-                    `Word "${keyword}" is too short to query with ~ operator. Must be at least ${
-                        MIN_WORD_SIZE
-                    } letters after splitting on whitespace characters`
-                ));
-            }
-            let session;
-            try {
-                session = await app.pool.acquire();
-            } catch (err) {
-                return next(err);
-            }
-            try {
-                const result = await selectByKeyword(session, wordList, options);
-                session.close();
-                return res.json(jc.decycle({result}));
-            } catch (err) {
-                session.close();
-                if (err instanceof AttributeError) {
-                    logger.log('debug', err);
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                }
-                return next(err);
-            }
-        });
-};
-
-/**
- * @param {AppServer} app the GraphKB app server
- */
-const addGetRecordsByList = (app) => {
-    app.router.get('/records',
-        async (req, res, next) => {
-            let options;
-            try {
-                options = {...checkStandardOptions(req.query), user: req.user};
-            } catch (err) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-            }
-
-            const {
-                rid = '', activeOnly, neighbors, user, ...rest
-            } = options;
-            if (Object.keys(rest).length) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                    message: `Invalid query parameter(s) (${Object.keys(rest).join(', ')})`,
-                    invalidParams: rest
-                });
-            }
-            let session;
-            try {
-                session = await app.pool.acquire();
-            } catch (err) {
-                return next(err);
-            }
-            try {
-                const result = await selectFromList(session, rid.split(',').map(r => r.trim()), options);
-                session.close();
-                return res.json(jc.decycle({result}));
-            } catch (err) {
-                session.close();
-                if (err instanceof AttributeError) {
-                    logger.log('debug', err);
-                    return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
-                }
-                if (err instanceof NoRecordFoundError) {
-                    logger.log('debug', err);
-                    return res.status(HTTP_STATUS.NOT_FOUND).json(err);
-                }
-                return next(err);
-            }
-        });
-};
+    checkStandardOptions
+} = require('../repo/query_builder/util');
+const {selectCounts} = require('../repo/commands');
+const {addErrorRoute} = require('./error');
+const {addQueryRoute} = require('./query');
 
 
 const addStatsRoute = (app) => {
@@ -130,15 +31,12 @@ const addStatsRoute = (app) => {
             return next(err);
         }
         try {
-            const {groupBySource = false, activeOnly = true} = checkStandardOptions(req.query);
-            const stats = await selectCounts(session, {groupBySource, activeOnly, classList});
+            const {groupBySource = false, history = false} = checkStandardOptions(req.query);
+            const stats = await selectCounts(session, {groupBySource, history, classList});
             session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({result: stats}));
         } catch (err) {
             session.close();
-            if (err instanceof AttributeError) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json(jc.decycle(err));
-            }
             return next(err);
         }
     });
@@ -149,14 +47,14 @@ const addParserRoute = (app) => {
     logger.info('NEW ROUTE [POST] /parse');
     app.router.post('/parse', async (req, res, next) => {
         if (!req.body || !req.body.content) {
-            return res.status(HTTP_STATUS.BAD_REQUEST).json(new AttributeError('body.content is a required input'));
+            return next(new AttributeError('body.content is a required input'));
         }
         const {content, requireFeatures = true} = req.body;
         try {
             const parsed = variantParser(content, requireFeatures);
             return res.status(HTTP_STATUS.OK).json({result: parsed});
         } catch (err) {
-            if (err instanceof AttributeError || err instanceof ParsingError) {
+            if (err instanceof ParsingError) {
                 return res.status(HTTP_STATUS.BAD_REQUEST).json(jc.decycle(err));
             }
             return next(err);
@@ -166,5 +64,5 @@ const addParserRoute = (app) => {
 
 
 module.exports = {
-    openapi, resource, addKeywordSearchRoute, addGetRecordsByList, addStatsRoute, addParserRoute
+    openapi, resource, addStatsRoute, addParserRoute, addErrorRoute, addQueryRoute
 };

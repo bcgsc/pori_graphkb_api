@@ -1,284 +1,60 @@
-/**
- * Module for parsing query parameters into a the format expected for POST queries
- */
 
-/**
- * Parse the operators prefixed on the query parameters
- *
- * @param {Object} inputQuery
- */
+const jc = require('json-cycle');
 
 const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
-
-const {
-    constants: {
-        MAX_LIMIT,
-        MAX_NEIGHBORS,
-        OPERATORS,
-        TRAVERSAL_TYPE
-    },
-    util: {
-        castBoolean,
-        castRangeInt,
-        parseCompoundAttr
-    }
-} = require('./../repo/query');
-
-const MIN_WORD_SIZE = 4;
-
-const STD_QUERY_OPTIONS = [
-    'activeOnly',
-    'count',
-    'limit',
-    'neighbors',
-    'orderBy',
-    'orderByDirection',
-    'returnProperties',
-    'skip'
-];
-
-/**
- * @param {object} opt the query options
- * @param {Number} opt.skip the number of records to skip (for paginating)
- * @param {Array.<string>} opt.orderBy the properties used to determine the sort order of the results
- * @param {string} opt.orderByDirection the direction to order (ASC or DESC)
- * @param {boolean} opt.count count the records instead of returning them
- * @param {Number} opt.neighbors the number of neighboring record levels to fetch
- */
-const checkStandardOptions = (opt) => {
-    const {
-        limit, neighbors, skip, orderBy, orderByDirection, count, returnProperties, activeOnly
-    } = opt;
-
-    const options = {};
-    if (limit !== undefined) {
-        options.limit = castRangeInt(limit, 1, MAX_LIMIT);
-    }
-    if (neighbors !== undefined) {
-        options.neighbors = castRangeInt(neighbors, 0, MAX_NEIGHBORS);
-    }
-    if (skip !== undefined) {
-        options.skip = castRangeInt(skip, 0);
-    }
-    if (orderBy) {
-        if (Array.isArray(orderBy)) {
-            options.orderBy = orderBy.map(prop => prop.trim());
-        } else {
-            options.orderBy = orderBy.split(',').map(prop => prop.trim());
-        }
-    }
-    if (orderByDirection) {
-        options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
-        if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
-            throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
-        }
-    }
-    if (returnProperties) {
-        options.returnProperties = returnProperties.split(',');
-    }
-    if (activeOnly !== undefined) {
-        options.activeOnly = castBoolean(activeOnly);
-    }
-    if (count) {
-        options.count = castBoolean(count);
-    }
-    return {...opt, ...options};
-};
+const {logger} = require('./../repo/logging');
+const {parse} = require('../repo/query_builder');
+const {select} = require('../repo/commands');
+const {NoRecordFoundError} = require('../repo/error');
 
 
 /**
- * Given objects representing collapsed traversals. Return individual lists representing the
- * flattened form
+ * Route to query the db
  *
- * @param {Object} params nested params object
- * @param {Array.<string>} prefixList array of attributes that are accessed to get to the current attr
+ * @param {AppServer} app the GraphKB app server
  */
-const flattenQueryParams = (params, prefixList = []) => {
-    const flattened = [];
-    for (const [key, value] of Object.entries(params)) {
-        const newPrefix = prefixList.slice();
-        newPrefix.push(key);
+const addQueryRoute = (app) => {
+    logger.log('verbose', 'NEW ROUTE [POST] /query');
+    app.router.post('/query',
+        async (req, res, next) => {
+            const {body} = req;
+            if (!body) {
+                return next(new AttributeError(
+                    {message: 'request body is required'}
+                ));
+            }
+            if (!body.target) {
+                return next(new AttributeError(
+                    {message: 'request body.target is required. Must specify the class being queried'}
+                ));
+            }
+            let query;
+            try {
+                query = parse(body);
+            } catch (err) {
+                return next(err);
+            }
 
-        if (value !== null && typeof value === 'object' && !(value instanceof Array)) {
-            const children = flattenQueryParams(value, newPrefix);
-            flattened.push(...children);
-        } else {
-            const flat = {attrList: newPrefix, value};
-            flattened.push(flat);
-        }
-    }
-    return flattened;
-};
-
-
-/**
- * Given some list of attributes to be successively accessed, format as a traversal
- *
- * @param {Array.<string>} attrList the list of attributes being chained
- *
- * @returns {Object} the list of attribute names represented as a traversal object
- *
- * @example
- * > formatTraversal(['a', 'b'])
- * {
- *      attr: 'a',
- *      type: 'LINK',
- *      child: {attr: 'b'}
- * }
- */
-const formatTraversal = (attrList) => {
-    let curr = {attr: attrList[0]};
-    const top = curr;
-    for (const key of attrList.slice(1)) {
-        curr.child = {attr: key};
-        curr.type = TRAVERSAL_TYPE.LINK;
-        curr = curr.child;
-    }
-    return top;
-};
-
-/**
- * Parses the querystring representation of a value comparison
- *
- * @param {string|Object} attr the attribute (or attribute traversal) associated with comparison to this value
- * @param value the value string
- *
- * @returns {Object} the object representing the value as a query
- */
-const parseValue = (attr, value) => {
-    if (value instanceof Array) {
-        throw new AttributeError(`Cannot specify a query parameter (${attr.attr || attr}) more than once (${value.length})`);
-    }
-    const clause = {operator: 'OR', comparisons: []};
-    for (let subValue of value.split('|')) {
-        let negate = false;
-        if (subValue.startsWith('!')) {
-            negate = true;
-            subValue = subValue.slice(1);
-        }
-        let operator;
-
-        if (subValue.startsWith('~')) {
-            // CONTAINSTEXT must be split on index separators or the search will not behave as expected on a fulltext index
-            operator = OPERATORS.CONTAINSTEXT;
-            subValue = subValue.slice(1);
-
-            const wordList = subValue.split(/\s+/);
-
-            if (wordList.length > 1) { // contains a separator char, should split into AND clause
-                const andClause = {
-                    operator: OPERATORS.AND,
-                    comparisons: Array.from(
-                        wordList, word => ({
-                            attr, value: word, operator, negate
-                        })
-                    )
-                };
-                if (andClause.comparisons.some(comp => comp.value.length < MIN_WORD_SIZE)) {
-                    throw new AttributeError(
-                        `Word "${subValue}" is too short to query with ~ operator. Must be at least ${
-                            MIN_WORD_SIZE
-                        } letters after splitting on whitespace characters`
-                    );
+            let session;
+            try {
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+            try {
+                const result = await select(session, query, {user: req.user});
+                if (query.expectedCount() !== null && result.length !== query.expectedCount()) {
+                    throw new NoRecordFoundError(`expected ${query.expectedCount()} records but only found ${result.length}`);
                 }
-                clause.comparisons.push(andClause);
-                continue; // added already
-            } else if (subValue.length < MIN_WORD_SIZE) {
-                throw new AttributeError(
-                    `Word is too short to query with ~ operator. Must be at least ${
-                        MIN_WORD_SIZE
-                    } letters`
-                );
+                session.close();
+                return res.json(jc.decycle({result}));
+            } catch (err) {
+                session.close();
+                logger.log('debug', err);
+                return next(err);
             }
-        }
-        if (subValue === 'null') {
-            subValue = null;
-        }
-        const comp = {
-            value: subValue, attr, negate
-        };
-        if (operator !== undefined) {
-            comp.operator = operator;
-        }
-        clause.comparisons.push(comp);
-    }
-    if (clause.comparisons.length < 1) {
-        throw new AttributeError(`Cannot define a comparison with no values ${attr}:${value}`);
-    } if (clause.comparisons.length < 2) {
-        return clause.comparisons[0];
-    }
-    return clause;
+        });
 };
 
 
-/**
- * @param {Object} queryParams Object representing the input query parameters
- */
-const parse = (queryParams) => {
-    const flat = flattenQueryParams(queryParams);
-    const specialArgs = {};
-    const queryConditions = [];
-    let compoundSyntax = false;
-
-    // split into special args and regular query conditions
-    for (const condition of flat) {
-        const {attrList, value} = condition;
-        let attr;
-        if (attrList.length === 1) {
-            attr = attrList[0];
-        }
-        if (STD_QUERY_OPTIONS.includes(attr)) {
-            specialArgs[attr] = value;
-        } else if (attr === 'or') {
-            specialArgs[attr] = value.split(',');
-        } else if (attr === 'compoundSyntax') {
-            compoundSyntax = value;
-        } else {
-            if (!attr) {
-                attr = formatTraversal(attrList);
-            }
-            queryConditions.push({attr, value});
-        }
-    }
-    const topLevelOr = specialArgs.or
-        ? {operator: OPERATORS.OR, comparisons: []}
-        : null;
-
-    const query = [];
-    // add conditions to regular level or to the top level or and parse values
-    for (const condition of queryConditions) {
-        let {attr} = condition;
-        if (typeof attr === 'string' && (compoundSyntax || attr.includes('.'))) {
-            attr = parseCompoundAttr(attr);
-        }
-
-        const value = parseValue(attr, condition.value);
-
-        if (specialArgs.or && specialArgs.or.includes(attr)) {
-            topLevelOr.comparisons.push(value);
-        } else {
-            query.push(value);
-        }
-    }
-    if (specialArgs.or) {
-        if (topLevelOr.comparisons.length > 1) {
-            query.push(topLevelOr);
-        } else {
-            query.push(topLevelOr.comparisons[0]);
-        }
-        delete specialArgs.or;
-    }
-
-    return Object.assign({where: query}, specialArgs);
-};
-
-module.exports = {
-    parse,
-    flattenQueryParams,
-    formatTraversal,
-    parseValue,
-    parseCompoundAttr,
-    STD_QUERY_OPTIONS,
-    checkStandardOptions,
-    MIN_WORD_SIZE
-};
+module.exports = {addQueryRoute};

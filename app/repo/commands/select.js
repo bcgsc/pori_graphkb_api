@@ -6,13 +6,12 @@
 /**
  * @ignore
  */
-const {error: {AttributeError}, util: {castToRID}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const {schema: {schema}} = require('@bcgsc/knowledgebase-schema');
 const {variant: {VariantNotation}} = require('@bcgsc/knowledgebase-parser');
 
 const {logger} = require('../logging');
-const {
-    Query, keywordSearch, searchByLinkedRecords
-} = require('../query');
+const {parse} = require('../query_builder');
+
 const {
     MultipleRecordsFoundError,
     NoRecordFoundError
@@ -29,13 +28,13 @@ const QUERY_LIMIT = 1000;
  * @param {orientjs.Db} db the database connection object
  * @param {Object} opt
  * @param {Array.<string>} opt.classList list of classes to gather stats for. Defaults to all
- * @param {Boolean} [opt.activeOnly=true] ignore deleted records
+ * @param {Boolean} [opt.=true] ignore deleted records
  * @param {Boolean} [opt.groupBySource=false] group by class and source instead of class only
  */
 const selectCounts = async (db, opt = {}) => {
     const {
         groupBySource = false,
-        activeOnly = true,
+        history = false,
         classList = Object.keys(schema)
     } = opt;
 
@@ -44,10 +43,10 @@ const selectCounts = async (db, opt = {}) => {
             let statement;
             if (!groupBySource) {
                 statement = `SELECT count(*) as cnt FROM ${cls}`;
-                if (activeOnly) {
+                if (!history) {
                     statement = `${statement} WHERE deletedAt IS NULL`;
                 }
-            } else if (activeOnly) {
+            } else if (!history) {
                 statement = `SELECT source, count(*) as cnt FROM ${cls} WHERE deletedAt IS NULL GROUP BY source`;
             } else {
                 statement = `SELECT source, count(*) as cnt FROM ${cls} GROUP BY source`;
@@ -126,7 +125,10 @@ const select = async (db, query, opt = {}) => {
     logger.log('debug', query.displayString());
 
     // send the query statement to the database
-    const {params, query: statement} = query.toString();
+    const {params, query: statement} = query.toString
+        ? query.toString()
+        : query;
+
     const queryOpt = {
         params
     };
@@ -139,13 +141,14 @@ const select = async (db, query, opt = {}) => {
     } catch (err) {
         logger.log('debug', `Error in executing the query statement (${statement})`);
         logger.log('debug', err);
-        console.error(err);
-        throw wrapIfTypeError({...err, sql: statement});
+        const error = wrapIfTypeError({...err, sql: statement});
+        console.error(error);
+        throw error;
     }
 
     logger.log('debug', `selected ${recordList.length} records`);
 
-    recordList = await trimRecords(recordList, {activeOnly: query.activeOnly, user, db});
+    recordList = await trimRecords(recordList, {history: query.history, user, db});
 
     if (exactlyN !== null) {
         if (recordList.length < exactlyN) {
@@ -166,72 +169,6 @@ const select = async (db, query, opt = {}) => {
     }
 };
 
-
-/**
- * @param {orientjs.Db} db Database connection from orientjs
- * @param {Array.<string>} keywords array of keywords to search for
- * @param {Object} opt Selection options
- */
-const selectByKeyword = async (db, keywords, opt = {}) => {
-    const queryObj = Object.assign({
-        toString: () => keywordSearch(keywords, {...opt})
-    }, opt);
-    queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj);
-};
-
-
-/**
- * @param {orientjs.Db} db Database connection from orientjs
- * @param {Object} opt Selection options
- * @param {ClassModel} opt.model
- * @param {Object} opt.search filters
- */
-const searchSelect = async (db, opt = {}) => {
-    const queryObj = {
-        ...opt,
-        toString: () => searchByLinkedRecords(opt)
-    };
-    queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj);
-};
-
-
-/**
- * @param {orientjs.Db} db Database connection from orientjs
- * @param {Array.<string|RID>} recordList array of record IDs to select from
- * @param {Object} opt Selection options
- * @param {?Number} opt.neighbors number of related records to fetch
- * @param {?Boolean} opt.activeOnly exclude deleted records
- * @param {?string} opt.projection project to use from select
- */
-const selectFromList = async (db, inputRecordList, opt = {}) => {
-    const {neighbors = 0, activeOnly = true, projection = '*'} = opt;
-    const params = {};
-    const recordList = inputRecordList.map(castToRID);
-    recordList.forEach((rid) => {
-        params[`param${Object.keys(params).length}`] = rid;
-    });
-    if (recordList.length < 1) {
-        throw new AttributeError('Must select a minimum of 1 record');
-    }
-    // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
-    let query = `SELECT ${projection} FROM [${recordList.map(p => `${p}`).join(', ')}]`;
-
-    if (activeOnly) {
-        query = `${query} WHERE deletedAt IS NULL`;
-    }
-    const queryObj = Object.assign({
-        toString: () => ({query, params}),
-        activeOnly,
-        neighbors,
-        params
-    }, opt);
-    queryObj.displayString = () => Query.displayString(queryObj);
-    return select(db, queryObj, {exactlyN: recordList.length});
-};
-
-
 /**
  * Calculate the display name when it requires a db connection to resolve linked records
  */
@@ -241,10 +178,13 @@ const fetchDisplayName = async (db, model, content) => {
         if (content.reference2) {
             links.push(content.reference2);
         }
-        const [type, reference1, reference2] = (await selectFromList(
+        const query = parse({
+            target: links,
+            returnProperties: ['displayName']
+        });
+        const [type, reference1, reference2] = (await select(
             db,
-            links,
-            {projection: 'displayName'}
+            query
         )).map(rec => rec.displayName);
 
         if (model.name === 'CategoryVariant') {
@@ -272,8 +212,5 @@ module.exports = {
     RELATED_NODE_DEPTH,
     select,
     selectCounts,
-    selectByKeyword,
-    selectFromList,
-    searchSelect,
     fetchDisplayName
 };

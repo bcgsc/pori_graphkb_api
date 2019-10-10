@@ -18,14 +18,14 @@ const GENERAL_QUERY_PARAMS = {
         },
         description: 'Return neighbors of the selected record(s) up to \'n\' edges away. If this is set to 0, no neighbors will be returned. To collect all immediate neighbors this must be set to 2.'
     },
-    activeOnly: {
+    history: {
         in: 'query',
-        name: 'activeOnly',
+        name: 'history',
         schema: {
             type: 'boolean',
-            default: true
+            default: false
         },
-        description: 'Limit the query to active records only (records that have not been deleted)'
+        description: 'Include deleted records in the query result'
     },
     returnProperties: {
         in: 'query',

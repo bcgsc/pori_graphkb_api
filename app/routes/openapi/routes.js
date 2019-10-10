@@ -130,84 +130,6 @@ const GET_VERSION = {
     }
 };
 
-const GET_STATEMENT_BY_KEYWORD = {
-    summary: 'Search statement records by a single keyword',
-    tags: ['Statement'],
-    parameters: [
-        {$ref: '#/components/parameters/Accept'},
-        {
-            in: 'query',
-            name: 'keyword',
-            schema: {type: 'string'},
-            example: 'kras',
-            description: 'the keyword to search for',
-            required: true
-        },
-        {$ref: '#/components/parameters/neighbors'},
-        {$ref: '#/components/parameters/limit'},
-        {$ref: '#/components/parameters/skip'},
-        {$ref: '#/components/parameters/orderBy'},
-        {$ref: '#/components/parameters/orderByDirection'},
-        {$ref: '#/components/parameters/activeOnly'},
-        {$ref: '#/components/parameters/count'}
-    ],
-    responses: {
-        200: {
-            content: {
-                'application/json': {
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            result: {
-                                type: 'array', items: {$ref: '#/components/schemas/Statement'}
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        401: {$ref: '#/components/responses/NotAuthorized'},
-        403: {$ref: '#/components/responses/Forbidden'},
-        400: {$ref: '#/components/responses/BadInput'}
-    }
-};
-
-
-const GET_RECORDS = {
-    summary: 'Get a list of records from their record IDs',
-    tags: ['General'],
-    parameters: [
-        {$ref: '#/components/parameters/Accept'},
-        {
-            in: 'query',
-            name: 'rid',
-            schema: {type: 'string'},
-            example: '69:780,59:4927,84:12673',
-            description: 'the record IDs (CSV list) to search for',
-            required: true
-        },
-        {$ref: '#/components/parameters/neighbors'}
-    ],
-    responses: {
-        200: {
-            content: {
-                'application/json': {
-                    schema: {
-                        type: 'object',
-                        properties: {
-                            result: {schema: {type: 'array', items: {type: 'object'}}}
-                        },
-                        description: 'The list of records from the database'
-                    }
-                }
-            }
-        },
-        401: {$ref: '#/components/responses/NotAuthorized'},
-        400: {$ref: '#/components/responses/BadInput'},
-        403: {$ref: '#/components/responses/Forbidden'}
-    }
-};
-
 
 const GET_STATS = {
     summary: 'Returns counts for all non-abstract database classes',
@@ -215,7 +137,7 @@ const GET_STATS = {
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {$ref: '#/components/parameters/Authorization'},
-        {$ref: '#/components/parameters/activeOnly'},
+        {$ref: '#/components/parameters/history'},
         {
             in: 'query',
             name: 'groupBySource',
@@ -285,12 +207,43 @@ const GET_STATS = {
     }
 };
 
+
+const QUERY = {
+    summary: 'Query the database',
+    tags: ['General'],
+    requestBody: {
+        required: true,
+        content: {
+            'application/json': {
+                schema: {
+                    $ref: '#/components/schemas/Query'
+                }
+            }
+        }
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    type: 'object',
+                    required: ['result'],
+                    properties: {
+                        result: {
+                            type: 'array',
+                            items: {$ref: '#/components/schemas/V'}
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+
 module.exports = {
     POST_TOKEN,
     POST_PARSE,
     GET_SCHEMA,
     GET_STATS,
     GET_VERSION,
-    GET_STATEMENT_BY_KEYWORD,
-    GET_RECORDS
+    QUERY
 };

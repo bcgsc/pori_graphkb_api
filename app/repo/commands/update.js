@@ -17,6 +17,7 @@ const {
 } = require('./../error');
 const {omitDBAttributes, wrapIfTypeError, hasRecordAccess} = require('./util');
 const {select} = require('./select');
+const {nestedProjection} = require('../query_builder/util');
 
 
 /**
@@ -242,9 +243,10 @@ const modify = async (db, opt) => {
             ignoreMissing: true,
             ignoreExtra: false
         }));
-    query.neighbors = 2;
+    query.projection = nestedProjection(2);
     // select the original record and check permissions
     // select will also throw an error when the user attempts to modify a deleted record
+
     const [original] = await select(db, query, {
         exactlyN: 1
     });
