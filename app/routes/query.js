@@ -42,6 +42,9 @@ const addQueryRoute = (app) => {
             }
             try {
                 const result = await select(session, query, {user: req.user});
+                if (query.expectedCount() !== null && result.length !== query.expectedCount()) {
+                    throw new NoRecordFoundError(`expected ${query.expectedCount()} records but only found ${result.length}`);
+                }
                 session.close();
                 return res.json(jc.decycle({result}));
             } catch (err) {

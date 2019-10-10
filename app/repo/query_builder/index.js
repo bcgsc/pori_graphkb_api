@@ -25,6 +25,18 @@ class WrapperQuery {
         this.orderBy = orderBy;
         this.orderByDirection = orderByDirection;
         this.count = count;
+        this.history = history;
+    }
+
+    expectedCount() {
+        if (this.query.expectedCount() && !this.skip) {
+            let count = this.query.expectedCount();
+            if (this.limit !== null) {
+                count = Math.min(this.limit, count);
+            }
+            return count;
+        }
+        return null;
     }
 
     toString() {

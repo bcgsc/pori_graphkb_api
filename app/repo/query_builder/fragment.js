@@ -300,6 +300,13 @@ class Subquery {
         this.isSubquery = true;
     }
 
+    expectedCount() {
+        if (!this.filters && Array.isArray(this.target)) {
+            return this.target.length;
+        }
+        return null;
+    }
+
     toString(paramIndex = 0, prefix = '') {
         const {filters, history, target} = this;
         let targetString = target,
