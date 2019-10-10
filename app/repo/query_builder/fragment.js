@@ -9,6 +9,7 @@ const {OPERATORS, PARAM_PREFIX} = require('./constants');
 const {FixedSubquery} = require('./fixed');
 const {getQueryableProps} = require('./util');
 
+const NUMBER_ONLY_OPERATORS = [OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE];
 
 class Comparison {
     /**
@@ -17,12 +18,19 @@ class Comparison {
      * @param {string} operator the operator to use for the comparison
      * @param {bool} negate if true then surround the comparison with a negation
      */
-    constructor(name, prop, value, operator, negate = false) {
+    constructor({
+        name, prop, value, operator, negate = false, isLength = false
+    }) {
         this.name = name;
         this.prop = prop;
         this.value = value;
         this.operator = operator;
         this.negate = negate;
+        this.isLength = isLength;
+    }
+
+    get valueIsIterable() {
+        return this.value && (Array.isArray(this.value) || this.value.isSubquery);
     }
 
     /**
@@ -45,11 +53,13 @@ class Comparison {
             return value;
         };
 
-        const valueIsIterable = this.value && (Array.isArray(this.value) || this.value.isSubquery);
+        if (this.length && [...NUMBER_ONLY_OPERATORS, OPERATORS.EQ, OPERATORS.NE].includes(this.operator)) {
+            throw new AttributeError('The length comparison can only be used with number values');
+        }
 
 
-        if ([OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE].includes(this.operator)) {
-            if (prop.iterable || valueIsIterable) {
+        if (NUMBER_ONLY_OPERATORS.includes(this.operator)) {
+            if (prop.iterable || this.valueIsIterable) {
                 throw new AttributeError(
                     `Non-equality operator (${
                         this.operator
@@ -78,7 +88,7 @@ class Comparison {
             );
         }
 
-        if (valueIsIterable) {
+        if (this.valueIsIterable) {
             if (this.operator === OPERATORS.CONTAINS) {
                 throw new AttributeError(
                     `CONTAINS should be used with non-iterable values (${
@@ -86,7 +96,7 @@ class Comparison {
                     }). To compare two interables for intersecting values use CONTAINSANY or CONTAINSALL instead`
                 );
             }
-            if (this.operator === OPERATORS.EQ) {
+            if (this.operator === OPERATORS.EQ && !prop.iterable) {
                 throw new AttributeError(
                     `Using a direct comparison (${
                         this.operator
@@ -125,7 +135,11 @@ class Comparison {
         if (Object.keys(rest).length === 0) {
             throw new AttributeError('Missing the property name for the comparison');
         }
-        const [name] = Object.keys(rest);
+        let [name] = Object.keys(rest);
+        const isLength = name.endsWith('.length');
+        if (isLength) {
+            name = name.slice(0, name.length - '.length'.length);
+        }
         let value = rest[name];
 
         const properties = getQueryableProps(model);
@@ -142,8 +156,6 @@ class Comparison {
         ) {
             if (value.queryType || value.filters) {
                 value = Subquery.parse(value);
-            } else {
-                throw new AttributeError('Value for a comparison must be a primitive value or Array or IDs or subquery');
             }
         }
 
@@ -151,7 +163,7 @@ class Comparison {
         if (inputOperator === undefined) {
             if (prop.iterable) {
                 if (Array.isArray(value)) {
-                    defaultOperator = OPERATORS.CONTAINSALL;
+                    defaultOperator = OPERATORS.EQ;
                 } else if (value && value.isSubquery) {
                     defaultOperator = OPERATORS.CONTAINSANY;
                 } else {
@@ -173,13 +185,14 @@ class Comparison {
             );
         }
 
-        const result = new this(
+        const result = new this({
             name,
-            properties[name],
+            prop: properties[name],
             value,
             operator,
-            negate
-        );
+            negate,
+            isLength
+        });
         result.validate();
         return result;
     }
@@ -203,14 +216,28 @@ class Comparison {
                 const pname = `${PARAM_PREFIX}${paramIndex++}`;
                 params[pname] = element;
             }
-            query = `${attr} ${this.operator} [${
-                Array.from(Object.keys(params), p => `:${p}`).join(', ')
-            }]`;
+            if (this.operator === OPERATORS.EQ && this.prop.iterable) {
+                const pname = `${PARAM_PREFIX}${paramIndex++}`;
+
+                query = `(${attr} ${OPERATORS.CONTAINSALL} [${
+                    Array.from(Object.keys(params), p => `:${p}`).join(', ')
+                }] AND ${attr}.size() = :${pname})`;
+
+                params[pname] = this.value.length;
+            } else {
+                query = `${attr} ${this.operator} [${
+                    Array.from(Object.keys(params), p => `:${p}`).join(', ')
+                }]`;
+            }
         } else {
             const pname = `${PARAM_PREFIX}${paramIndex}`;
             if (this.value !== null) {
                 params[pname] = this.value;
-                query = `${attr} ${this.operator} :${pname}`;
+                if (this.isLength) {
+                    query = `${attr}.size() ${this.operator} :${pname}`;
+                } else {
+                    query = `${attr} ${this.operator} :${pname}`;
+                }
             } else {
                 query = `${attr} ${OPERATORS.IS} NULL`;
             }
@@ -365,9 +392,6 @@ class Subquery {
         }
 
         if (rawFilters) {
-            if (!model) {
-                throw new AttributeError('Target class (not subquery) is required to apply filters');
-            }
             filters = rawFilters;
             if (Array.isArray(filters)) {
                 filters = {AND: filters};
@@ -375,7 +399,7 @@ class Subquery {
                 filters = {AND: [{...filters}]};
             }
 
-            filters = Clause.parse(model, filters);
+            filters = Clause.parse(model || schema.V, filters);
         }
         if (queryType) {
             if (!filters) {
