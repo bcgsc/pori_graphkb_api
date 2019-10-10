@@ -125,7 +125,7 @@ describeWithAuth('CRUD operations', () => {
                 });
                 expect(updated).toHaveProperty('name', 'bob');
                 expect(updated).toHaveProperty('history');
-                expect(update.history).not.toBeNull;
+                expect(update.history).not.toBeNull();
             });
 
             test('delete', async () => {
@@ -142,7 +142,7 @@ describeWithAuth('CRUD operations', () => {
                     { query, user: db.admin, model: schema.User },
                 );
                 expect(deleted).toHaveProperty('deletedAt');
-                expect(deleted.deletedAt).not.toBeNull;
+                expect(deleted.deletedAt).not.toBeNull();
             });
         });
     });
@@ -447,7 +447,7 @@ describeWithAuth('CRUD operations', () => {
 
                 // check that a history link has been added to the node
                 expect(deleted).toHaveProperty('deletedAt');
-                expect(deleted.deletedAt).not.toBeNull;
+                expect(deleted.deletedAt).not.toBeNull();
                 // check that the 'old'/copy node has the original details
                 expect(deleted['@rid']).toEqual(original['@rid']);
                 expect(deleted).toHaveProperty('out_AliasOf');

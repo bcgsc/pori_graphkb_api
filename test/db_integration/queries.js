@@ -262,7 +262,7 @@ describeWithAuth('query builder', () => {
             const name = await fetchDisplayName(
                 session, schema.Statement, db.records.resToDrug,
             );
-            expect(name).toBeNull;
+            expect(name).toBeNull();
         });
     });
 
