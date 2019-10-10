@@ -131,32 +131,39 @@ const parse = query => WrapperQuery.parse(query);
  * @param {object} record the record content
  *
  */
-const parseRecord = (model, record, {history = false, activeIndexOnly = false} = {}) => {
-    const query = {target: model.name, filters: {AND: []}, history};
+const parseRecord = (model, record, {activeIndexOnly = false, ...opt} = {}) => {
+    const query = {...opt, target: model.name, filters: {AND: []}};
     const filters = query.filters.AND;
+    const content = {...record};
 
-    const properties = activeIndexOnly
-        ? model.getActiveProperties()
-        : Object.values(model.properties);
+    const activeIndexProps = model.getActiveProperties();
+    const properties = Object.values(model.properties).filter(
+        prop => !activeIndexOnly || activeIndexProps.includes(prop.name)
+    );
 
     for (const prop of properties.sort((a, b) => a.name.localeCompare(b.name))) {
-        if (record[prop.name] === undefined) {
-            continue;
+        if (content[prop.name] === undefined) {
+            if (!activeIndexOnly) {
+                continue;
+            } else {
+                content[prop.name] = null; // nulls are included in the active index
+            }
         }
-        if (prop.type.includes('embedded') && prop.linkedClass && record[prop.name]) {
+        if (prop.type.includes('embedded') && prop.linkedClass && content[prop.name]) {
             for (const [propKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass)).sort()) {
                 const propChain = `${prop.name}.${propKey}`;
-                const value = record[prop.name][subprop.name];
+                const value = content[prop.name][subprop.name];
 
                 if (value !== undefined) {
                     filters.push({[propChain]: value});
                 }
             }
         } else {
-            filters.push({[prop.name]: record[prop.name]});
+            filters.push({[prop.name]: content[prop.name]});
         }
     }
-    return parse(query);
+    const result = parse(query);
+    return result;
 };
 
 
