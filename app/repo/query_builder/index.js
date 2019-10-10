@@ -93,18 +93,16 @@ class WrapperQuery {
 
         const query = Subquery.parse({target, history, ...rest});
         const model = schema[target];
-        if (!model && (orderBy || returnProperties)) {
-            throw new AttributeError(`Invalid target class (${target}). Must be a class to use orderBy or returnProperties arguments`);
-        }
+
         // try to project the ordering to ensure they are valid properties
         if (orderBy) {
-            propsToProjection(model, orderBy);
+            propsToProjection(model || schema.V, orderBy);
         }
 
         let projection = '*';
 
         if (returnProperties) {
-            projection = propsToProjection(model, returnProperties);
+            projection = propsToProjection(model || schema.V, returnProperties);
         } else if (neighbors) {
             projection = nestedProjection(neighbors, !history);
         }
