@@ -10,7 +10,7 @@ const resource = require('./resource');
 const {logger} = require('./../repo/logging');
 const {
     checkStandardOptions
-} = require('./query');
+} = require('../repo/query_builder/util');
 const {selectCounts} = require('../repo/commands');
 const {addErrorRoute} = require('./error');
 const {addQueryRoute} = require('./query');

@@ -5,6 +5,7 @@ const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
 const {logger} = require('./../repo/logging');
 const {parse} = require('../repo/query_builder');
 const {select} = require('../repo/commands');
+const {NoRecordFoundError} = require('../repo/error');
 
 
 /**
