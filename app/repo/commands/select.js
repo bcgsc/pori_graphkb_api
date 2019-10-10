@@ -27,13 +27,13 @@ const QUERY_LIMIT = 1000;
  * @param {orientjs.Db} db the database connection object
  * @param {Object} opt
  * @param {Array.<string>} opt.classList list of classes to gather stats for. Defaults to all
- * @param {Boolean} [opt.activeOnly=true] ignore deleted records
+ * @param {Boolean} [opt.=true] ignore deleted records
  * @param {Boolean} [opt.groupBySource=false] group by class and source instead of class only
  */
 const selectCounts = async (db, opt = {}) => {
     const {
         groupBySource = false,
-        activeOnly = true,
+        history = false,
         classList = Object.keys(schema)
     } = opt;
 
@@ -42,10 +42,10 @@ const selectCounts = async (db, opt = {}) => {
             let statement;
             if (!groupBySource) {
                 statement = `SELECT count(*) as cnt FROM ${cls}`;
-                if (activeOnly) {
+                if (!history) {
                     statement = `${statement} WHERE deletedAt IS NULL`;
                 }
-            } else if (activeOnly) {
+            } else if (!history) {
                 statement = `SELECT source, count(*) as cnt FROM ${cls} WHERE deletedAt IS NULL GROUP BY source`;
             } else {
                 statement = `SELECT source, count(*) as cnt FROM ${cls} GROUP BY source`;
@@ -140,13 +140,14 @@ const select = async (db, query, opt = {}) => {
     } catch (err) {
         logger.log('debug', `Error in executing the query statement (${statement})`);
         logger.log('debug', err);
-        console.error(err);
-        throw wrapIfTypeError({...err, sql: statement});
+        const error = wrapIfTypeError({...err, sql: statement});
+        console.error(error);
+        throw error;
     }
 
     logger.log('debug', `selected ${recordList.length} records`);
 
-    recordList = await trimRecords(recordList, {activeOnly: query.activeOnly, user, db});
+    recordList = await trimRecords(recordList, {history: query.history, user, db});
 
     if (exactlyN !== null) {
         if (recordList.length < exactlyN) {

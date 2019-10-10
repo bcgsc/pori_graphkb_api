@@ -31,8 +31,8 @@ const addStatsRoute = (app) => {
             return next(err);
         }
         try {
-            const {groupBySource = false, activeOnly = true} = checkStandardOptions(req.query);
-            const stats = await selectCounts(session, {groupBySource, activeOnly, classList});
+            const {groupBySource = false, history = false} = checkStandardOptions(req.query);
+            const stats = await selectCounts(session, {groupBySource, history, classList});
             session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({result: stats}));
         } catch (err) {

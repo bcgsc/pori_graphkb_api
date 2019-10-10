@@ -19,10 +19,10 @@ const {checkStandardOptions} = require('../repo/query_builder/util');
 
 const activeRidQuery = (model, rid, opt = {}) => {
     const query = parse({
+        ...opt,
         target: [rid],
         filters: {'@class': model.name},
-        history: false,
-        ...opt
+        history: false
     });
     return query;
 };

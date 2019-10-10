@@ -360,7 +360,7 @@ module.exports = {
     skip: {
         nullable: true, type: 'integer', min: 0, description: 'The number of records to skip. Used in combination with limit for paginating queries.'
     },
-    activeOnly: {type: 'boolean', default: true},
+    history: {type: 'boolean', default: false},
     returnProperties: {type: 'array', items: {type: 'string'}, description: 'array of property names to return (defaults to all)'},
     limit: {
         type: 'integer', min: 1, max: MAX_QUERY_LIMIT, description: 'maximum number of records to return'

@@ -137,7 +137,7 @@ const GET_STATS = {
     parameters: [
         {$ref: '#/components/parameters/Accept'},
         {$ref: '#/components/parameters/Authorization'},
-        {$ref: '#/components/parameters/activeOnly'},
+        {$ref: '#/components/parameters/history'},
         {
             in: 'query',
             name: 'groupBySource',
