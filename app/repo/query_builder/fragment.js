@@ -215,15 +215,14 @@ class Comparison {
             ({ params } = subquery);
         } else if (this.value instanceof Array || this.value instanceof Set) {
             for (const element of this.value) {
-                paramIndex += 1;
                 const pname = `${PARAM_PREFIX}${paramIndex}`;
+                paramIndex += 1;
                 params[pname] = element;
             }
 
             if (this.operator === OPERATORS.EQ && this.prop.iterable) {
-                paramIndex += 1;
                 const pname = `${PARAM_PREFIX}${paramIndex}`;
-
+                paramIndex += 1;
                 query = `(${attr} ${OPERATORS.CONTAINSALL} [${
                     Array.from(Object.keys(params), p => `:${p}`).join(', ')
                 }] AND ${attr}.size() = :${pname})`;
