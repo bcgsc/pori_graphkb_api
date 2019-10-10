@@ -8,13 +8,13 @@ const {
     selectCounts,
     fetchDisplayName,
     getUserByName,
-} = require('../../app/repo/commands');
+} = require('../../src/repo/commands');
 const {
     AttributeError, NoRecordFoundError,
-} = require('../../app/repo/error');
+} = require('../../src/repo/error');
 const {
     parse,
-} = require('../../app/repo/query_builder');
+} = require('../../src/repo/query_builder');
 
 
 const { createSeededDb, tearDownDb } = require('./util');

@@ -3,11 +3,11 @@ const { types } = require('orientjs');
 const {
     splitSchemaClassLevels,
     SCHEMA_DEFN,
-} = require('./../../app/repo/schema');
+} = require('./../../src/repo/schema');
 const {
     ClassModel,
     Property,
-} = require('./../../app/repo/model');
+} = require('./../../src/repo/model');
 
 
 const OJS_TYPES = {};

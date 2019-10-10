@@ -5,16 +5,16 @@
 const {
     migrate,
     requiresMigration,
-} = require('../../app/repo/migrate');
+} = require('../../src/repo/migrate');
 
-jest.mock('../../app/repo/migrate/version');
-jest.mock('../../app/repo/model', () => ({
+jest.mock('../../src/repo/migrate/version');
+jest.mock('../../src/repo/model', () => ({
     Property: { create: jest.fn() },
     ClassModel: { create: jest.fn() },
 }));
 
-const { getCurrentVersion, getLoadVersion } = jest.requireActual('./../../app/repo/migrate/version');
-const _version = require('../../app/repo/migrate/version');
+const { getCurrentVersion, getLoadVersion } = jest.requireActual('./../../src/repo/migrate/version');
+const _version = require('../../src/repo/migrate/version');
 
 describe('migrate', () => {
     let db,
@@ -37,7 +37,7 @@ describe('migrate', () => {
                 }),
             },
         };
-        const model = require('../../app/repo/model');  // eslint-disable-line
+        const model = require('../../src/repo/model');  // eslint-disable-line
         propertyMock = model.Property.create;
         modelMock = model.ClassModel.create;
     });

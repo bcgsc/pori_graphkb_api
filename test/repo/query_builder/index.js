@@ -2,7 +2,7 @@ const { schema } = require('@bcgsc/knowledgebase-schema');
 
 const {
     parse, parseRecord,
-} = require('../../../app/repo/query_builder');
+} = require('../../../src/repo/query_builder');
 
 const { stripSQL } = require('./util');
 

@@ -4,8 +4,8 @@
 const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
 
-const { AppServer } = require('../../app');
-const { generateToken } = require('../../app/routes/auth');
+const { AppServer } = require('../../src');
+const { generateToken } = require('../../src/routes/auth');
 
 const { createSeededDb, tearDownDb } = require('./util');
 

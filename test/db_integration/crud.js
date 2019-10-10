@@ -5,13 +5,13 @@ const {
     update,
     remove,
     select,
-} = require('../../app/repo/commands');
+} = require('../../src/repo/commands');
 const {
     RecordExistsError, AttributeError, NotImplementedError,
-} = require('../../app/repo/error');
+} = require('../../src/repo/error');
 const {
     parseRecord,
-} = require('../../app/repo/query_builder');
+} = require('../../src/repo/query_builder');
 
 
 const { clearDB, createEmptyDb, tearDownDb } = require('./util');

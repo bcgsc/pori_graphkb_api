@@ -3,10 +3,10 @@
 const {
     groupRecordsBy,
     trimRecords,
-} = require('./../../app/repo/util');
+} = require('./../../src/repo/util');
 const {
     hasRecordAccess,
-} = require('./../../app/repo/commands/util');
+} = require('./../../src/repo/commands/util');
 
 
 describe('groupRecordsBy', () => {
