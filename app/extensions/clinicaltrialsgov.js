@@ -1,16 +1,16 @@
 const Ajv = require('ajv');
 
-const {logger} = require('../repo/logging');
+const { logger } = require('../repo/logging');
 
-const {requestWithRetry, parseXmlToJson} = require('./util');
+const { requestWithRetry, parseXmlToJson } = require('./util');
 
 
 const BASE_URL = 'https://clinicaltrials.gov/ct2/show';
 
 const ajv = new Ajv();
 
-const singleItemArray = (spec = {type: 'string'}) => ({
-    type: 'array', maxItems: 1, minItems: 1, items: {...spec}
+const singleItemArray = (spec = { type: 'string' }) => ({
+    type: 'array', maxItems: 1, minItems: 1, items: { ...spec },
 });
 
 const validateAPITrialRecord = ajv.compile({
@@ -27,13 +27,13 @@ const validateAPITrialRecord = ajv.compile({
                 'intervention',
                 'last_update_posted',
                 'required_header',
-                'location'
+                'location',
             ],
             properties: {
                 required_header: singleItemArray({
                     type: 'object',
                     required: ['url'],
-                    properties: {url: singleItemArray()}
+                    properties: { url: singleItemArray() },
                 }),
                 start_date: singleItemArray({
                     oneOf: [
@@ -41,29 +41,29 @@ const validateAPITrialRecord = ajv.compile({
                             type: 'object',
                             required: ['_'],
                             properties: {
-                                _: {type: 'string'}
-                            }
+                                _: { type: 'string' },
+                            },
                         },
-                        {type: 'string'}
-                    ]
+                        { type: 'string' },
+                    ],
                 }),
                 completion_date: singleItemArray({
                     type: 'object',
                     required: ['_'],
                     properties: {
-                        _: {type: 'string'}
-                    }
+                        _: { type: 'string' },
+                    },
                 }),
                 id_info: singleItemArray({
                     type: 'object',
                     required: ['nct_id'],
-                    properties: {nct_id: singleItemArray({pattern: '^NCT\\d+$'})}
+                    properties: { nct_id: singleItemArray({ pattern: '^NCT\\d+$' }) },
                 }),
                 official_title: singleItemArray(),
                 phase: singleItemArray(),
                 condition: {
                     type: 'array',
-                    items: {type: 'string'}
+                    items: { type: 'string' },
                 },
                 intervention: {
                     type: 'array',
@@ -71,18 +71,18 @@ const validateAPITrialRecord = ajv.compile({
                         type: 'object',
                         required: [
                             'intervention_type',
-                            'intervention_name'
+                            'intervention_name',
                         ],
                         properties: {
                             intervention_name: singleItemArray(),
-                            intervention_type: singleItemArray()
-                        }
-                    }
+                            intervention_type: singleItemArray(),
+                        },
+                    },
                 },
                 last_update_posted: singleItemArray({
                     type: 'object',
                     required: ['_'],
-                    properties: {_: {type: 'string'}}
+                    properties: { _: { type: 'string' } },
                 }),
                 location: {
                     type: 'array',
@@ -100,24 +100,24 @@ const validateAPITrialRecord = ajv.compile({
                                         required: ['city', 'country'],
                                         properties: {
                                             city: singleItemArray(),
-                                            country: singleItemArray()
-                                        }
-                                    })
-                                }
-                            })
-                        }
-                    }
+                                            country: singleItemArray(),
+                                        },
+                                    }),
+                                },
+                            }),
+                        },
+                    },
                 },
                 detailed_description: singleItemArray({
                     type: 'object',
                     required: ['textblock'],
                     properties: {
-                        textblock: singleItemArray({type: 'string'})
-                    }
-                })
-            }
-        }
-    }
+                        textblock: singleItemArray({ type: 'string' }),
+                    },
+                }),
+            },
+        },
+    },
 });
 
 
@@ -135,11 +135,14 @@ const standardizeDate = (dateString) => {
 
 const processPhases = (phaseList) => {
     const phases = [];
+
     for (const raw of phaseList || []) {
         const cleanedPhaseList = raw.trim().toLowerCase().replace(/\bn\/a\b/, '').split(/[,/]/);
+
         for (const phase of cleanedPhaseList) {
             if (phase !== '' && phase !== 'not applicable') {
                 const match = /^(early )?phase (\d+)$/.exec(phase);
+
                 if (!match) {
                     throw new Error(`unrecognized phase description (${phase})`);
                 }
@@ -158,13 +161,15 @@ const parseRecord = (result) => {
     if (!validateAPITrialRecord(result)) {
         throw new Error(`Failed to parse from the extension api (${validateAPITrialRecord.errors[0].message})`);
     }
-    const {clinical_study: record} = result;
+    const { clinical_study: record } = result;
 
     let startDate,
         completionDate;
+
     try {
         startDate = standardizeDate(record.start_date[0]._ || record.start_date[0]);
     } catch (err) {}
+
     try {
         completionDate = standardizeDate(record.completion_date[0]._);
     } catch (err) {}
@@ -178,23 +183,25 @@ const parseRecord = (result) => {
         drugs: [],
         startDate,
         completionDate,
-        locations: []
+        locations: [],
     };
+
     if (record.detailed_description) {
         [content.description] = record.detailed_description[0].textblock;
     }
     if (record.phase) {
         content.phases = processPhases(record.phase);
     }
-    for (const {intervention_name: [name], intervention_type: [type]} of record.intervention || []) {
+
+    for (const { intervention_name: [name], intervention_type: [type] } of record.intervention || []) {
         if (type.toLowerCase() === 'drug' || type.toLowerCase() === 'biological') {
             content.drugs.push(name);
         }
     }
 
     for (const location of record.location || []) {
-        const {facility: [{address: [{country: [country], city: [city]}]}]} = location;
-        content.locations.push({country: country.toLowerCase(), city: city.toLowerCase()});
+        const { facility: [{ address: [{ country: [country], city: [city] }] }] } = location;
+        content.locations.push({ country: country.toLowerCase(), city: city.toLowerCase() });
     }
     return content;
 };
@@ -213,9 +220,9 @@ const fetchRecord = async (id) => {
     const resp = await requestWithRetry({
         method: 'GET',
         uri: url,
-        qs: {displayxml: true},
-        headers: {Accept: 'application/xml'},
-        json: true
+        qs: { displayxml: true },
+        headers: { Accept: 'application/xml' },
+        json: true,
     });
     const result = await parseXmlToJson(resp);
     return parseRecord(result);
@@ -223,5 +230,5 @@ const fetchRecord = async (id) => {
 
 
 module.exports = {
-    fetchRecord
+    fetchRecord,
 };

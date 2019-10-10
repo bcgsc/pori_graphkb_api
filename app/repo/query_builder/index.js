@@ -1,21 +1,21 @@
 
 
-const {schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    propsToProjection, checkStandardOptions, nestedProjection, displayQuery, getQueryableProps
+    propsToProjection, checkStandardOptions, nestedProjection, displayQuery, getQueryableProps,
 } = require('./util');
-const {Subquery} = require('./fragment');
+const { Subquery } = require('./fragment');
 const constants = require('./constants');
 
-const {MAX_LIMIT} = constants;
+const { MAX_LIMIT } = constants;
 
 /**
  * Top level query class
  */
 class WrapperQuery {
     constructor({
-        target, limit, skip, projection, query, orderByDirection, orderBy, count = false, history = false
+        target, limit, skip, projection, query, orderByDirection, orderBy, count = false, history = false,
     }) {
         this.target = target;
         this.limit = limit;
@@ -31,6 +31,7 @@ class WrapperQuery {
     expectedCount() {
         if (this.query.expectedCount() && !this.skip) {
             let count = this.query.expectedCount();
+
             if (this.limit !== null) {
                 count = Math.min(this.limit, count);
             }
@@ -41,16 +42,17 @@ class WrapperQuery {
 
     toString() {
         const {
-            skip, limit, projection, count, orderByDirection, orderBy
+            skip, limit, projection, count, orderByDirection, orderBy,
         } = this;
-        const {query, params} = this.query.toString(0);
+        const { query, params } = this.query.toString(0);
 
         if (!count && !orderBy && !skip && limit === undefined) {
             // don't need to wrap since there are no modificiations
-            return {query, params};
+            return { query, params };
         }
 
         let statement = query;
+
         if (projection !== '*') {
             statement = `SELECT ${projection} FROM (${query})`;
         } else if (count) {
@@ -70,7 +72,7 @@ class WrapperQuery {
                 statement = `${statement} LIMIT ${limit}`;
             }
         }
-        return {query: statement, params};
+        return { query: statement, params };
     }
 
     displayString() {
@@ -91,7 +93,7 @@ class WrapperQuery {
             ...rest
         } = checkStandardOptions(opt);
 
-        const query = Subquery.parse({target, history, ...rest});
+        const query = Subquery.parse({ target, history, ...rest });
         const model = schema[target];
 
         // try to project the ordering to ensure they are valid properties
@@ -116,7 +118,7 @@ class WrapperQuery {
             orderByDirection,
             count,
             query,
-            history
+            history,
         });
     }
 }
@@ -131,14 +133,14 @@ const parse = query => WrapperQuery.parse(query);
  * @param {object} record the record content
  *
  */
-const parseRecord = (model, record, {activeIndexOnly = false, ...opt} = {}) => {
-    const query = {...opt, target: model.name, filters: {AND: []}};
+const parseRecord = (model, record, { activeIndexOnly = false, ...opt } = {}) => {
+    const query = { ...opt, target: model.name, filters: { AND: [] } };
     const filters = query.filters.AND;
-    const content = {...record};
+    const content = { ...record };
 
     const activeIndexProps = model.getActiveProperties();
     const properties = Object.values(model.properties).filter(
-        prop => !activeIndexOnly || activeIndexProps.includes(prop.name)
+        prop => !activeIndexOnly || activeIndexProps.includes(prop.name),
     );
 
     for (const prop of properties.sort((a, b) => a.name.localeCompare(b.name))) {
@@ -155,11 +157,11 @@ const parseRecord = (model, record, {activeIndexOnly = false, ...opt} = {}) => {
                 const value = content[prop.name][subprop.name];
 
                 if (value !== undefined) {
-                    filters.push({[propChain]: value});
+                    filters.push({ [propChain]: value });
                 }
             }
         } else {
-            filters.push({[prop.name]: content[prop.name]});
+            filters.push({ [prop.name]: content[prop.name] });
         }
     }
     const result = parse(query);
@@ -168,5 +170,5 @@ const parseRecord = (model, record, {activeIndexOnly = false, ...opt} = {}) => {
 
 
 module.exports = {
-    WrapperQuery, parse, parseRecord, constants
+    WrapperQuery, parse, parseRecord, constants,
 };

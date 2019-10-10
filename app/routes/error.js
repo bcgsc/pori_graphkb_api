@@ -1,11 +1,11 @@
 const HTTP_STATUS = require('http-status-codes');
 
-const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    DatabaseConnectionError, NoRecordFoundError, RecordExistsError
+    DatabaseConnectionError, NoRecordFoundError, RecordExistsError,
 } = require('./../repo/error');
-const {logger} = require('./../repo/logging');
+const { logger } = require('./../repo/logging');
 
 
 /**
@@ -19,6 +19,7 @@ const addErrorRoute = (app) => {
 
         logger.info('unexpected error');
         logger.log('error', err.stack);
+
         if (err instanceof AttributeError) {
             code = HTTP_STATUS.BAD_REQUEST;
         } else if (err instanceof NoRecordFoundError) {
@@ -27,6 +28,7 @@ const addErrorRoute = (app) => {
             code = HTTP_STATUS.CONFLICT;
         } else if (err instanceof DatabaseConnectionError) {
             logger.warn('connection error, attempting to restart the database connection');
+
             try {
                 await app.connectToDb();
             } catch (secondErr) {}
@@ -36,10 +38,10 @@ const addErrorRoute = (app) => {
         }
         const errorContent = err.toJSON
             ? err.toJSON()
-            : {message: err.toString(), ...err};
+            : { message: err.toString(), ...err };
 
         return res.status(code).json(errorContent);
     });
 };
 
-module.exports = {addErrorRoute};
+module.exports = { addErrorRoute };

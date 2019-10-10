@@ -6,18 +6,18 @@
 /**
  * @ignore
  */
-const {schema: {schema}} = require('@bcgsc/knowledgebase-schema');
-const {variant: {VariantNotation}} = require('@bcgsc/knowledgebase-parser');
+const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { variant: { VariantNotation } } = require('@bcgsc/knowledgebase-parser');
 
-const {logger} = require('../logging');
-const {parse} = require('../query_builder');
+const { logger } = require('../logging');
+const { parse } = require('../query_builder');
 
 const {
     MultipleRecordsFoundError,
-    NoRecordFoundError
+    NoRecordFoundError,
 } = require('../error');
-const {trimRecords} = require('../util');
-const {wrapIfTypeError} = require('./util');
+const { trimRecords } = require('../util');
+const { wrapIfTypeError } = require('./util');
 
 
 const RELATED_NODE_DEPTH = 3;
@@ -35,14 +35,16 @@ const selectCounts = async (db, opt = {}) => {
     const {
         groupBySource = false,
         history = false,
-        classList = Object.keys(schema)
+        classList = Object.keys(schema),
     } = opt;
 
     const tempCounts = await Promise.all(classList.map(
         async (cls) => {
             let statement;
+
             if (!groupBySource) {
                 statement = `SELECT count(*) as cnt FROM ${cls}`;
+
                 if (!history) {
                     statement = `${statement} WHERE deletedAt IS NULL`;
                 }
@@ -53,13 +55,15 @@ const selectCounts = async (db, opt = {}) => {
             }
             logger.log('debug', statement);
             return db.query(statement).all();
-        }
+        },
     ));
     const counts = {};
+
     // nest counts into objects based on the grouping keys
     for (let i = 0; i < classList.length; i++) {
         const name = classList[i];
         counts[name] = {};
+
         for (const record of tempCounts[i]) {
             if (groupBySource) {
                 counts[name][record.source || null] = record.cnt;
@@ -83,16 +87,18 @@ const getUserByName = async (db, username) => {
     logger.debug(`getUserByName: ${username}`);
     // raw SQL to avoid having to load db models in the middleware
     let user;
+
     try {
         user = await db.query(
             'SELECT *, groups:{*, @rid, @class} from User where name = :param0 AND deletedAt IS NULL',
             {
-                params: {param0: username}
-            }
+                params: { param0: username },
+            },
         ).all();
     } catch (err) {
         throw wrapIfTypeError(err);
     }
+
     if (user.length > 1) {
         logger.error(`selected multiple users: ${user.map(r => r['@rid']).join(', ')}`);
         throw new MultipleRecordsFoundError(`username (${username}) is not unique and returned multiple (${user.length}) records`);
@@ -121,16 +127,16 @@ const getUserByName = async (db, username) => {
  */
 const select = async (db, query, opt = {}) => {
     // set the default options
-    const {exactlyN = null, user} = opt;
+    const { exactlyN = null, user } = opt;
     logger.log('debug', query.displayString());
 
     // send the query statement to the database
-    const {params, query: statement} = query.toString
+    const { params, query: statement } = query.toString
         ? query.toString()
         : query;
 
     const queryOpt = {
-        params
+        params,
     };
     logger.log('debug', JSON.stringify(queryOpt));
 
@@ -141,25 +147,25 @@ const select = async (db, query, opt = {}) => {
     } catch (err) {
         logger.log('debug', `Error in executing the query statement (${statement})`);
         logger.log('debug', err);
-        const error = wrapIfTypeError({...err, sql: statement});
+        const error = wrapIfTypeError({ ...err, sql: statement });
         console.error(error);
         throw error;
     }
 
     logger.log('debug', `selected ${recordList.length} records`);
 
-    recordList = await trimRecords(recordList, {history: query.history, user, db});
+    recordList = await trimRecords(recordList, { history: query.history, user, db });
 
     if (exactlyN !== null) {
         if (recordList.length < exactlyN) {
             throw new NoRecordFoundError({
                 message: `query expected ${exactlyN} records but only found ${recordList.length}`,
-                sql: query.displayString()
+                sql: query.displayString(),
             });
         } else if (exactlyN !== recordList.length) {
             throw new MultipleRecordsFoundError({
                 message: `query returned unexpected number of results. Found ${recordList.length} results but expected ${exactlyN} results`,
-                sql: query.displayString()
+                sql: query.displayString(),
             });
         } else {
             return recordList;
@@ -175,16 +181,17 @@ const select = async (db, query, opt = {}) => {
 const fetchDisplayName = async (db, model, content) => {
     if (model.inherits.includes('Variant')) {
         const links = [content.type, content.reference1];
+
         if (content.reference2) {
             links.push(content.reference2);
         }
         const query = parse({
             target: links,
-            returnProperties: ['displayName']
+            returnProperties: ['displayName'],
         });
         const [type, reference1, reference2] = (await select(
             db,
-            query
+            query,
         )).map(rec => rec.displayName);
 
         if (model.name === 'CategoryVariant') {
@@ -194,7 +201,7 @@ const fetchDisplayName = async (db, model, content) => {
             return `${reference1} ${type}`;
         } if (model.name === 'PositionalVariant') {
             const obj = {
-                ...content, multiFeature: Boolean(reference2), reference1, reference2, type
+                ...content, multiFeature: Boolean(reference2), reference1, reference2, type,
             };
             const notation = VariantNotation.toString(obj);
             return notation;
@@ -212,5 +219,5 @@ module.exports = {
     RELATED_NODE_DEPTH,
     select,
     selectCounts,
-    fetchDisplayName
+    fetchDisplayName,
 };

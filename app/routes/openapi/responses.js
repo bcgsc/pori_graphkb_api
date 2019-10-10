@@ -11,20 +11,20 @@ const Forbidden = {
         'application/json': {
             schema: {
                 $ref: '#/components/schemas/Error',
-                properties: {name: {example: 'PermissionError'}}
-            }
-        }
-    }
+                properties: { name: { example: 'PermissionError' } },
+            },
+        },
+    },
 };
 const NotAuthorized = {
     description: 'Authorization failed or insufficient permissions were found',
     content: {
         'application/json': {
             schema: {
-                $ref: '#/components/schemas/Error'
-            }
-        }
-    }
+                $ref: '#/components/schemas/Error',
+            },
+        },
+    },
 };
 const RecordExistsError = {
     description: 'The record cannot be created, the record already exists',
@@ -32,10 +32,10 @@ const RecordExistsError = {
         'application/json': {
             schema: {
                 $ref: '#/components/schemas/Error',
-                properties: {name: {example: 'RecordExistsError'}}
-            }
-        }
-    }
+                properties: { name: { example: 'RecordExistsError' } },
+            },
+        },
+    },
 };
 const BadInput = {
     description: 'Bad request contains invalid input',
@@ -43,10 +43,10 @@ const BadInput = {
         'application/json': {
             schema: {
                 $ref: '#/components/schemas/Error',
-                properties: {name: {example: 'AttributeError'}}
-            }
-        }
-    }
+                properties: { name: { example: 'AttributeError' } },
+            },
+        },
+    },
 };
 
 const RecordNotFound = {
@@ -54,12 +54,12 @@ const RecordNotFound = {
     content: {
         'application/json': {
             schema: {
-                $ref: '#/components/schemas/Error'
-            }
-        }
-    }
+                $ref: '#/components/schemas/Error',
+            },
+        },
+    },
 };
 
 module.exports = {
-    Forbidden, NotAuthorized, RecordExistsError, BadInput, RecordNotFound
+    Forbidden, NotAuthorized, RecordExistsError, BadInput, RecordNotFound,
 };

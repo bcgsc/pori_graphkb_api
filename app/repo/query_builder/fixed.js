@@ -6,13 +6,13 @@
  * @constant
  * @ignore
  */
-const {util: {castToRID}, error: {AttributeError}, schema: {schema}} = require('@bcgsc/knowledgebase-schema');
-const {quoteWrap} = require('./../util');
+const { util: { castToRID }, error: { AttributeError }, schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { quoteWrap } = require('./../util');
 
 const {
-    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE,
 } = require('./constants');
-const {castRangeInt} = require('./util');
+const { castRangeInt } = require('./util');
 
 
 const SIMILARITY_EDGES = [
@@ -21,7 +21,7 @@ const SIMILARITY_EDGES = [
     'CrossReferenceOf',
     'DeprecatedBy',
     'GeneralizationOf',
-    'Infers'
+    'Infers',
 ];
 
 
@@ -35,7 +35,7 @@ const SIMILARITY_EDGES = [
  */
 const treeQuery = (opt) => {
     const {
-        filters, target: rawTarget, paramIndex = 0, direction, history = false
+        filters, target: rawTarget, paramIndex = 0, direction, history = false,
     } = opt;
     const edges = opt.edges || ['SubclassOf'];
     const depth = castRangeInt(opt.depth || MAX_TRAVEL_DEPTH, 1, MAX_TRAVEL_DEPTH);
@@ -48,7 +48,7 @@ const treeQuery = (opt) => {
     } else if (schema[target] === undefined) {
         throw new AttributeError(`Invalid target class (${target})`);
     } else {
-        const {query, params: whereParams} = filters.toString(paramIndex);
+        const { query, params: whereParams } = filters.toString(paramIndex);
         target = `(SELECT * FROM ${target} WHERE ${query})`;
         params = whereParams;
     }
@@ -59,10 +59,11 @@ const treeQuery = (opt) => {
 
     const edgeList = Array.from(edges, quoteWrap).join(', ');
     let statement = `TRAVERSE ${direction}(${edgeList}) FROM ${target} MAXDEPTH ${depth}`;
+
     if (!history) {
         statement = `SELECT * FROM (${statement}) WHERE deletedAt IS NULL`;
     }
-    return {query: statement, params};
+    return { query: statement, params };
 };
 
 /**
@@ -74,7 +75,7 @@ const treeQuery = (opt) => {
  * @param {Number} opt.depth the number of jumps away to follow (max distance away)
  */
 const neighborhood = ({
-    filters, target, paramIndex = 0, edges = [], depthIn
+    filters, target, paramIndex = 0, edges = [], depthIn,
 }) => {
     // check the edges are valid edge names
     for (const edge of edges) {
@@ -82,17 +83,18 @@ const neighborhood = ({
             throw new AttributeError(`Invalid edge parameter (${edge})`);
         }
     }
+
     if (schema[target] === undefined) {
         throw new AttributeError(`Invalid target class (${target})`);
     }
     const depth = castRangeInt(depthIn || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);
 
-    const {query, params} = filters.toString(paramIndex);
+    const { query, params } = filters.toString(paramIndex);
     const statement = `SELECT * FROM (MATCH
     {class: ${target}, WHERE: (${query})}
         .both(${edges.map(quoteWrap).join(', ')}){WHILE: ($depth < ${depth})}
 RETURN DISTINCT $pathElements)`;
-    return {query: statement, params};
+    return { query: statement, params };
 };
 
 
@@ -102,16 +104,17 @@ const similarTo = ({
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
     let initialQuery,
         params = {};
+
     if (Object.keys(rest).length) {
         throw new AttributeError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
     }
     if (Array.isArray(target)) {
         initialQuery = `[${target.map(p => castToRID(p).toString()).join(', ')}]`;
     } else {
-        const {query: initialStatement, params: initialParams} = target.toString(paramIndex, prefix);
+        const { query: initialStatement, params: initialParams } = target.toString(paramIndex, prefix);
 
         initialQuery = `(${initialStatement})`; // recordIdList is a subquery instead of a list of record IDs
-        params = {...initialParams};
+        params = { ...initialParams };
     }
 
     const disambiguationClause = cond => `TRAVERSE both(${edges.map(e => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
@@ -125,10 +128,11 @@ const similarTo = ({
 
     // filter duplicates and re-expand
     const query = `SELECT expand(rid) FROM (SELECT distinct(@rid) as rid FROM (${innerQuery}))`;
+
     if (!history) {
-        return {query: `SELECT * FROM (${query}) WHERE deletedAt IS NULL`, params};
+        return { query: `SELECT * FROM (${query}) WHERE deletedAt IS NULL`, params };
     }
-    return {query, params};
+    return { query, params };
 };
 
 
@@ -167,9 +171,10 @@ const keywordSearch = ({
     target, keyword, paramIndex, prefix, ...opt
 }) => {
     // circular dependency unavoidable
-    const {Subquery} = require('./fragment'); // eslint-disable-line global-require
+    const { Subquery } = require('./fragment'); // eslint-disable-line global-require
 
     const model = schema[target];
+
     if (!model) {
         throw new AttributeError('Invalid target class');
     }
@@ -179,12 +184,13 @@ const keywordSearch = ({
 
     // remove any duplicate words
     const wordList = keyword.split(/\s+/).map(word => word.trim().toLowerCase());
+
     if (wordList.some(word => word.length < MIN_WORD_SIZE)) {
         const shortWords = wordList.filter(word => word.length < MIN_WORD_SIZE);
         throw new AttributeError(
             `Keywords (${shortWords.join(', ')}) are too short to query with. Must be at least ${
                 MIN_WORD_SIZE
-            } letters after splitting on whitespace characters`
+            } letters after splitting on whitespace characters`,
         );
     }
     if (wordList.length < 1) {
@@ -196,34 +202,37 @@ const keywordSearch = ({
     // each queryword must be found but it can be in any of the prop
     const subContainsClause = (props) => {
         const filters = [];
+
         // must contains all words but words can exist in any prop
         for (const word of keywords) {
             let clause;
+
             if (props.length === 1) {
                 const [prop] = props;
-                clause = {[prop]: word, operator: OPERATORS.CONTAINSTEXT};
+                clause = { [prop]: word, operator: OPERATORS.CONTAINSTEXT };
             } else {
-                clause = {OR: []};
+                clause = { OR: [] };
+
                 for (const prop of props) {
-                    clause.OR.push({[prop]: word, operator: OPERATORS.CONTAINSTEXT});
+                    clause.OR.push({ [prop]: word, operator: OPERATORS.CONTAINSTEXT });
                 }
             }
             filters.push(clause);
         }
-        return {AND: filters};
+        return { AND: filters };
     };
 
     if (model.inherits.includes('Ontology') || model.name === 'Ontology') {
         return Subquery.parse({
             ...opt,
             target: model.name,
-            filters: subContainsClause(['sourceId', 'name'])
+            filters: subContainsClause(['sourceId', 'name']),
         }).toString(paramIndex, prefix);
     } if (model.name === 'Statement') {
-        const {query: subquery, params} = Subquery.parse({
+        const { query: subquery, params } = Subquery.parse({
             ...opt,
             target: 'Ontology',
-            filters: subContainsClause(['sourceId', 'name'])
+            filters: subContainsClause(['sourceId', 'name']),
         }).toString(paramIndex, prefix);
 
         const query = `SELECT expand($statements)
@@ -238,21 +247,21 @@ const keywordSearch = ({
                         OR relevance IN (SELECT expand($ont))
                 )
         `;
-        return {query, params};
+        return { query, params };
     } if (model.inherits.includes('Variant') || model.name === 'Variant') {
-        const {query: subquery, params} = Subquery.parse({
+        const { query: subquery, params } = Subquery.parse({
             ...opt,
             target: 'Ontology',
-            filters: subContainsClause(['sourceId', 'name'])
+            filters: subContainsClause(['sourceId', 'name']),
         }).toString(paramIndex, prefix);
 
         const query = `SELECT expand($variants)
             LET $ont = (${subquery}),
                 $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
         )`;
-        return {query, params};
+        return { query, params };
     }
-    return Subquery.parse({...opt, target: model.name, filters: subContainsClause(['name'])}).toString(paramIndex, prefix);
+    return Subquery.parse({ ...opt, target: model.name, filters: subContainsClause(['name']) }).toString(paramIndex, prefix);
 };
 
 
@@ -267,11 +276,11 @@ class FixedSubquery {
     expectedCount() { return null; }  // eslint-disable-line
 
     toString(paramIndex = 0, prefix = '') {
-        const query = this.queryBuilder({...this.opt, paramIndex, prefix: prefix || this.opt.prefix});
+        const query = this.queryBuilder({ ...this.opt, paramIndex, prefix: prefix || this.opt.prefix });
         return query;
     }
 
-    static parse({queryType, ...opt}) {
+    static parse({ queryType, ...opt }) {
         if (queryType === 'ancestors') {
             return new this(queryType, ancestors, opt);
         } if (queryType === 'descendants') {
@@ -288,4 +297,4 @@ class FixedSubquery {
 }
 
 
-module.exports = {FixedSubquery};
+module.exports = { FixedSubquery };

@@ -1,9 +1,9 @@
-const {RecordID: RID} = require('orientjs');
+const { RecordID: RID } = require('orientjs');
 const {
-    error: {AttributeError},
-    util: {castInteger}
+    error: { AttributeError },
+    util: { castInteger },
 } = require('@bcgsc/knowledgebase-schema');
-const {MAX_LIMIT, MAX_NEIGHBORS} = require('./constants');
+const { MAX_LIMIT, MAX_NEIGHBORS } = require('./constants');
 
 /**
  * Format a value as an Integer. Throw an error if it is not an integer or does not
@@ -18,6 +18,7 @@ const {MAX_LIMIT, MAX_NEIGHBORS} = require('./constants');
  */
 const castRangeInt = (value, min, max) => {
     const castValue = castInteger(value);
+
     if (min !== null && castValue < min) {
         throw new AttributeError(`value (${castValue}) must be greater than or equal to ${min}`);
     }
@@ -29,6 +30,7 @@ const castRangeInt = (value, min, max) => {
 
 const castBoolean = (value) => {
     const castValue = value.toString().toLowerCase();
+
     if (['t', 'true', '1'].includes(castValue)) {
         return true;
     } if (['f', 'false', '0', 'null'].includes(castValue)) {
@@ -40,6 +42,7 @@ const castBoolean = (value) => {
 
 const getQueryableProps = (model) => {
     const allProps = {};
+
     for (const prop of Object.values(model.queryProperties)) {
         if (prop.linkedClass && !prop.iterable && prop.type.includes('embedded')) {
             for (const [subKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass))) {
@@ -60,8 +63,10 @@ const getQueryableProps = (model) => {
 const nestedProjection = (initialDepth, excludeHistory = true) => {
     const recursiveNestedProjection = (depth) => {
         let current = '*';
+
         if (depth !== initialDepth) {
             current = `${current}, @rid, @class`;
+
             if (excludeHistory) {
                 current = `${current}, !history`;
             }
@@ -86,10 +91,11 @@ const nestedProjection = (initialDepth, excludeHistory = true) => {
  */
 const checkStandardOptions = (opt) => {
     const {
-        limit, neighbors, skip, orderBy, orderByDirection, count, returnProperties, history
+        limit, neighbors, skip, orderBy, orderByDirection, count, returnProperties, history,
     } = opt;
 
     const options = {};
+
     if (limit !== undefined && limit !== null) {
         options.limit = castRangeInt(limit, 1, MAX_LIMIT);
     }
@@ -108,6 +114,7 @@ const checkStandardOptions = (opt) => {
     }
     if (orderByDirection) {
         options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
+
         if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
             throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
         }
@@ -123,7 +130,7 @@ const checkStandardOptions = (opt) => {
     if (count) {
         options.count = castBoolean(count);
     }
-    return {...opt, ...options};
+    return { ...opt, ...options };
 };
 
 
@@ -148,7 +155,7 @@ const parsePropertyList = (model, properties) => {
                 throw new AttributeError(`Cannot return nested property (${prop}), the property (${propModel.name}) does not have a linked class`);
             }
             const innerProjection = parsePropertyList(propModel.linkedClass, [nestedProps]);
-            projections[directProp] = {...projections[directProp], ...innerProjection};
+            projections[directProp] = { ...projections[directProp], ...innerProjection };
         }
     }
     return projections;
@@ -160,6 +167,7 @@ const propsToProjection = (model, properties) => {
 
     const convertToString = (obj) => {
         const keyList = [];
+
         for (const [key, value] of Object.entries(obj)) {
             if (Object.keys(value).length) {
                 keyList.push(`${key}:{ ${convertToString(value)} }`);
@@ -173,10 +181,12 @@ const propsToProjection = (model, properties) => {
 };
 
 
-const displayQuery = ({query: statement, params = {}}) => {
+const displayQuery = ({ query: statement, params = {} }) => {
     let result = statement;
+
     for (const key of Object.keys(params)) {
         let value = params[key];
+
         if (typeof value === 'string') {
             value = `'${value}'`;
         } else if (value instanceof RID) {
@@ -196,5 +206,5 @@ module.exports = {
     getQueryableProps,
     nestedProjection,
     castBoolean,
-    castRangeInt
+    castRangeInt,
 };

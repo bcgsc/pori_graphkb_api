@@ -7,17 +7,17 @@
  */
 const _ = require('lodash');
 
-const {util: {castToRID, timeStampNow}, error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
+const { util: { castToRID, timeStampNow }, error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 
-const {logger} = require('./../logging');
+const { logger } = require('./../logging');
 
 const {
     NotImplementedError,
-    PermissionError
+    PermissionError,
 } = require('./../error');
-const {omitDBAttributes, wrapIfTypeError, hasRecordAccess} = require('./util');
-const {select} = require('./select');
-const {nestedProjection} = require('../query_builder/util');
+const { omitDBAttributes, wrapIfTypeError, hasRecordAccess } = require('./util');
+const { select } = require('./select');
+const { nestedProjection } = require('../query_builder/util');
 
 
 /**
@@ -31,12 +31,12 @@ const {nestedProjection} = require('../query_builder/util');
  * @param {Object} opt.user the user performing the record update
  */
 const updateNodeTx = async (db, opt) => {
-    const {original, changes, model} = opt;
+    const { original, changes, model } = opt;
     const userRID = castToRID(opt.user);
 
     const content = model.formatRecord(omitDBAttributes(original), {
         dropExtra: true,
-        addDefaults: false
+        addDefaults: false,
     });
     content.deletedAt = timeStampNow();
     content.deletedBy = userRID;
@@ -45,6 +45,7 @@ const updateNodeTx = async (db, opt) => {
     changes.createdAt = timeStampNow();
 
     let commit;
+
     if (model.inherits.includes('V')) {
         commit = db
             .let('copy', tx => tx.create('VERTEX', original['@class'])
@@ -58,10 +59,10 @@ const updateNodeTx = async (db, opt) => {
         .let('updated', tx => tx.update(original['@rid'])
             .set(omitDBAttributes(changes))
             .set('history = $copy[0]')
-            .where({createdAt: original.createdAt})
+            .where({ createdAt: original.createdAt })
             .return('AFTER @rid'))
         .let('result', tx => tx.select()
-            .from(original['@class']).where({'@rid': original['@rid']}));
+            .from(original['@class']).where({ '@rid': original['@rid'] }));
 
     return commit.commit();
 };
@@ -83,11 +84,11 @@ const updateNodeTx = async (db, opt) => {
  * @param {Object} opt.user the user performing the record update
  */
 const modifyEdgeTx = async (db, opt) => {
-    const {original, changes} = opt;
+    const { original, changes } = opt;
     const userRID = castToRID(opt.user);
     const [src, tgt] = await Promise.all(Array.from(
         [original.out, original.in],
-        async rid => db.record.get(rid)
+        async rid => db.record.get(rid),
     ));
     const srcCopy = omitDBAttributes(src);
     srcCopy.deletedAt = timeStampNow();
@@ -111,15 +112,15 @@ const modifyEdgeTx = async (db, opt) => {
             .set(srcCopy))
         .let('src', tx => tx.update(src['@rid'])
             .set('history = $srcCopy[0]')
-            .set({createdBy: userRID, createdAt: timeStampNow()})
-            .where({createdAt: src.createdAt})
+            .set({ createdBy: userRID, createdAt: timeStampNow() })
+            .where({ createdAt: src.createdAt })
             .return('AFTER @rid'))
         .let('tgtCopy', tx => tx.create('VERTEX', tgt['@class'])
             .set(tgtCopy))
         .let('tgt', tx => tx.update(tgt['@rid'])
             .set('history = $tgtCopy[0]')
-            .set({createdBy: userRID, createdAt: timeStampNow()})
-            .where({createdAt: tgt.createdAt})
+            .set({ createdBy: userRID, createdAt: timeStampNow() })
+            .where({ createdAt: tgt.createdAt })
             .return('AFTER @rid'));
 
 
@@ -127,11 +128,11 @@ const modifyEdgeTx = async (db, opt) => {
         // deletion
         commit
             .let('deleted', tx => tx.update(`EDGE ${original['@rid']}`)
-                .where({createdAt: original.createdAt})
+                .where({ createdAt: original.createdAt })
                 .set('out = $srcCopy[0]').set('in = $tgtCopy[0]')
-                .set({deletedAt: timeStampNow(), deletedBy: userRID})
+                .set({ deletedAt: timeStampNow(), deletedBy: userRID })
                 .return('AFTER @rid'))
-            .let('result', tx => tx.select().from(original['@class']).where({'@rid': original['@rid']}));
+            .let('result', tx => tx.select().from(original['@class']).where({ '@rid': original['@rid'] }));
         // .let('result', tx => tx.select('*, *:{*, @rid, @class}').from('(select expand($deleted[0]))')); // See https://github.com/orientechnologies/orientdb/issues/8786
     } else {
         // edge update
@@ -159,16 +160,18 @@ const modifyEdgeTx = async (db, opt) => {
  * @param {Object} opt options
  */
 const deleteNodeTx = async (db, opt) => {
-    const {original} = opt;
+    const { original } = opt;
     const userRID = castToRID(opt.user);
     const commit = db
         .let('deleted', tx => tx.update(original['@rid'])
-            .set({deletedAt: timeStampNow(), deletedBy: userRID})
-            .where({createdAt: original.createdAt}));
+            .set({ deletedAt: timeStampNow(), deletedBy: userRID })
+            .where({ createdAt: original.createdAt }));
     const updatedVertices = {}; // mapping of rid string to let variable name
     let edgeCount = 0;
+
     for (const attr of Object.keys(original)) {
         let direction;
+
         if (attr.startsWith('out_')) {
             direction = 'in';
         } else if (attr.startsWith('in_')) {
@@ -176,6 +179,7 @@ const deleteNodeTx = async (db, opt) => {
         } else {
             continue;
         }
+
         // back up the target vetex
         for (const value of original[attr]) {
             const targetNode = value[direction];
@@ -183,6 +187,7 @@ const deleteNodeTx = async (db, opt) => {
             const targetContent = omitDBAttributes(targetNode);
             targetContent.deletedAt = timeStampNow();
             targetContent.deletedBy = userRID;
+
             // clean any nested content
             for (const [subAttr, subValue] of Object.entries(targetContent)) {
                 if (subValue['@rid'] !== undefined) {
@@ -198,21 +203,21 @@ const deleteNodeTx = async (db, opt) => {
                         .set(targetContent))
                     .let(`vertex${Object.keys(updatedVertices).length}`, tx => tx.update(target)
                         .set(`history = $${name}[0]`)
-                        .set({createdBy: userRID, createdAt: timeStampNow()})
-                        .where({createdAt: targetContent.createdAt})
+                        .set({ createdBy: userRID, createdAt: timeStampNow() })
+                        .where({ createdAt: targetContent.createdAt })
                         .return('AFTER @rid'));
                 updatedVertices[target.toString()] = name;
             }
 
             // move the current edge to point to the copied node
             commit.let(`edge${edgeCount++}`, tx => tx.update(castToRID(value))
-                .set({deletedAt: timeStampNow(), deletedBy: userRID})
+                .set({ deletedAt: timeStampNow(), deletedBy: userRID })
                 .set(`${direction} = $${updatedVertices[target.toString()]}[0]`)
-                .where({createdAt: value.createdAt})
+                .where({ createdAt: value.createdAt })
                 .return('AFTER @rid'));
         }
     }
-    commit.let('result', tx => tx.select().from(original['@class']).where({'@rid': original['@rid']}));
+    commit.let('result', tx => tx.select().from(original['@class']).where({ '@rid': original['@rid'] }));
     return commit.commit();
 };
 
@@ -230,8 +235,9 @@ const deleteNodeTx = async (db, opt) => {
  */
 const modify = async (db, opt) => {
     const {
-        model, user, query
+        model, user, query,
     } = opt;
+
     if (!query || !model || !user) {
         throw new AttributeError('missing required argument');
     }
@@ -241,34 +247,37 @@ const modify = async (db, opt) => {
             dropExtra: false,
             addDefaults: false,
             ignoreMissing: true,
-            ignoreExtra: false
+            ignoreExtra: false,
         }));
     query.projection = nestedProjection(2);
     // select the original record and check permissions
     // select will also throw an error when the user attempts to modify a deleted record
 
     const [original] = await select(db, query, {
-        exactlyN: 1
+        exactlyN: 1,
     });
 
     if (!hasRecordAccess(user, original)) {
         throw new PermissionError(`The user '${user.name}' does not have sufficient permissions to interact with record ${original['@rid']}`);
     }
     let commit;
+
     if (model.isEdge) {
-        commit = await modifyEdgeTx(db, {original, user, changes});
+        commit = await modifyEdgeTx(db, { original, user, changes });
     } else if (changes === null) {
         // vertex deletion
-        commit = await deleteNodeTx(db, {original, user});
+        commit = await deleteNodeTx(db, { original, user });
     } else {
         // vertex update
         commit = await updateNodeTx(db, {
-            original, user, changes, model
+            original, user, changes, model,
         });
     }
     logger.log('debug', commit.buildStatement());
+
     try {
         const result = await commit.return('$result').one();
+
         if (!result) {
             throw new Error('Failed to modify');
         }
@@ -306,10 +315,10 @@ const update = async (db, opt) => {
  * @param {Object} opt.user the user updating the record
  * @param {ClassModel} opt.model the class model
  */
-const remove = async (db, opt) => modify(db, Object.assign({}, opt, {changes: null}));
+const remove = async (db, opt) => modify(db, Object.assign({}, opt, { changes: null }));
 
 
 module.exports = {
     remove,
-    update
+    update,
 };

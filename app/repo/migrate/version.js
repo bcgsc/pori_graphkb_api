@@ -6,7 +6,7 @@ const path = require('path');
  * @param {orientjs.Db} db the database connection
  */
 const getCurrentVersion = async (db) => {
-    const [{version}] = await db.query('SELECT * FROM SchemaHistory ORDER BY createdAt DESC LIMIT 1').all();
+    const [{ version }] = await db.query('SELECT * FROM SchemaHistory ORDER BY createdAt DESC LIMIT 1').all();
     return version;
 };
 
@@ -18,12 +18,12 @@ const getCurrentVersion = async (db) => {
 const getLoadVersion = () => {
     const pathToVersionInfo = path.join(
         path.dirname(require.resolve('@bcgsc/knowledgebase-schema')),
-        '../package.json'
+        '../package.json',
     );
     // must be a global require, currently no other way to obtain dependency package version info of the actual install
     const {version, name, _resolved} = require(pathToVersionInfo); // eslint-disable-line
-    return {version, name, url: _resolved};
+    return { version, name, url: _resolved };
 };
 
 
-module.exports = {getCurrentVersion, getLoadVersion};
+module.exports = { getCurrentVersion, getLoadVersion };

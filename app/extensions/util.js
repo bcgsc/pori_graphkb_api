@@ -6,14 +6,14 @@ const xml2js = require('xml2js');
 /**
  *  Try again for too many requests errors. Helpful for APIs with a rate limit (ex. pubmed)
  */
-const requestWithRetry = async (requestOpt, {waitSeconds = 2, retries = 1} = {}) => {
+const requestWithRetry = async (requestOpt, { waitSeconds = 2, retries = 1 } = {}) => {
     try {
         const result = await request(requestOpt);
         return result;
     } catch (err) {
         if (err.statusCode === HTTP_STATUS_CODES.TOO_MANY_REQUESTS && retries > 0) {
             await sleep(waitSeconds);
-            return requestWithRetry(requestOpt, {waitSeconds, retries: retries - 1});
+            return requestWithRetry(requestOpt, { waitSeconds, retries: retries - 1 });
         }
         throw err;
     }
@@ -28,7 +28,7 @@ const parseXmlToJson = (xmlContent, opts = {}) => new Promise((resolve, reject) 
             emptyTag: null,
             mergeAttrs: true,
             normalize: true,
-            ...opts
+            ...opts,
         },
         (err, result) => {
             if (err !== null) {
@@ -36,9 +36,9 @@ const parseXmlToJson = (xmlContent, opts = {}) => new Promise((resolve, reject) 
             } else {
                 resolve(result);
             }
-        }
+        },
     );
 });
 
 
-module.exports = {requestWithRetry, parseXmlToJson};
+module.exports = { requestWithRetry, parseXmlToJson };

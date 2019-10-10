@@ -4,9 +4,9 @@ const form = require('form-urlencoded').default;
 const request = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
 
-const {getUserByName} = require('./../repo/commands');
-const {logger} = require('./../repo/logging');
-const {AuthenticationError, PermissionError, NoRecordFoundError} = require('./../repo/error');
+const { getUserByName } = require('./../repo/commands');
+const { logger } = require('./../repo/logging');
+const { AuthenticationError, PermissionError, NoRecordFoundError } = require('./../repo/error');
 
 const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
 
@@ -22,10 +22,11 @@ const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
  */
 const generateToken = async (db, username, key, exp = null) => {
     const user = jc.decycle(await getUserByName(db, username));
+
     if (exp === null) {
-        return jwt.sign({user}, key, {expiresIn: TOKEN_TIMEOUT});
+        return jwt.sign({ user }, key, { expiresIn: TOKEN_TIMEOUT });
     }
-    return jwt.sign({user, exp}, key);
+    return jwt.sign({ user, exp }, key);
 };
 
 
@@ -53,7 +54,7 @@ const generateToken = async (db, username, key, exp = null) => {
  * }
  */
 const fetchKeyCloakToken = async (username, password, {
-    GKB_KEYCLOAK_URI, GKB_KEYCLOAK_CLIENT_ID, GKB_KEYCLOAK_CLIENT_SECRET
+    GKB_KEYCLOAK_URI, GKB_KEYCLOAK_CLIENT_ID, GKB_KEYCLOAK_CLIENT_SECRET,
 }) => {
     logger.log('debug', `[POST] ${GKB_KEYCLOAK_URI}`);
     const resp = JSON.parse(await request({
@@ -64,9 +65,9 @@ const fetchKeyCloakToken = async (username, password, {
             grant_type: 'password',
             username,
             password,
-            client_secret: GKB_KEYCLOAK_CLIENT_SECRET
+            client_secret: GKB_KEYCLOAK_CLIENT_SECRET,
         }),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     }));
     return resp.access_token;
 };
@@ -82,12 +83,14 @@ const fetchKeyCloakToken = async (username, password, {
  */
 const validateKeyCloakToken = (token, key, role) => {
     let parsed;
+
     try {
-        jwt.verify(token, key, {algorithms: ['RS256']});
+        jwt.verify(token, key, { algorithms: ['RS256'] });
         parsed = jwt.decode(token);
     } catch (err) {
         throw new AuthenticationError(err);
     }
+
     if (parsed.realm_access.roles && parsed.realm_access.roles.includes(role)) {
         return parsed;
     }
@@ -101,19 +104,20 @@ const validateKeyCloakToken = (token, key, role) => {
  */
 const addPostToken = (app) => {
     const {
-        GKB_DISABLE_AUTH, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE, GKB_KEY
+        GKB_DISABLE_AUTH, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE, GKB_KEY,
     } = app.conf;
 
     app.router.route('/token').post(async (req, res, next) => {
         // generate a token to return to the user
         if ((req.body.username === undefined || req.body.password === undefined) && req.body.keyCloakToken === undefined) {
-            return res.status(HTTP_STATUS.BAD_REQUEST).json({message: 'body requires both username and password to generate a token or an external keycloak token (keyCloakToken)'});
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'body requires both username and password to generate a token or an external keycloak token (keyCloakToken)' });
         }
         // passed a token already
-        let {keyCloakToken} = req.body;
+        let { keyCloakToken } = req.body;
+
         if (keyCloakToken === undefined) {
             if (req.body.username === undefined || req.body.password === undefined) {
-                return res.status(HTTP_STATUS.BAD_REQUEST).json({message: 'body requires both username and password to generate a token or an external keycloak token (keyCloakToken)'});
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({ message: 'body requires both username and password to generate a token or an external keycloak token (keyCloakToken)' });
             }
             // get the keyCloakToken
             if (!GKB_DISABLE_AUTH) {
@@ -127,6 +131,7 @@ const addPostToken = (app) => {
         }
         // verify the keyCloakToken
         let kcTokenContent;
+
         if (!GKB_DISABLE_AUTH) {
             try {
                 kcTokenContent = validateKeyCloakToken(keyCloakToken, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE);
@@ -139,30 +144,33 @@ const addPostToken = (app) => {
                 return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);
             }
         } else {
-            kcTokenContent = {preferred_username: req.body.username, exp: null};
+            kcTokenContent = { preferred_username: req.body.username, exp: null };
         }
 
         // kb-level authentication
         let token,
             session;
+
         try {
             session = await app.pool.acquire();
         } catch (err) {
             return next(err);
         }
+
         try {
             token = await generateToken(session, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
             session.close();
         } catch (err) {
             session.close();
             logger.log('debug', err);
+
             if (err instanceof NoRecordFoundError) {
                 return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);
             }
             return next(err);
         }
-        return res.status(HTTP_STATUS.OK).json({kbToken: token, keyCloakToken});
+        return res.status(HTTP_STATUS.OK).json({ kbToken: token, keyCloakToken });
     });
 };
 
-module.exports = {addPostToken, generateToken};
+module.exports = { addPostToken, generateToken };

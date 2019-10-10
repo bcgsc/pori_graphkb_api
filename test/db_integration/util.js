@@ -1,13 +1,13 @@
 const uuidV4 = require('uuid/v4');
 
-const {schema: {schema}} = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
 
 
-const {getUserByName, create, update} = require('../../app/repo/commands');
-const {connectDB} = require('../../app/repo');
-const {createConfig} = require('../../app');
+const { getUserByName, create, update } = require('../../app/repo/commands');
+const { connectDB } = require('../../app/repo');
+const { createConfig } = require('../../app');
 
-const clearDB = async ({session, admin}) => {
+const clearDB = async ({ session, admin }) => {
     // clear all V/E records
     await session.command('delete edge e').all();
     await session.command('delete vertex v').all();
@@ -22,14 +22,14 @@ const createEmptyDb = async () => {
         GKB_PORT: null,
         GKB_DB_NAME: `test_${uuidV4()}`,
         GKB_DB_CREATE: true,
-        GKB_USER_CREATE: true
+        GKB_USER_CREATE: true,
     });
-    const {server, pool} = await connectDB(conf);
+    const { server, pool } = await connectDB(conf);
     const session = await pool.acquire();
     const user = await getUserByName(session, process.env.USER || 'admin');
     session.close();
     return {
-        pool, conf, admin: user, server
+        pool, conf, admin: user, server,
     };
 };
 
@@ -39,17 +39,17 @@ const createEmptyDb = async () => {
  */
 const createSeededDb = async () => {
     const db = await createEmptyDb();
-    const {pool, admin} = db;
+    const { pool, admin } = db;
     // create a source
     const session = await pool.acquire();
     const source = await create(
         session,
-        {content: {name: 'default source'}, model: schema.Source, user: admin}
+        { content: { name: 'default source' }, model: schema.Source, user: admin },
     );
 
     const createRecord = async opt => create(
         session,
-        {...opt, content: {...opt.content, source}, user: admin}
+        { ...opt, content: { ...opt.content, source }, user: admin },
     );
     // create default record set
     const [
@@ -64,40 +64,40 @@ const createSeededDb = async () => {
         publication,
         sensitivity,
         resistance,
-        drug
+        drug,
     ] = await Promise.all([
-        {content: {sourceId: 'mutation', displayName: 'mutation'}, model: schema.Vocabulary},
-        {content: {sourceId: 'substitution', displayName: 'substitution'}, model: schema.Vocabulary},
-        {content: {sourceId: 'gain of function'}, model: schema.Vocabulary},
-        {content: {sourceId: 'cancer', subsets: ['singleSubset']}, model: schema.Disease},
-        {content: {sourceId: 'disease of cellular proliferation', subsets: ['wordy', 'singleSubset']}, model: schema.Disease},
-        {content: {sourceId: 'carcinomas'}, model: schema.Disease},
-        {content: {sourceId: 'kras', biotype: 'gene', displayName: 'KRAS'}, model: schema.Feature},
-        {content: {sourceId: 'kras1', biotype: 'gene', displayName: 'KRAS1'}, model: schema.Feature},
-        {content: {sourceId: '1234'}, model: schema.Publication},
-        {content: {sourceId: 'sensitivity'}, model: schema.Vocabulary},
-        {content: {sourceId: 'resistance'}, model: schema.Vocabulary},
-        {content: {sourceId: 'drug'}, model: schema.Therapy}
+        { content: { sourceId: 'mutation', displayName: 'mutation' }, model: schema.Vocabulary },
+        { content: { sourceId: 'substitution', displayName: 'substitution' }, model: schema.Vocabulary },
+        { content: { sourceId: 'gain of function' }, model: schema.Vocabulary },
+        { content: { sourceId: 'cancer', subsets: ['singleSubset'] }, model: schema.Disease },
+        { content: { sourceId: 'disease of cellular proliferation', subsets: ['wordy', 'singleSubset'] }, model: schema.Disease },
+        { content: { sourceId: 'carcinomas' }, model: schema.Disease },
+        { content: { sourceId: 'kras', biotype: 'gene', displayName: 'KRAS' }, model: schema.Feature },
+        { content: { sourceId: 'kras1', biotype: 'gene', displayName: 'KRAS1' }, model: schema.Feature },
+        { content: { sourceId: '1234' }, model: schema.Publication },
+        { content: { sourceId: 'sensitivity' }, model: schema.Vocabulary },
+        { content: { sourceId: 'resistance' }, model: schema.Vocabulary },
+        { content: { sourceId: 'drug' }, model: schema.Therapy },
     ].map(createRecord));
 
     // update a record so there is something deleted we can test
     const query = `SELECT * FROM [${carcinomas['@rid']}]`;
     const carcinoma = await update(session, {
-        changes: {sourceId: 'carcinoma'},
+        changes: { sourceId: 'carcinoma' },
         user: db.admin,
         model: schema.Disease,
         query: {
-            toString: () => ({query, params: {}}),
-            displayString: () => query
-        }
+            toString: () => ({ query, params: {} }),
+            displayString: () => query,
+        },
     });
 
     // add some default relationships
     await Promise.all([
-        {content: {out: cancer, in: proliferation}, model: schema.AliasOf},
-        {content: {out: carcinoma, in: cancer}, model: schema.SubClassOf},
-        {content: {out: substitution, in: mutation}, model: schema.SubClassOf},
-        {content: {out: kras1, in: kras}, model: schema.DeprecatedBy}
+        { content: { out: cancer, in: proliferation }, model: schema.AliasOf },
+        { content: { out: carcinoma, in: cancer }, model: schema.SubClassOf },
+        { content: { out: substitution, in: mutation }, model: schema.SubClassOf },
+        { content: { out: kras1, in: kras }, model: schema.DeprecatedBy },
     ].map(createRecord));
 
     // create a positional variant
@@ -106,23 +106,23 @@ const createSeededDb = async () => {
             content: {
                 reference1: kras1,
                 type: substitution,
-                break1Start: {refAA: 'G', pos: 12, '@class': 'ProteinPosition'},
+                break1Start: { refAA: 'G', pos: 12, '@class': 'ProteinPosition' },
                 untemplatedSeq: 'D',
-                untemplatedSeqSize: 1
+                untemplatedSeqSize: 1,
             },
             model: schema.PositionalVariant,
-            user: admin
+            user: admin,
         }),
         create(session, {
             content: {
                 reference1: kras,
-                type: mutation
+                type: mutation,
             },
             model: schema.CategoryVariant,
-            user: admin
-        })
+            user: admin,
+        }),
     ]);
-    await createRecord({content: {out: krasSub, in: krasMut}, model: schema.Infers});
+    await createRecord({ content: { out: krasSub, in: krasMut }, model: schema.Infers });
     // create a statement
     const [sensToDrug, resToDrug, mutIsGof] = await Promise.all([
         create(session, {
@@ -130,31 +130,31 @@ const createSeededDb = async () => {
                 relevance: sensitivity,
                 appliesTo: drug,
                 impliedBy: [cancer, krasMut],
-                supportedBy: [publication]
+                supportedBy: [publication],
             },
             user: admin,
-            model: schema.Statement
+            model: schema.Statement,
         }),
         create(session, {
             content: {
                 relevance: resistance,
                 appliesTo: drug,
                 impliedBy: [carcinoma],
-                supportedBy: [publication]
+                supportedBy: [publication],
             },
             user: admin,
-            model: schema.Statement
+            model: schema.Statement,
         }),
         create(session, {
             content: {
                 relevance: gof,
                 appliesTo: kras,
                 impliedBy: [proliferation, krasMut],
-                supportedBy: [publication]
+                supportedBy: [publication],
             },
             user: admin,
-            model: schema.Statement
-        })
+            model: schema.Statement,
+        }),
     ]);
     await session.close();
     return {
@@ -169,23 +169,23 @@ const createSeededDb = async () => {
             kras1,
             cancer,
             carcinoma,
-            proliferation
+            proliferation,
         },
-        ...db
+        ...db,
     };
 };
 
 
-const tearDownDb = async ({server, conf}) => {
+const tearDownDb = async ({ server, conf }) => {
     if (server) {
         await server.dropDatabase({
             name: conf.GKB_DB_NAME,
             username: conf.GKB_DBS_USER,
-            password: conf.GKB_DBS_PASS
+            password: conf.GKB_DBS_PASS,
         });
     }
 };
 
 module.exports = {
-    clearDB, createEmptyDb, createSeededDb, tearDownDb
+    clearDB, createEmptyDb, createSeededDb, tearDownDb,
 };
