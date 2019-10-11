@@ -7,8 +7,8 @@
 const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
 
-const { AppServer } = require('../../app');
-const { generateToken } = require('../../app/routes/auth');
+const { AppServer } = require('../../src');
+const { generateToken } = require('../../src/routes/auth');
 
 const { createEmptyDb, tearDownDb } = require('./util');
 
@@ -26,12 +26,12 @@ if (!process.env.GKB_DBS_PASS) {
     console.warn('Cannot run tests without database password (GKB_DBS_PASS)');
 }
 
-jest.mock('../../app/extensions/util', () => {
-    const original = require.requireActual('../../app/extensions/util');
+jest.mock('../../src/extensions/util', () => {
+    const original = require.requireActual('../../src/extensions/util');
     return { ...original, requestWithRetry: jest.fn() };
 });
 
-const util = require('../../app/extensions/util');
+const util = require('../../src/extensions/util');
 
 describeWithAuth('api crud routes', () => {
     let db,

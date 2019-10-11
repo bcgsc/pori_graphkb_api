@@ -1,13 +1,13 @@
 // required packages
-const {AppServer, createConfig} = require('./app');
-const {logger} = require('./app/repo/logging');
+const { AppServer, createConfig } = require('./src');
+const { logger } = require('./src/repo/logging');
 
 // process.on('uncaughtException', app.close);
 let app;
 
 (async () => {
     try {
-        app = new AppServer(createConfig({GKB_DBS_PASS: process.env.GKB_DBS_PASS}));
+        app = new AppServer(createConfig({ GKB_DBS_PASS: process.env.GKB_DBS_PASS }));
         await app.listen();
 
         // cleanup
