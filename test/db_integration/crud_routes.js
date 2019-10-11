@@ -253,7 +253,7 @@ describeWithAuth('api crud routes', () => {
 
     describe('/:model/:rid', () => {
         describe('patch/update', () => {
-            let readyOnly,
+            let readOnly,
                 adminGroup,
                 user,
                 group;
@@ -267,10 +267,11 @@ describeWithAuth('api crud routes', () => {
                     body: { target: 'UserGroup' },
                     method: 'POST',
                 });
-                readyOnly = res.body.result.find(g => g.name === 'readonly');
+                readOnly = res.body.result.find(g => g.name === 'readonly');
                 adminGroup = res.body.result.find(g => g.name === 'admin');
 
-                if (!readyOnly || !adminGroup) {
+                if (!readOnly || !adminGroup) {
+                    console.log(res.body.result.map(r => r.name), readOnly);
                     throw new Error('failed to find the readonly and admin user groups');
                 }
                 user = (await request({
@@ -278,7 +279,7 @@ describeWithAuth('api crud routes', () => {
                     method: 'POST',
                     body: {
                         name: 'alice',
-                        groups: [readyOnly['@rid']],
+                        groups: [readOnly['@rid']],
                     },
                     headers: { Authorization: mockToken },
                 })
@@ -323,7 +324,7 @@ describeWithAuth('api crud routes', () => {
                 });
                 expect(result).toHaveProperty('groups');
                 expect(result.groups).toHaveProperty('length', 1);
-                expect(result.groups[0]).toBe(readyOnly['@rid']);
+                expect(result.groups[0]).toBe(readOnly['@rid']);
                 expect(result).toHaveProperty('name', 'bob');
             });
 
@@ -390,7 +391,7 @@ describeWithAuth('api crud routes', () => {
         });
 
         describe('delete', () => {
-            let readyOnly,
+            let readOnly,
                 adminGroup,
                 user;
 
@@ -406,20 +407,20 @@ describeWithAuth('api crud routes', () => {
 
                 for (const group of res.body.result) {
                     if (group.name === 'readonly') {
-                        readyOnly = group;
+                        readOnly = group;
                     } else if (group.name === 'admin') {
                         adminGroup = group;
                     }
                 }
 
-                if (!readyOnly || !adminGroup) {
+                if (!readOnly || !adminGroup) {
                     throw new Error('failed to find the readonly and admin user groups');
                 }
                 user = (await request({
                     uri: `${app.url}/users`,
                     body: {
                         name: 'alice',
-                        groups: [readyOnly['@rid']],
+                        groups: [readOnly['@rid']],
                     },
                     method: 'POST',
                     headers: {
