@@ -1,5 +1,5 @@
-const {error: {AttributeError}, constants: {PERMISSIONS}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
-const {RecordID: RID} = require('orientjs');
+const { error: { AttributeError }, constants: { PERMISSIONS }, util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
+const { RecordID: RID } = require('orientjs');
 
 
 /**
@@ -17,6 +17,7 @@ const naturalListJoin = (list) => {
         return '';
     }
     let result = list.slice(0, list.length - 1).join(', ');
+
     if (list.length > 1) {
         result = `${result}, and ${list[list.length - 1]}`;
     }
@@ -54,17 +55,21 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
         ? true
         : opt.aggregate;
     const nested = {};
+
     // nest counts into objects based on the grouping keys
     for (const record of records) {
         let level = nested;
+
         for (const groupingKey of keysList.slice(0, -1)) {
             const key = record[groupingKey];
+
             if (level[key] === undefined) {
                 level[key] = {};
             }
             level = level[key];
         }
         const lastKey = record[keysList.slice(-1)];
+
         if (aggregate) {
             if (level[lastKey] === undefined) {
                 level[lastKey] = [];
@@ -94,7 +99,7 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
  * @param {boolean} [opt.history=false] include deleted records
  * @param {User} [opt.user=null] if the user object is given, will check record-level permissions and trim any non-permitted content
  */
-const trimRecords = async (recordList, {history = false, user = null} = {}) => {
+const trimRecords = async (recordList, { history = false, user = null } = {}) => {
     const queue = recordList.slice();
     const visited = new Set();
     const readableClasses = new Set();
@@ -103,6 +108,7 @@ const trimRecords = async (recordList, {history = false, user = null} = {}) => {
     if (user) {
         for (const group of user.groups) {
             allGroups.add(castToRID(group).toString());
+
             for (const [cls, permissions] of Object.entries(group.permissions || {})) {
                 if (permissions & PERMISSIONS.READ) {
                     readableClasses.add(cls);
@@ -116,14 +122,17 @@ const trimRecords = async (recordList, {history = false, user = null} = {}) => {
             const cls = record['@rid'] === undefined // embedded records cannot have class-level permissions checks and will not have @rid's
                 ? null
                 : record['@class'];
+
             if (cls && !readableClasses.has(cls)) {
                 return false;
             }
             if (!record.groupRestrictions || record.groupRestrictions.length === 0) {
                 return true;
             }
+
             for (let group of record.groupRestrictions || []) {
                 group = castToRID(group).toString();
+
                 if (allGroups.has(group)) {
                     return true;
                 }
@@ -144,8 +153,10 @@ const trimRecords = async (recordList, {history = false, user = null} = {}) => {
         }
         visited.add(curr);
         const keys = Array.from(Object.keys(curr));
+
         for (const attr of keys) {
             const value = curr[attr];
+
             if (attr === '@type' || attr === '@version') {
                 delete curr[attr];
             } else if (attr === 'history' && history) {
@@ -164,8 +175,10 @@ const trimRecords = async (recordList, {history = false, user = null} = {}) => {
                 // check here for updated edges that have not been removed
                 // https://github.com/orientechnologies/orientjs/issues/32
                 const arr = [];
+
                 for (const edge of value) {
                     const edgeCheck = edge;
+
                     if (!edge.out || !edge.in) {
                         arr.push(edge);
                         continue;
@@ -188,6 +201,7 @@ const trimRecords = async (recordList, {history = false, user = null} = {}) => {
     }
     // remove the top level elements last
     const result = [];
+
     for (const record of recordList) {
         if (accessOk(record)) {
             if (history || !record.deletedAt) {
@@ -203,5 +217,5 @@ module.exports = {
     groupRecordsBy,
     naturalListJoin,
     quoteWrap,
-    trimRecords
+    trimRecords,
 };

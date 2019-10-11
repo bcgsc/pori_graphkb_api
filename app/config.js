@@ -19,22 +19,22 @@ module.exports = {
         GKB_PORT: 8080,
         GKB_USER_CREATE: true,
         GKB_CORS_ORIGIN: '^.*$',
-        GKB_HOST: process.env.HOSTNAME
+        GKB_HOST: process.env.HOSTNAME,
     },
     development: {
         GKB_DB_CREATE: false,
         GKB_LOG_MAX_FILES: 7,
         GKB_DB_NAME: 'production-sync-dev',
-        GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca http://graphkbdev.bcgsc.ca:5000 http://localhost:3000'
+        GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca http://graphkbdev.bcgsc.ca:5000 http://localhost:3000',
     },
     staging: {
         GKB_DB_CREATE: false,
         GKB_LOG_MAX_FILES: 14,
         GKB_DB_NAME: 'production-sync-staging',
-        GKB_CORS_ORIGIN: 'https://graphkbstaging.bcgsc.ca http://graphkbstaging.bcgsc.ca:5000 http://localhost:3000'
+        GKB_CORS_ORIGIN: 'https://graphkbstaging.bcgsc.ca http://graphkbstaging.bcgsc.ca:5000 http://localhost:3000',
     },
     local: {
-        GKB_CORS_ORIGIN: '^.*$'
+        GKB_CORS_ORIGIN: '^.*$',
     },
     production: {
         GKB_DB_CREATE: false,
@@ -45,10 +45,10 @@ module.exports = {
         GKB_KEYCLOAK_URI: 'https://sso.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
         GKB_LOG_LEVEL: 'info',
         GKB_LOG_MAX_FILES: 28,
-        GKB_CORS_ORIGIN: 'https://graphkb.bcgsc.ca'
+        GKB_CORS_ORIGIN: 'https://graphkb.bcgsc.ca',
     },
     test: {
         GKB_DISABLE_AUTH: true,
-        GKB_LOG_LEVEL: 'error'
-    }
+        GKB_LOG_LEVEL: 'error',
+    },
 };

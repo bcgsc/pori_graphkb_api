@@ -1,13 +1,13 @@
 
 
-const {RecordID: RID} = require('orientjs');
+const { RecordID: RID } = require('orientjs');
 
-const {error: {AttributeError}, schema: {schema}, util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError }, schema: { schema }, util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
 
 
-const {OPERATORS, PARAM_PREFIX} = require('./constants');
-const {FixedSubquery} = require('./fixed');
-const {getQueryableProps} = require('./util');
+const { OPERATORS, PARAM_PREFIX } = require('./constants');
+const { FixedSubquery } = require('./fixed');
+const { getQueryableProps } = require('./util');
 
 const NUMBER_ONLY_OPERATORS = [OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE];
 
@@ -19,7 +19,7 @@ class Comparison {
      * @param {bool} negate if true then surround the comparison with a negation
      */
     constructor({
-        name, prop, value, operator, negate = false, isLength = false
+        name, prop, value, operator, negate = false, isLength = false,
     }) {
         this.name = name;
         this.prop = prop;
@@ -38,7 +38,7 @@ class Comparison {
      * to format the values being compared to
      */
     validate() {
-        const {prop, prop: {cast}} = this;
+        const { prop, prop: { cast } } = this;
 
         const validateValue = (value) => {
             if (value !== null) {
@@ -65,7 +65,7 @@ class Comparison {
                         this.operator
                     }) cannot be used in conjunction with an iterable property or value (${
                         prop.name
-                    })`
+                    })`,
                 );
             }
         } else if (this.operator === OPERATORS.IS) {
@@ -84,7 +84,7 @@ class Comparison {
             throw new AttributeError(
                 `CONTAINS can only be used with iterable properties (${
                     prop.name
-                }). To check for a substring, use CONTAINSTEXT instead`
+                }). To check for a substring, use CONTAINSTEXT instead`,
             );
         }
 
@@ -93,7 +93,7 @@ class Comparison {
                 throw new AttributeError(
                     `CONTAINS should be used with non-iterable values (${
                         prop.name
-                    }). To compare two interables for intersecting values use CONTAINSANY or CONTAINSALL instead`
+                    }). To compare two interables for intersecting values use CONTAINSANY or CONTAINSALL instead`,
                 );
             }
             if (this.operator === OPERATORS.EQ && !prop.iterable) {
@@ -102,7 +102,7 @@ class Comparison {
                         this.operator
                     }) of a non-iterable property (${
                         prop.name
-                    }) against a list or set`
+                    }) against a list or set`,
                 );
             }
         } else if (this.operator === OPERATORS.IN) {
@@ -137,6 +137,7 @@ class Comparison {
         }
         let [name] = Object.keys(rest);
         const isLength = name.endsWith('.length');
+
         if (isLength) {
             name = name.slice(0, name.length - '.length'.length);
         }
@@ -160,6 +161,7 @@ class Comparison {
         }
 
         let defaultOperator = OPERATORS.EQ;
+
         if (inputOperator === undefined) {
             if (prop.iterable) {
                 if (Array.isArray(value)) {
@@ -181,7 +183,7 @@ class Comparison {
                     operator
                 }). Must be one of (${
                     Object.values(OPERATORS).join(', ')
-                })`
+                })`,
             );
         }
 
@@ -191,7 +193,7 @@ class Comparison {
             value,
             operator,
             negate,
-            isLength
+            isLength,
         });
         result.validate();
         return result;
@@ -202,7 +204,7 @@ class Comparison {
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
     toString(initialParamIndex = 0) {
-        const {name: attr} = this;
+        const { name: attr } = this;
         let params = {},
             query,
             paramIndex = initialParamIndex;
@@ -210,15 +212,17 @@ class Comparison {
         if (this.value && this.value.isSubquery) {
             const subquery = this.value.toString(paramIndex);
             query = `${attr} ${this.operator} (${subquery.query})`;
-            ({params} = subquery);
+            ({ params } = subquery);
         } else if (this.value instanceof Array || this.value instanceof Set) {
             for (const element of this.value) {
-                const pname = `${PARAM_PREFIX}${paramIndex++}`;
+                const pname = `${PARAM_PREFIX}${paramIndex}`;
+                paramIndex += 1;
                 params[pname] = element;
             }
-            if (this.operator === OPERATORS.EQ && this.prop.iterable) {
-                const pname = `${PARAM_PREFIX}${paramIndex++}`;
 
+            if (this.operator === OPERATORS.EQ && this.prop.iterable) {
+                const pname = `${PARAM_PREFIX}${paramIndex}`;
+                paramIndex += 1;
                 query = `(${attr} ${OPERATORS.CONTAINSALL} [${
                     Array.from(Object.keys(params), p => `:${p}`).join(', ')
                 }] AND ${attr}.size() = :${pname})`;
@@ -231,8 +235,10 @@ class Comparison {
             }
         } else {
             const pname = `${PARAM_PREFIX}${paramIndex}`;
+
             if (this.value !== null) {
                 params[pname] = this.value;
+
                 if (this.isLength) {
                     query = `${attr}.size() ${this.operator} :${pname}`;
                 } else {
@@ -245,7 +251,7 @@ class Comparison {
         if (this.negate) {
             query = `NOT (${query})`;
         }
-        return {query, params};
+        return { query, params };
     }
 }
 
@@ -262,6 +268,7 @@ class Clause {
             throw new AttributeError('Filter clauses must be an object with a single AND or OR key');
         }
         const [operator] = Object.keys(content);
+
         if (!['AND', 'OR'].includes(operator)) {
             throw new AttributeError('Filter clauses must be an object with a single AND or OR key');
         }
@@ -271,8 +278,10 @@ class Clause {
 
         // clause may contain other clauses or direct comparisons
         const parsedFilters = [];
+
         for (const clause of content[operator]) {
             let parsed;
+
             try {
                 parsed = this.parse(model, clause);
             } catch (err) {
@@ -284,6 +293,7 @@ class Clause {
             }
             parsedFilters.push(parsed);
         }
+
         if (parsedFilters.length === 0) {
             throw new AttributeError('Clause must contain filters. Cannot be an empty array');
         }
@@ -299,10 +309,12 @@ class Clause {
         const params = {};
         const components = [];
         let paramIndex = initialParamIndex;
+
         for (const comp of this.filters) {
             const result = comp.toString(
-                paramIndex, prefix
+                paramIndex, prefix,
             );
+
             if (comp instanceof Clause && comp.filters.length > 1) {
                 // wrap in brackets
                 result.query = `(${result.query})`;
@@ -312,14 +324,14 @@ class Clause {
             paramIndex = Object.values(params).length + initialParamIndex;
         }
         const query = components.join(` ${this.operator} `);
-        return {query, params};
+        return { query, params };
     }
 }
 
 
 class Subquery {
     constructor({
-        target, history, filters = null
+        target, history, filters = null,
     }) {
         this.target = target;
         this.history = history;
@@ -335,14 +347,14 @@ class Subquery {
     }
 
     toString(paramIndex = 0, prefix = '') {
-        const {filters, history, target} = this;
+        const { filters, history, target } = this;
         let targetString = target,
             params = {};
 
         if (Array.isArray(target)) {
             targetString = `[${target.map(rid => rid.toString()).join(', ')}]`;
         } else if (target.isSubquery) {
-            const {query: subQuery, params: subParams} = target.toString(paramIndex, prefix);
+            const { query: subQuery, params: subParams } = target.toString(paramIndex, prefix);
             paramIndex += Object.keys(subParams).length;
             targetString = subQuery;
             Object.assign(params, subParams);
@@ -350,7 +362,8 @@ class Subquery {
         let statement = `SELECT * FROM ${targetString}`;
 
         if (filters && Object.keys(filters).length) {
-            const {query: clause, params: filterParams} = filters.toString(paramIndex, prefix);
+            const { query: clause, params: filterParams } = filters.toString(paramIndex, prefix);
+
             if (filters.isSubquery) {
                 statement = `${statement} WHERE (${clause})`;
             } else {
@@ -362,7 +375,7 @@ class Subquery {
             statement = `SELECT * FROM (${statement}) WHERE deletedAt IS NULL`;
         }
 
-        return {query: statement, params};
+        return { query: statement, params };
     }
 
     static parse(opt) {
@@ -393,10 +406,11 @@ class Subquery {
 
         if (rawFilters) {
             filters = rawFilters;
+
             if (Array.isArray(filters)) {
-                filters = {AND: filters};
+                filters = { AND: filters };
             } else if (!filters.AND && !filters.OR) {
-                filters = {AND: [{...filters}]};
+                filters = { AND: [{ ...filters }] };
             }
 
             filters = Clause.parse(model || schema.V, filters);
@@ -404,18 +418,18 @@ class Subquery {
         if (queryType) {
             if (!filters) {
                 return FixedSubquery.parse({
-                    ...rest, queryType, target, history
+                    ...rest, queryType, target, history,
                 });
             }
             return FixedSubquery.parse({
-                ...rest, queryType, filters, target, history
+                ...rest, queryType, filters, target, history,
             });
         }
         return new this({
-            target, history, filters
+            target, history, filters,
         });
     }
 }
 
 
-module.exports = {Subquery};
+module.exports = { Subquery };

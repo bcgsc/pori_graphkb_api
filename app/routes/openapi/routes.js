@@ -8,8 +8,8 @@ const POST_TOKEN = {
     summary: 'Generate an authentication token to be used for requests to the KB API server',
     tags: ['General'],
     parameters: [
-        {$ref: '#/components/parameters/Content-Type'},
-        {$ref: '#/components/parameters/Accept'}
+        { $ref: '#/components/parameters/Content-Type' },
+        { $ref: '#/components/parameters/Accept' },
     ],
     requestBody: {
         required: true,
@@ -20,20 +20,20 @@ const POST_TOKEN = {
                         {
                             type: 'object',
                             properties: {
-                                username: {type: 'string', description: 'The username'},
-                                password: {type: 'string', description: 'The password associated with this username'}
-                            }
+                                username: { type: 'string', description: 'The username' },
+                                password: { type: 'string', description: 'The password associated with this username' },
+                            },
                         },
                         {
                             type: 'object',
                             properties: {
-                                keyCloakToken: {type: 'string', description: 'The token from keycloak'}
-                            }
-                        }
-                    ]
-                }
-            }
-        }
+                                keyCloakToken: { type: 'string', description: 'The token from keycloak' },
+                            },
+                        },
+                    ],
+                },
+            },
+        },
     },
     responses: {
         200: {
@@ -46,22 +46,22 @@ const POST_TOKEN = {
                             kbToken: {
                                 type: 'string',
                                 format: 'token',
-                                description: 'The token for KB API requests'
+                                description: 'The token for KB API requests',
                             },
                             keyCloakToken: {
                                 type: 'string',
                                 format: 'token',
-                                description: 'The token from keycloak'
-                            }
-                        }
-                    }
-                }
-            }
+                                description: 'The token from keycloak',
+                            },
+                        },
+                    },
+                },
+            },
         },
         401: {
-            description: 'The credentials were incorrect or not found'
-        }
-    }
+            description: 'The credentials were incorrect or not found',
+        },
+    },
 };
 
 
@@ -76,33 +76,33 @@ const POST_PARSE = {
                     type: 'object',
                     required: ['content'],
                     properties: {
-                        content: {type: 'string', description: 'the variant string representation', example: 'KRAS:p.G12D'},
-                        requiredFeatures: {type: 'boolean', description: 'flag to indicate features are not required in the variant string'}
-                    }
-                }
-            }
-        }
+                        content: { type: 'string', description: 'the variant string representation', example: 'KRAS:p.G12D' },
+                        requiredFeatures: { type: 'boolean', description: 'flag to indicate features are not required in the variant string' },
+                    },
+                },
+            },
+        },
     },
     responses: {
         200: {
-            content: {'application/json': {schema: {type: 'object'}}}
+            content: { 'application/json': { schema: { type: 'object' } } },
         },
-        400: {$ref: '#/components/responses/BadInput'}
-    }
+        400: { $ref: '#/components/responses/BadInput' },
+    },
 };
 
 const GET_SCHEMA = {
     summary: 'Returns a JSON representation of the current database schema',
     tags: ['Metadata'],
     parameters: [
-        {$ref: '#/components/parameters/Accept'}
+        { $ref: '#/components/parameters/Accept' },
     ],
     responses: {
         200: {
-            content: {'application/json': {schema: {type: 'object'}}}
-        }
+            content: { 'application/json': { schema: { type: 'object' } } },
+        },
 
-    }
+    },
 };
 
 
@@ -110,7 +110,7 @@ const GET_VERSION = {
     summary: 'Returns the version information for the API and database',
     tags: ['Metadata'],
     parameters: [
-        {$ref: '#/components/parameters/Accept'}
+        { $ref: '#/components/parameters/Accept' },
     ],
     responses: {
         200: {
@@ -119,15 +119,15 @@ const GET_VERSION = {
                     schema: {
                         type: 'object',
                         properties: {
-                            api: {type: 'string', description: 'Version of the API', example: '0.6.3'},
-                            db: {type: 'string', description: 'Name of the database the API is connected to', example: 'kbapi_v0.6.3'},
-                            schema: {type: 'string', description: 'Version of the schema package used to build the database', example: '1.2.1'}
-                        }
-                    }
-                }
-            }
-        }
-    }
+                            api: { type: 'string', description: 'Version of the API', example: '0.6.3' },
+                            db: { type: 'string', description: 'Name of the database the API is connected to', example: 'kbapi_v0.6.3' },
+                            schema: { type: 'string', description: 'Version of the schema package used to build the database', example: '1.2.1' },
+                        },
+                    },
+                },
+            },
+        },
+    },
 };
 
 
@@ -135,15 +135,15 @@ const GET_STATS = {
     summary: 'Returns counts for all non-abstract database classes',
     tags: ['Metadata'],
     parameters: [
-        {$ref: '#/components/parameters/Accept'},
-        {$ref: '#/components/parameters/Authorization'},
-        {$ref: '#/components/parameters/history'},
+        { $ref: '#/components/parameters/Accept' },
+        { $ref: '#/components/parameters/Authorization' },
+        { $ref: '#/components/parameters/history' },
         {
             in: 'query',
             name: 'groupBySource',
-            schema: {type: 'boolean', default: false},
-            description: 'Count by class and source versus only by class'
-        }
+            schema: { type: 'boolean', default: false },
+            description: 'Count by class and source versus only by class',
+        },
     ],
     responses: {
         200: {
@@ -156,9 +156,9 @@ const GET_STATS = {
                                 type: 'object',
                                 additionalProperties: {
                                     type: 'integer',
-                                    description: 'The number of records in this grouping (usually just by class)'
-                                }
-                            }
+                                    description: 'The number of records in this grouping (usually just by class)',
+                                },
+                            },
                         },
                         example: {
                             result: {
@@ -195,16 +195,16 @@ const GET_STATS = {
                                 OppositeOf: 15,
                                 SubClassOf: 66691,
                                 SupportedBy: 17582,
-                                TargetOf: 0
-                            }
-                        }
-                    }
-                }
-            }
+                                TargetOf: 0,
+                            },
+                        },
+                    },
+                },
+            },
         },
-        401: {$ref: '#/components/responses/NotAuthorized'},
-        400: {$ref: '#/components/responses/BadInput'}
-    }
+        401: { $ref: '#/components/responses/NotAuthorized' },
+        400: { $ref: '#/components/responses/BadInput' },
+    },
 };
 
 
@@ -216,10 +216,10 @@ const QUERY = {
         content: {
             'application/json': {
                 schema: {
-                    $ref: '#/components/schemas/Query'
-                }
-            }
-        }
+                    $ref: '#/components/schemas/Query',
+                },
+            },
+        },
     },
     responses: {
         200: {
@@ -230,13 +230,13 @@ const QUERY = {
                     properties: {
                         result: {
                             type: 'array',
-                            items: {$ref: '#/components/schemas/V'}
-                        }
-                    }
-                }
-            }
-        }
-    }
+                            items: { $ref: '#/components/schemas/V' },
+                        },
+                    },
+                },
+            },
+        },
+    },
 };
 
 module.exports = {
@@ -245,5 +245,5 @@ module.exports = {
     GET_SCHEMA,
     GET_STATS,
     GET_VERSION,
-    QUERY
+    QUERY,
 };

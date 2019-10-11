@@ -5,7 +5,7 @@
  * @constant
  * @ignore
  */
-const {MAX_JUMPS, MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT} = require('./constants');
+const { MAX_JUMPS, MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('./constants');
 
 const GENERAL_QUERY_PARAMS = {
     neighbors: {
@@ -14,26 +14,26 @@ const GENERAL_QUERY_PARAMS = {
         schema: {
             type: 'integer',
             minimum: 0,
-            maximum: MAX_JUMPS
+            maximum: MAX_JUMPS,
         },
-        description: 'Return neighbors of the selected record(s) up to \'n\' edges away. If this is set to 0, no neighbors will be returned. To collect all immediate neighbors this must be set to 2.'
+        description: 'Return neighbors of the selected record(s) up to \'n\' edges away. If this is set to 0, no neighbors will be returned. To collect all immediate neighbors this must be set to 2.',
     },
     history: {
         in: 'query',
         name: 'history',
         schema: {
             type: 'boolean',
-            default: false
+            default: false,
         },
-        description: 'Include deleted records in the query result'
+        description: 'Include deleted records in the query result',
     },
     returnProperties: {
         in: 'query',
         name: 'returnProperties',
         schema: {
-            type: 'string'
+            type: 'string',
         },
-        description: 'CSV list of attributes to return. Returns the whole record if not specified'
+        description: 'CSV list of attributes to return. Returns the whole record if not specified',
     },
     limit: {
         in: 'query',
@@ -41,62 +41,62 @@ const GENERAL_QUERY_PARAMS = {
         schema: {
             type: 'integer',
             minimum: 1,
-            maximum: MAX_QUERY_LIMIT
+            maximum: MAX_QUERY_LIMIT,
         },
         description: 'Limits the number of records to return (useful for paginating queries)',
-        default: DEFAULT_QUERY_LIMIT
+        default: DEFAULT_QUERY_LIMIT,
     },
     skip: {
         in: 'query',
         name: 'skip',
         schema: {
             type: 'integer',
-            minimum: 1
+            minimum: 1,
         },
-        description: 'Number of records to skip (useful for paginating queries)'
+        description: 'Number of records to skip (useful for paginating queries)',
     },
     deletedAt: {
         in: 'query',
         name: 'deletedAt',
-        schema: {type: 'integer'},
+        schema: { type: 'integer' },
         nullable: true,
-        description: 'The timestamp when the record was deleted'
+        description: 'The timestamp when the record was deleted',
     },
     createdAt: {
         in: 'query',
         name: 'createdAt',
-        schema: {type: 'integer'},
+        schema: { type: 'integer' },
         nullable: false,
-        description: 'The timestamp when the record was created'
+        description: 'The timestamp when the record was created',
     },
     or: {
         in: 'query',
         name: 'or',
-        schema: {type: 'string'},
+        schema: { type: 'string' },
         nullable: false,
-        description: 'CSV list of class properties which should be joined as an OR statment instead of the default AND'
+        description: 'CSV list of class properties which should be joined as an OR statment instead of the default AND',
     },
     orderBy: {
         in: 'query',
         name: 'orderBy',
-        schema: {type: 'string'},
+        schema: { type: 'string' },
         nullable: false,
-        description: 'CSV list of properties to order the results by'
+        description: 'CSV list of properties to order the results by',
     },
     orderByDirection: {
         in: 'query',
         name: 'orderByDirection',
         nullable: false,
         description: 'When orderBy is given, this property is used to determine the direction of that ordering',
-        schema: {type: 'string', enum: ['ASC', 'DESC']}
+        schema: { type: 'string', enum: ['ASC', 'DESC'] },
     },
     count: {
         in: 'query',
         name: 'count',
         nullable: false,
         description: 'Return a count of the records for this query instead of the query itself',
-        schema: {type: 'boolean'}
-    }
+        schema: { type: 'boolean' },
+    },
 };
 
 
@@ -105,10 +105,10 @@ const ONTOLOGY_QUERY_PARAMS = {
         in: 'query',
         name: 'subsets',
         schema: {
-            type: 'string'
+            type: 'string',
         },
-        description: 'Check if an ontology term belongs to a given subset'
-    }
+        description: 'Check if an ontology term belongs to a given subset',
+    },
 };
 
 
@@ -118,32 +118,32 @@ const BASIC_HEADER_PARAMS = {
         name: 'Authorization',
         schema: {
             type: 'string',
-            format: 'token'
+            format: 'token',
         },
         required: true,
-        description: 'Token containing the user information/authentication'
+        description: 'Token containing the user information/authentication',
     },
     Accept: {
         in: 'header',
         name: 'Accept',
         schema: {
             type: 'string',
-            enum: ['application/json']
+            enum: ['application/json'],
         },
         required: true,
-        description: 'The content type you expect to recieve. Currently only supports application/json'
+        description: 'The content type you expect to recieve. Currently only supports application/json',
     },
     'Content-Type': {
         in: 'header',
         name: 'Content-Type',
         schema: {
             type: 'string',
-            enum: ['application/json']
+            enum: ['application/json'],
         },
         required: true,
-        description: 'The content type you expect to send. Currently only supports application/json'
-    }
+        description: 'The content type you expect to send. Currently only supports application/json',
+    },
 };
 
 
-module.exports = {BASIC_HEADER_PARAMS, GENERAL_QUERY_PARAMS, ONTOLOGY_QUERY_PARAMS};
+module.exports = { BASIC_HEADER_PARAMS, GENERAL_QUERY_PARAMS, ONTOLOGY_QUERY_PARAMS };

@@ -1,10 +1,10 @@
-const {OrientDBClient} = require('orientjs');
+const { OrientDBClient } = require('orientjs');
 
-const {logger} = require('./logging');
-const {loadSchema, createSchema} = require('./schema');
-const {migrate} = require('./migrate');
-const {createUser} = require('./commands');
-const {RecordExistsError} = require('./error');
+const { logger } = require('./logging');
+const { loadSchema, createSchema } = require('./schema');
+const { migrate } = require('./migrate');
+const { createUser } = require('./commands');
+const { RecordExistsError } = require('./error');
 
 
 /**
@@ -13,18 +13,19 @@ const {RecordExistsError} = require('./error');
 const createDB = async (server, {
     GKB_DB_NAME,
     GKB_DBS_PASS,
-    GKB_DBS_USER
+    GKB_DBS_USER,
 }) => {
     await server.createDatabase({
         name: GKB_DB_NAME,
         username: GKB_DBS_USER,
-        password: GKB_DBS_PASS
+        password: GKB_DBS_PASS,
     });
     const db = await server.session({
         name: GKB_DB_NAME,
         username: GKB_DBS_USER,
-        password: GKB_DBS_PASS
+        password: GKB_DBS_PASS,
     });
+
     try {
         await db.command('alter database custom standardElementConstraints=false');
         logger.log('verbose', 'create the schema');
@@ -34,7 +35,7 @@ const createDB = async (server, {
         await server.dropDatabase({
             name: GKB_DB_NAME,
             username: GKB_DBS_USER,
-            password: GKB_DBS_PASS
+            password: GKB_DBS_PASS,
         });
         await server.close();
         throw err;
@@ -76,17 +77,17 @@ const connectDB = async ({
     GKB_DBS_PASS,
     GKB_DBS_USER,
     GKB_USER_CREATE,
-    GKB_DB_POOL
+    GKB_DB_POOL,
 }) => {
     // set up the database server
     const server = await OrientDBClient.connect({
         host: GKB_DB_HOST,
-        port: GKB_DB_PORT
+        port: GKB_DB_PORT,
     });
     const exists = await server.existsDatabase({
         name: GKB_DB_NAME,
         username: GKB_DBS_USER,
-        password: GKB_DBS_PASS
+        password: GKB_DBS_PASS,
     });
     logger.log('info', `The database ${GKB_DB_NAME} ${exists
         ? 'exists'
@@ -99,7 +100,7 @@ const connectDB = async ({
                 GKB_DB_NAME,
                 GKB_DBS_PASS,
                 GKB_DBS_USER,
-                GKB_USER_CREATE
+                GKB_USER_CREATE,
             });
         } else {
             throw new Error(`Cannot create the database ${GKB_DB_NAME} it already exists`);
@@ -109,12 +110,13 @@ const connectDB = async ({
     logger.log('info', `connecting to the database (${GKB_DB_NAME}) as ${GKB_DB_USER}`);
     let pool,
         session;
+
     try {
         pool = await server.sessions({
             name: GKB_DB_NAME,
             username: GKB_DB_USER,
             password: GKB_DB_PASS,
-            pool: {max: GKB_DB_POOL}
+            pool: { max: GKB_DB_POOL },
         });
         session = await pool.acquire();
     } catch (err) {
@@ -128,7 +130,7 @@ const connectDB = async ({
             await createUser(session, {
                 userName: process.env.USER,
                 groupNames: ['admin'],
-                existsOk: true
+                existsOk: true,
             });
         } catch (err) {
             if (!(err instanceof RecordExistsError)) {
@@ -139,7 +141,7 @@ const connectDB = async ({
 
     // check if migration is required
     try {
-        await migrate(session, {checkOnly: !GKB_DB_MIGRATE});
+        await migrate(session, { checkOnly: !GKB_DB_MIGRATE });
     } catch (err) {
         logger.error(err);
         server.close();
@@ -147,6 +149,7 @@ const connectDB = async ({
     }
 
     let schema;
+
     try {
         schema = await loadSchema(session);
     } catch (err) {
@@ -156,8 +159,8 @@ const connectDB = async ({
     }
     session.close();
     // create the admin user
-    return {server, pool, schema};
+    return { server, pool, schema };
 };
 
 
-module.exports = {connectDB};
+module.exports = { connectDB };

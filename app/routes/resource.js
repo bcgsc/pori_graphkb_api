@@ -2,27 +2,27 @@ const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 const _ = require('lodash');
 
-const {util: {looksLikeRID}, error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
+const { util: { looksLikeRID }, error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    NoRecordFoundError
+    NoRecordFoundError,
 } = require('./../repo/error');
-const {logger} = require('./../repo/logging');
+const { logger } = require('./../repo/logging');
 const {
-    select, create, update, remove
+    select, create, update, remove,
 } = require('./../repo/commands');
-const {checkClassPermissions} = require('./../middleware/auth');
-const {parse} = require('./../repo/query_builder');
+const { checkClassPermissions } = require('./../middleware/auth');
+const { parse } = require('./../repo/query_builder');
 
-const {checkStandardOptions} = require('../repo/query_builder/util');
+const { checkStandardOptions } = require('../repo/query_builder/util');
 
 
 const activeRidQuery = (model, rid, opt = {}) => {
     const query = parse({
         ...opt,
         target: [rid],
-        filters: {'@class': model.name},
-        history: false
+        filters: { '@class': model.name },
+        history: false,
     });
     return query;
 };
@@ -38,13 +38,15 @@ const getRoute = (app, model) => {
     logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}`);
     app.router.get(`${model.routeName}/:rid`,
         async (req, res, next) => {
-            const {neighbors = 0, ...extra} = req.query;
+            const { neighbors = 0, ...extra } = req.query;
+
             if (Object.keys(extra).length > 0) {
                 return next(new AttributeError(`Did not recognize the query parameter: ${Object.keys(extra).sort().join(' ')}`));
             }
             let query;
+
             try {
-                query = activeRidQuery(model, req.params.rid, {neighbors});
+                query = activeRidQuery(model, req.params.rid, { neighbors });
             } catch (err) {
                 if (err instanceof AttributeError) {
                     return next(err);
@@ -53,18 +55,20 @@ const getRoute = (app, model) => {
                 return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(err);
             }
             let session;
+
             try {
                 session = await app.pool.acquire();
             } catch (err) {
                 return next(err);
             }
+
             try {
                 const [result] = await select(session, query, {
                     exactlyN: 1,
-                    user: req.user
+                    user: req.user,
                 });
                 session.close();
-                return res.json(jc.decycle({result}));
+                return res.json(jc.decycle({ result }));
             } catch (err) {
                 session.close();
                 return next(err);
@@ -84,24 +88,27 @@ const postRoute = (app, model) => {
         async (req, res, next) => {
             if (!_.isEmpty(req.query)) {
                 return next(new AttributeError(
-                    {message: 'No query parameters are allowed for this query type', params: req.query}
+                    { message: 'No query parameters are allowed for this query type', params: req.query },
                 ));
             }
             let session;
+
             try {
                 session = await app.pool.acquire();
             } catch (err) {
                 return next(err);
             }
+
             try {
                 const result = await create(session, {
-                    model, content: req.body, user: req.user, schema: app.schema
+                    model, content: req.body, user: req.user, schema: app.schema,
                 });
                 session.close();
-                return res.status(HTTP_STATUS.CREATED).json(jc.decycle({result}));
+                return res.status(HTTP_STATUS.CREATED).json(jc.decycle({ result }));
             } catch (err) {
                 session.close();
                 logger.log('debug', err.toString());
+
                 if (err instanceof NoRecordFoundError) {
                     return res.status(HTTP_STATUS.BAD_REQUEST).json(err);
                 }
@@ -124,31 +131,34 @@ const updateRoute = (app, model) => {
         async (req, res, next) => {
             if (!looksLikeRID(req.params.rid, false)) {
                 return next(new AttributeError(
-                    {message: `ID does not look like a valid record ID: ${req.params.rid}`}
+                    { message: `ID does not look like a valid record ID: ${req.params.rid}` },
                 ));
             }
             const rid = `#${req.params.rid.replace(/^#/, '')}`;
+
             if (!_.isEmpty(req.query)) {
                 return next(new AttributeError(
-                    {message: 'Query parameters are not allowed for this query type', params: req.query}
+                    { message: 'Query parameters are not allowed for this query type', params: req.query },
                 ));
             }
             let session;
+
             try {
                 session = await app.pool.acquire();
             } catch (err) {
                 return next(err);
             }
+
             try {
                 const result = await update(session, {
                     model,
                     changes: req.body,
                     query: activeRidQuery(model, rid),
                     user: req.user,
-                    schema: app.schema
+                    schema: app.schema,
                 });
                 session.close();
-                return res.json(jc.decycle({result}));
+                return res.json(jc.decycle({ result }));
             } catch (err) {
                 session.close();
                 return next(err);
@@ -166,34 +176,38 @@ const deleteRoute = (app, model) => {
     logger.log('verbose', `NEW ROUTE [DELETE] ${model.routeName}`);
     app.router.delete(`${model.routeName}/:rid`,
         async (req, res, next) => {
-            let {rid} = req.params;
+            let { rid } = req.params;
+
             if (!looksLikeRID(rid, false)) {
                 return next(new AttributeError(
-                    {message: `ID does not look like a valid record ID: ${rid}`}
+                    { message: `ID does not look like a valid record ID: ${rid}` },
                 ));
             }
             rid = `#${rid.replace(/^#/, '')}`;
+
             if (!_.isEmpty(req.query)) {
                 return next(new AttributeError(
-                    {message: 'No query parameters are allowed for this query type'}
+                    { message: 'No query parameters are allowed for this query type' },
                 ));
             }
             let session;
+
             try {
                 session = await app.pool.acquire();
             } catch (err) {
                 return next(err);
             }
+
             try {
                 const result = await remove(
                     session, {
                         query: activeRidQuery(model, rid),
                         user: req.user,
-                        model
-                    }
+                        model,
+                    },
                 );
                 session.close();
-                return res.json(jc.decycle({result}));
+                return res.json(jc.decycle({ result }));
             } catch (err) {
                 session.close();
                 logger.log('debug', err);
@@ -235,5 +249,5 @@ const addResourceRoutes = (app, model) => {
 
 
 module.exports = {
-    addResourceRoutes, checkStandardOptions
+    addResourceRoutes, checkStandardOptions,
 };

@@ -7,7 +7,7 @@
 const orientjs = require('orientjs');
 const kbSchema = require('@bcgsc/knowledgebase-schema');
 
-const {logger} = require('./logging');
+const { logger } = require('./logging');
 
 
 class Property extends kbSchema.Property {
@@ -22,8 +22,9 @@ class Property extends kbSchema.Property {
             name: model.name,
             type: model.type,
             notNull: !model.nullable,
-            mandatory: model.mandatory
+            mandatory: model.mandatory,
         };
+
         if (model.linkedClass) {
             dbProperties.linkedClass = model.linkedClass.name;
         }
@@ -59,40 +60,45 @@ class ClassModel extends kbSchema.ClassModel {
     static async create(model, db, opt = {}) {
         const {
             properties = true,
-            indices = true
+            indices = true,
         } = opt;
         const inherits = model._inherits
             ? Array.from(model._inherits, x => x.name).join(',')
             : null;
         let cls;
+
         try {
             cls = await db.class.get(model.name);
         } catch (err) {
             cls = await db.class.create(model.name, inherits, null, model.isAbstract); // create the class first
         }
+
         if (properties) {
             await Promise.all(Array.from(
                 Object.values(model._properties).filter(prop => !prop.name.startsWith('@') && !model.inheritsProperty(prop.name)),
-                async prop => Property.create(prop, cls)
+                async prop => Property.create(prop, cls),
             ));
         }
         if (indices) {
             await Promise.all(
                 model.indices
                     .filter(i => this.checkDbCanCreateIndex(model, i))
-                    .map(i => db.index.create(i))
+                    .map(i => db.index.create(i)),
             );
         }
         return cls;
     }
 
     static checkDbCanCreateIndex(model, index) {
-        const {properties} = model;
+        const { properties } = model;
+
         if (index.type.toLowerCase() !== 'unique') {
             return true;
         }
+
         for (const propName of index.properties) {
             const propModel = properties[propName];
+
             if (propModel && propModel.iterable) {
                 logger.log('warn', `Cannot create index (${index.name}) on iterable property (${propModel.name})`);
                 return false;
@@ -115,6 +121,7 @@ class ClassModel extends kbSchema.ClassModel {
             }
             // get the property definition from the schema
             const prop = model.properties[dbProp.name];
+
             if (prop === undefined) {
                 throw new Error(`[${
                     model.name
@@ -123,16 +130,18 @@ class ClassModel extends kbSchema.ClassModel {
                 } on the schema definition`);
             }
             const dbPropType = orientjs.types[dbProp.type].toLowerCase();
+
             if (dbPropType !== prop.type) {
                 throw new Error(
                     `[${model.name}] The type defined on the schema model (${
                         prop.type
                     }) does not match the type loaded from the database (${
                         dbPropType
-                    })`
+                    })`,
                 );
             }
         }
+
         if ((oclass.defaultClusterId === -1) !== model.isAbstract && model.name !== 'V' && model.name !== 'E') {
             throw new Error(
                 `The abstractness (${
@@ -141,7 +150,7 @@ class ClassModel extends kbSchema.ClassModel {
                     model.name
                 } does not match the database definition (${
                     oclass.defaultClusterId
-                })`
+                })`,
             );
         }
     }
@@ -150,5 +159,5 @@ class ClassModel extends kbSchema.ClassModel {
 
 module.exports = {
     ClassModel,
-    Property
+    Property,
 };

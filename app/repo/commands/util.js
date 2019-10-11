@@ -2,13 +2,13 @@
 
 const _ = require('lodash');
 
-const {util: {castToRID}} = require('@bcgsc/knowledgebase-schema');
+const { util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
 
 const {
     NoRecordFoundError,
     RecordExistsError,
     DatabaseConnectionError,
-    DatabaseRequestError
+    DatabaseRequestError,
 } = require('../error');
 
 
@@ -20,6 +20,7 @@ const wrapIfTypeError = (err) => {
     if (err) {
         if (err.type) {
             const type = err.type.toLowerCase();
+
             if (type.includes('orecordduplicatedexception')) {
                 return new RecordExistsError(err);
             } if (type.includes('orecordnotfoundexception')) {
@@ -34,12 +35,12 @@ const wrapIfTypeError = (err) => {
             }
             if (err.name.includes('OrientDB.RequestError')) {
                 const {
-                    name, type, message, sql
+                    name, type, message, sql,
                 } = err;
                 // error messages exceed 500 lines and are unreadable
                 const trimmed = message.split('\n').filter(line => !/^\s*[<"].*\s*\.\.\.\s*$/.exec(line)).join('\n');
                 return new DatabaseRequestError({
-                    name, type, message: trimmed, sql
+                    name, type, message: trimmed, sql,
                 });
             }
         }
@@ -52,7 +53,7 @@ const omitDBAttributes = rec => _.omit(rec, Object.keys(rec).filter(
     k => k.startsWith('@')
         || k.startsWith('out_')
         || k.startsWith('in_')
-        || k.startsWith('_')
+        || k.startsWith('_'),
 ));
 
 /**
@@ -68,10 +69,13 @@ const hasRecordAccess = (user, record) => {
     if (!record.groupRestrictions || record.groupRestrictions.length === 0) {
         return true;
     }
+
     for (let rgroup of record.groupRestrictions) {
         rgroup = castToRID(rgroup).toString();
+
         for (let ugroup of user.groups) {
             ugroup = castToRID(ugroup).toString();
+
             if (rgroup === ugroup) {
                 return true;
             }
@@ -81,5 +85,5 @@ const hasRecordAccess = (user, record) => {
 };
 
 module.exports = {
-    wrapIfTypeError, omitDBAttributes, hasRecordAccess
+    wrapIfTypeError, omitDBAttributes, hasRecordAccess,
 };

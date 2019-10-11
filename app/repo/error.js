@@ -1,7 +1,7 @@
 
 
-const {error: {ErrorMixin}} = require('@bcgsc/knowledgebase-parser');
-const {error: {AttributeError}} = require('@bcgsc/knowledgebase-schema');
+const { error: { ErrorMixin } } = require('@bcgsc/knowledgebase-parser');
+const { error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 
 
 class ParsingError extends ErrorMixin {}
@@ -46,5 +46,5 @@ module.exports = {
     MultipleRecordsFoundError,
     PermissionError,
     NotImplementedError,
-    AuthenticationError
+    AuthenticationError,
 };

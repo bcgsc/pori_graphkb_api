@@ -6,16 +6,16 @@
  */
 const _ = require('lodash');
 
-const {RID} = require('orientjs');
-const {constants, schema: {schema: SCHEMA_DEFN}, util: {timeStampNow}} = require('@bcgsc/knowledgebase-schema');
+const { RID } = require('orientjs');
+const { constants, schema: { schema: SCHEMA_DEFN }, util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
 
-const {PERMISSIONS} = constants;
+const { PERMISSIONS } = constants;
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
-const {logger} = require('./logging');
-const {ClassModel, Property} = require('./model');
-const {getLoadVersion} = require('./migrate/version');
+const { logger } = require('./logging');
+const { ClassModel, Property } = require('./model');
+const { getLoadVersion } = require('./migrate/version');
 
 /**
  * Split class models into an array or with dependencies
@@ -25,9 +25,11 @@ const {getLoadVersion} = require('./migrate/version');
 const splitSchemaClassLevels = (schema) => {
     const ranks = {};
     const queue = Object.values(schema);
+
     while (queue.length > 0) {
         const curr = queue.shift();
         let dependencies = Array.from(curr.inherits || []);
+
         for (const prop of Object.values(curr.properties)) {
             if (prop.linkedClass) {
                 dependencies.push(prop.linkedClass.name);
@@ -71,27 +73,27 @@ const createSchemaHistory = async (db) => {
         name: 'name',
         type: 'string',
         notNull: true,
-        mandatory: true
+        mandatory: true,
     });
     await cls.property.create({
         name: 'version',
         type: 'string',
         notNull: true,
-        mandatory: true
+        mandatory: true,
     });
     await cls.property.create({
         name: 'url',
         type: 'string',
         notNull: false,
-        mandatory: false
+        mandatory: false,
     });
     await cls.property.create({
         name: 'createdAt',
         type: 'long',
         notNull: true,
-        mandatory: true
+        mandatory: true,
     });
-    const {version, name, url} = getLoadVersion();
+    const { version, name, url } = getLoadVersion();
 
     // now insert the current schema version
     logger.log('info', `Log the current schema version (${version})`);
@@ -99,7 +101,7 @@ const createSchemaHistory = async (db) => {
         version,
         name,
         url,
-        createdAt: timeStampNow()
+        createdAt: timeStampNow(),
     }).one();
     return cls;
 };
@@ -118,34 +120,34 @@ const createSchema = async (db) => {
     await ClassModel.create(SCHEMA_DEFN.Permissions, db); // (name, extends, clusters, abstract)
     // create the user class
     logger.log('info', 'create the UserGroup class');
-    await ClassModel.create(SCHEMA_DEFN.UserGroup, db, {properties: false, indices: false});
+    await ClassModel.create(SCHEMA_DEFN.UserGroup, db, { properties: false, indices: false });
     logger.log('info', 'create the User class');
     await ClassModel.create(SCHEMA_DEFN.User, db);
     logger.log('info', 'Add properties to the UserGroup class');
-    await ClassModel.create(SCHEMA_DEFN.UserGroup, db, {properties: true, indices: true});
+    await ClassModel.create(SCHEMA_DEFN.UserGroup, db, { properties: true, indices: true });
     // modify the existing vertex and edge classes to add the minimum required attributes for tracking etc
     const V = await db.class.get('V');
     await Promise.all(Array.from(
         Object.values(SCHEMA_DEFN.V._properties).filter(p => !p.name.startsWith('@')),
-        async prop => Property.create(prop, V)
+        async prop => Property.create(prop, V),
     ));
     const E = await db.class.get('E');
     await Promise.all(Array.from(
         Object.values(SCHEMA_DEFN.E._properties).filter(p => !p.name.startsWith('@')),
-        async prop => Property.create(prop, E)
+        async prop => Property.create(prop, E),
     ));
 
     await Promise.all(Array.from(['E', 'V', 'User'], cls => db.index.create({
         name: `${cls}.activeId`,
         type: 'unique',
-        metadata: {ignoreNullValues: false},
+        metadata: { ignoreNullValues: false },
         properties: ['uuid', 'deletedAt'],
-        class: cls
+        class: cls,
     })));
     logger.log('info', 'defined schema for the major base classes');
     // create the other schema classes
     const classesByLevel = splitSchemaClassLevels(
-        _.omit(SCHEMA_DEFN, ['Permissions', 'User', 'UserGroup', 'V', 'E'])
+        _.omit(SCHEMA_DEFN, ['Permissions', 'User', 'UserGroup', 'V', 'E']),
     );
 
     for (const classList of classesByLevel) {
@@ -161,7 +163,7 @@ const createSchema = async (db) => {
     for (const model of Object.values(SCHEMA_DEFN)) {
         // The permissions for operations against a class should be the intersection of the
         // exposed routes and the group type
-        const {name} = model;
+        const { name } = model;
         const adminGroup = (['Permissions', 'UserGroup', 'User'].includes(model.name));
         adminPermissions[name] = PERMISSIONS.READ;
         regularPermissions[name] = PERMISSIONS.NONE;
@@ -174,18 +176,21 @@ const createSchema = async (db) => {
         }
         if (model.expose.PATCH || model.expose.UPDATE) {
             adminPermissions[name] |= PERMISSIONS.UPDATE;
+
             if (!adminGroup) {
                 regularPermissions[name] |= PERMISSIONS.UPDATE;
             }
         }
         if (model.expose.POST) {
             adminPermissions[name] |= PERMISSIONS.CREATE;
+
             if (!adminGroup) {
                 regularPermissions[name] |= PERMISSIONS.CREATE;
             }
         }
         if (model.expose.DELETE) {
             adminPermissions[name] |= PERMISSIONS.DELETE;
+
             if (!adminGroup) {
                 regularPermissions[name] |= PERMISSIONS.DELETE;
             }
@@ -193,10 +198,10 @@ const createSchema = async (db) => {
     }
     logger.log('info', 'creating the default user groups');
     const defaultGroups = Array.from([
-        {name: 'admin', permissions: adminPermissions},
-        {name: 'regular', permissions: regularPermissions},
-        {name: 'readOnly', permissions: readOnlyPermissions}
-    ], rec => SCHEMA_DEFN.UserGroup.formatRecord(rec, {addDefaults: true}));
+        { name: 'admin', permissions: adminPermissions },
+        { name: 'regular', permissions: regularPermissions },
+        { name: 'readOnly', permissions: readOnlyPermissions },
+    ], rec => SCHEMA_DEFN.UserGroup.formatRecord(rec, { addDefaults: true }));
     await Promise.all(Array.from(defaultGroups, async x => db.insert().into('UserGroup').set(x).one()));
 
     logger.log('info', 'Schema is Complete');
@@ -221,10 +226,12 @@ const loadSchema = async (db) => {
             continue;
         }
         const model = SCHEMA_DEFN[cls.name];
+
         if (model === undefined) {
             throw new Error(`The class loaded from the database (${model.name}) is not defined in the SCHEMA_DEFN`);
         }
         ClassModel.compareToDbClass(model, cls); // check that the DB matches the SCHEMA_DEFN
+
         if (cls.superClass && !model.inherits.includes(cls.superClass)) {
             throw new Error(`The class ${model.name} inherits according to the database (${cls.superClass}) does not match those defined by the schema definition: ${SCHEMA_DEFN[model.name].inherits}`);
         }
@@ -248,5 +255,5 @@ module.exports = {
     createSchema,
     loadSchema,
     SCHEMA_DEFN,
-    splitSchemaClassLevels
+    splitSchemaClassLevels,
 };

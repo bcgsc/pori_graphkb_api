@@ -1,12 +1,12 @@
-const {error: {AttributeError}, schema: {schema: SCHEMA_DEFN}} = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError }, schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
 
-const {logger} = require('../logging');
-const {parseRecord} = require('../query_builder');
+const { logger } = require('../logging');
+const { parseRecord } = require('../query_builder');
 const {
-    RecordExistsError
+    RecordExistsError,
 } = require('../error');
-const {select, getUserByName, fetchDisplayName} = require('./select');
-const {wrapIfTypeError, omitDBAttributes} = require('./util');
+const { select, getUserByName, fetchDisplayName } = require('./select');
+const { wrapIfTypeError, omitDBAttributes } = require('./util');
 
 /**
  * Create new User record
@@ -18,19 +18,20 @@ const {wrapIfTypeError, omitDBAttributes} = require('./util');
  */
 const createUser = async (db, opt) => {
     const {
-        userName, groupNames
+        userName, groupNames,
     } = opt;
     const userGroups = await db.select().from('UserGroup').all();
     const groupIds = Array.from(userGroups.filter(
-        group => groupNames.includes(group.name)
+        group => groupNames.includes(group.name),
     ), group => group['@rid']);
     const record = SCHEMA_DEFN.User.formatRecord({
         name: userName,
-        groups: groupIds
-    }, {dropExtra: false, addDefaults: true});
+        groups: groupIds,
+    }, { dropExtra: false, addDefaults: true });
     await db.insert().into(SCHEMA_DEFN.User.name)
         .set(record)
         .one();
+
     try {
         return await getUserByName(db, userName);
     } catch (err) {
@@ -51,11 +52,12 @@ const createUser = async (db, opt) => {
  * @param {Object} opt.user the user creating the new record
  */
 const createEdge = async (db, opt) => {
-    const {content, model, user} = opt;
+    const { content, model, user } = opt;
     content.createdBy = user['@rid'];
-    const record = model.formatRecord(content, {dropExtra: false, addDefaults: true});
+    const record = model.formatRecord(content, { dropExtra: false, addDefaults: true });
     const from = record.out;
     const to = record.in;
+
     // already checked not null in the format method
     if (from.toString() === to.toString()) {
         throw new AttributeError('an edge cannot be used to relate a node/vertex to itself');
@@ -63,6 +65,7 @@ const createEdge = async (db, opt) => {
     delete record.out;
     delete record.in;
     delete record['@class']; // Ignore if given since determined by the model
+
     try {
         return await db.create('EDGE', model.name).from(from).to(to).set(record)
             .one();
@@ -84,16 +87,18 @@ const createEdge = async (db, opt) => {
  */
 const create = async (db, opt) => {
     const {
-        content, model, user
+        content, model, user,
     } = opt;
+
     if (model.isEdge) {
         return createEdge(db, opt);
     } if (model.getActiveProperties()) {
         // try select before create if active properties are defined (as they may not be db enforceable)
         try {
-            const query = parseRecord(model, content, {activeIndexOnly: true});
+            const query = parseRecord(model, content, { activeIndexOnly: true });
 
             const records = await select(db, query);
+
             if (records.length) {
                 throw new RecordExistsError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
             }
@@ -103,9 +108,10 @@ const create = async (db, opt) => {
         }
     }
     const record = model.formatRecord(
-        {...content, createdBy: user['@rid']},
-        {dropExtra: false, addDefaults: true},
+        { ...content, createdBy: user['@rid'] },
+        { dropExtra: false, addDefaults: true },
     );
+
     try {
         if (!record.displayName && model.properties.displayName) {
             // displayName exists but has not been filled
@@ -121,4 +127,4 @@ const create = async (db, opt) => {
 };
 
 
-module.exports = {create, createUser};
+module.exports = { create, createUser };

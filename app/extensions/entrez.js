@@ -3,9 +3,9 @@
  */
 const Ajv = require('ajv');
 
-const {error: {AttributeError: ValidationError}} = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError: ValidationError } } = require('@bcgsc/knowledgebase-schema');
 
-const {requestWithRetry} = require('./util');
+const { requestWithRetry } = require('./util');
 
 const ajv = new Ajv();
 
@@ -13,22 +13,22 @@ const publicationSpec = ajv.compile({
     type: 'object',
     required: ['uid', 'title', 'fulljournalname'],
     properties: {
-        uid: {type: 'string', pattern: '^\\d+$'},
-        title: {type: 'string'},
-        fulljournalname: {type: 'string'},
-        sortpubdate: {type: 'string'},
-        sortdate: {type: 'string'}
-    }
+        uid: { type: 'string', pattern: '^\\d+$' },
+        title: { type: 'string' },
+        fulljournalname: { type: 'string' },
+        sortpubdate: { type: 'string' },
+        sortdate: { type: 'string' },
+    },
 });
 
 const geneSpec = ajv.compile({
     type: 'object',
     required: ['uid', 'name'],
     properties: {
-        uid: {type: 'string', pattern: '^\\d+$'},
-        name: {type: 'string'},
-        description: {type: 'string'}
-    }
+        uid: { type: 'string', pattern: '^\\d+$' },
+        name: { type: 'string' },
+        description: { type: 'string' },
+    },
 });
 
 /**
@@ -44,7 +44,7 @@ const parseGeneRecord = (record) => {
         name: record.name,
         biotype: 'gene',
         description: record.description,
-        displayName: record.name
+        displayName: record.name,
     };
 };
 
@@ -59,16 +59,19 @@ const parsePubmedRecord = (record) => {
     const parsed = {
         sourceId: record.uid,
         name: record.title,
-        journalName: record.fulljournalname
+        journalName: record.fulljournalname,
     };
+
     // sortpubdate: '1992/06/01 00:00'
     if (record.sortpubdate) {
         const match = /^(\d\d\d\d)\//.exec(record.sortpubdate);
+
         if (match) {
             parsed.year = parseInt(match[1], 10);
         }
     } else if (record.sortdate) {
         const match = /^(\d\d\d\d)\//.exec(record.sortdate);
+
         if (match) {
             parsed.year = parseInt(match[1], 10);
         }
@@ -79,18 +82,19 @@ const parsePubmedRecord = (record) => {
 
 
 const fetchRecord = async (db, id) => {
-    const {result: {[id]: result}} = await requestWithRetry({
+    const { result: { [id]: result } } = await requestWithRetry({
         method: 'GET',
         uri: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi',
         qs: {
             retmode: 'json',
             rettype: 'docsum',
             db,
-            id
+            id,
         },
-        headers: {Accept: 'application/json'},
-        json: true
+        headers: { Accept: 'application/json' },
+        json: true,
     });
+
     if (db === 'pubmed') {
         return parsePubmedRecord(result);
     } if (db === 'gene') {
@@ -101,5 +105,5 @@ const fetchRecord = async (db, id) => {
 
 
 module.exports = {
-    fetchRecord
+    fetchRecord,
 };
