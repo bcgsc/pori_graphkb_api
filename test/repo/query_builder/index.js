@@ -67,12 +67,12 @@ describe('WrapperQuery.parse', () => {
     test('add size check for equals comparison of iterables', () => {
         const parsed = parse({
             target: 'Statement',
-            filters: { impliedBy: ['#3:2', '#4:3'] },
+            filters: { conditions: ['#3:2', '#4:3'] },
             history: true,
             limit: null,
         });
         const { query, params } = parsed.toString();
-        expect(query).toEqual('SELECT * FROM Statement WHERE (impliedBy CONTAINSALL [:param0, :param1] AND impliedBy.size() = :param2)');
+        expect(query).toEqual('SELECT * FROM Statement WHERE (conditions CONTAINSALL [:param0, :param1] AND conditions.size() = :param2)');
         expect(params.param0).toEqual('#3:2');
         expect(params.param1).toEqual('#4:3');
         expect(params.param2).toEqual(2);
@@ -81,12 +81,12 @@ describe('WrapperQuery.parse', () => {
     test('specify custom operator for iterables', () => {
         const parsed = parse({
             target: 'Statement',
-            filters: { impliedBy: ['#3:2', '#4:3'], operator: 'CONTAINSALL' },
+            filters: { conditions: ['#3:2', '#4:3'], operator: 'CONTAINSALL' },
             history: true,
             limit: null,
         });
         const { query, params } = parsed.toString();
-        expect(query).toEqual('SELECT * FROM Statement WHERE impliedBy CONTAINSALL [:param0, :param1]');
+        expect(query).toEqual('SELECT * FROM Statement WHERE conditions CONTAINSALL [:param0, :param1]');
         expect(params.param0).toEqual('#3:2');
         expect(params.param1).toEqual('#4:3');
     });

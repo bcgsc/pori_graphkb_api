@@ -61,6 +61,7 @@ class ClassModel extends kbSchema.ClassModel {
         const {
             properties = true,
             indices = true,
+            graceful = false,
         } = opt;
         const inherits = model._inherits
             ? Array.from(model._inherits, x => x.name).join(',')
@@ -80,10 +81,28 @@ class ClassModel extends kbSchema.ClassModel {
             ));
         }
         if (indices) {
+            const createIndex = async (index) => {
+                let exists = false;
+
+                if (graceful) {
+                    try {
+                        const curr = await db.index.get(index.name);
+
+                        if (curr) {
+                            exists = true;
+                        }
+                    } catch (err) {}
+
+                    if (exists) {
+                        return;
+                    }
+                }
+                await db.index.create(index);
+            };
             await Promise.all(
                 model.indices
                     .filter(i => this.checkDbCanCreateIndex(model, i))
-                    .map(i => db.index.create(i)),
+                    .map(createIndex),
             );
         }
         return cls;

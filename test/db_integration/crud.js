@@ -487,10 +487,10 @@ describeWithAuth('CRUD operations', () => {
                 session,
                 {
                     content: {
-                        impliedBy: [disease],
-                        appliesTo: disease,
+                        conditions: [disease],
+                        subject: disease,
                         relevance,
-                        supportedBy: [publication],
+                        evidence: [publication],
                     },
                     model: schema.Statement,
                     user: db.admin,
@@ -503,10 +503,10 @@ describeWithAuth('CRUD operations', () => {
                     session,
                     {
                         content: {
-                            impliedBy: [disease],
-                            appliesTo: disease,
+                            conditions: [disease],
+                            subject: disease,
                             relevance,
-                            supportedBy: [publication],
+                            evidence: [publication],
                         },
                         model: schema.Statement,
                         user: db.admin,

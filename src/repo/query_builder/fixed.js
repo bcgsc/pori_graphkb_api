@@ -241,9 +241,9 @@ const keywordSearch = ({
                 $implicable = (SELECT expand(UNIONALL($ont, $variants))),
                 $statements = (SELECT * FROM Statement
                     WHERE
-                        impliedBy CONTAINSANY (SELECT expand($implicable))
-                        OR supportedBy CONTAINSANY (SELECT expand($ont))
-                        OR appliesTo IN (SELECT expand($implicable))
+                        conditions CONTAINSANY (SELECT expand($implicable))
+                        OR evidence CONTAINSANY (SELECT expand($ont))
+                        OR subject IN (SELECT expand($implicable))
                         OR relevance IN (SELECT expand($ont))
                 )
         `;

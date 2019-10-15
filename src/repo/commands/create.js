@@ -112,6 +112,12 @@ const create = async (db, opt) => {
         { dropExtra: false, addDefaults: true },
     );
 
+    if (model.name === 'Statement') {
+        if (!record.conditions.map(c => c.toString()).includes(record.subject.toString())) {
+            throw new AttributeError('Statement subject must also be present in the record conditions');
+        }
+    }
+
     try {
         if (!record.displayName && model.properties.displayName) {
             // displayName exists but has not been filled
