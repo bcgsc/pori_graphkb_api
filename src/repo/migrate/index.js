@@ -217,21 +217,22 @@ const migrate2to3From6xto0x = async (db) => {
         ['supportedBy', 'evidence'],
     ];
 
+    const { properties } = SCHEMA_DEFN.Statement;
+    const statement = await db.class.get(SCHEMA_DEFN.Statement.name);
+
     for (const [oldName, newName] of renames) {
-        logger.info(`Rename Statement.${oldName} to Statement.${newName}`);
-        await db.command(`ALTER PROPERTY Statement.${oldName} NAME ${newName}`).all();
-    }
+        const prop = properties[newName];
+        logger.info(`Create new Property Statement.${newName}`);
+        await Property.create(prop, statement);
 
-    // move all properties to new names (renames properties but does not alter existing records)
-    logger.info('modify all existing records with the old propery names');
-    await db.command('UPDATE Statement SET subject = appliesTo, conditions = impliedBy, evidence = supportedBy').all();
+        logger.info(`copy content Statement.${oldName} to Statement.${newName}`);
+        await db.command(`UPDATE Statement SET ${newName} = ${oldName}`).all();
 
-    for (const oldProp of ['appliesTo', 'impliedBy', 'supportedBy']) {
-        logger.info('Drop old property');
-        await db.command(`DROP PROPERTY Statement.${oldProp} FORCE`).all(); // also drop indexes on these properties
+        logger.info(`Drop old property Statement.${oldName}`);
+        await db.command(`DROP PROPERTY Statement.${oldName} FORCE`).all(); // also drop indexes on these properties
 
-        logger.info(`Remove old property ${oldProp} from existing Statement records`);
-        await db.command(`UPDATE Statement REMOVE ${oldProp}`).all();
+        logger.info(`Remove old property ${oldName} from existing Statement records`);
+        await db.command(`UPDATE Statement REMOVE ${oldName}`).all();
     }
 
     logger.info('Update statement displayNameTemplate');
@@ -243,7 +244,7 @@ const migrate2to3From6xto0x = async (db) => {
 
     // ensure appliesTo/subject is also in impliedBy/conditions for all statements
     const statements = await db.query('SELECT * FROM Statement WHERE subject NOT IN conditions AND subject IS NOT NULL').all();
-    logger.info(`${statements.length} statements require updating`);
+    logger.info(`${statements.length} statements require updating (subject must be in conditions)`);
 
     for (const { '@rid': rid, conditions, subject } of statements) {
         await db.command(`UPDATE ${rid} SET conditions = [${conditions.join(', ')}, ${subject}]`).all();

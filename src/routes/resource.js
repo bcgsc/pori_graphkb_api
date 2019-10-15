@@ -35,7 +35,7 @@ const activeRidQuery = (model, rid, opt = {}) => {
  * @param {ClassModel} model the model the routes are created for
  */
 const getRoute = (app, model) => {
-    logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}`);
+    logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}/:rid`);
     app.router.get(`${model.routeName}/:rid`,
         async (req, res, next) => {
             const { neighbors = 0, ...extra } = req.query;
