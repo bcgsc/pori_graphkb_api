@@ -142,6 +142,9 @@ const connectDB = async ({
     // check if migration is required
     try {
         await migrate(session, { checkOnly: !GKB_DB_MIGRATE });
+        // close the re-open the session (so that the db class models are updated)
+        await session.close();
+        session = await pool.acquire();
     } catch (err) {
         logger.error(err);
         server.close();
