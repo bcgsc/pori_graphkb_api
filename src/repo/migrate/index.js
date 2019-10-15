@@ -244,7 +244,7 @@ const migrate2to3From6xto0x = async (db) => {
 
     // ensure appliesTo/subject is also in impliedBy/conditions for all statements
     const statements = await db.query('SELECT * FROM Statement WHERE subject NOT IN conditions AND subject IS NOT NULL').all();
-    logger.info(`${statements.length} statements require updating`);
+    logger.info(`${statements.length} statements require updating (subject must be in conditions)`);
 
     for (const { '@rid': rid, conditions, subject } of statements) {
         await db.command(`UPDATE ${rid} SET conditions = [${conditions.join(', ')}, ${subject}]`).all();
