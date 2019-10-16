@@ -248,7 +248,9 @@ const keywordSearch = ({
 
         const query = `SELECT expand($statements)
             LET $ont = (${subquery}),
-                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))),
+                $variants = (TRAVERSE both('Infers') FROM (
+                    SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
+                ) MAXDEPTH ${MAX_NEIGHBORS}),
                 $implicable = (SELECT expand(UNIONALL($ont, $variants))),
                 $statements = (SELECT * FROM Statement
                     WHERE
@@ -271,8 +273,10 @@ const keywordSearch = ({
 
         const query = `SELECT expand($variants)
             LET $ont = (${subquery}),
-                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
-        )`;
+                $variants = (TRAVERSE both('Infers') FROM (
+                    SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
+                ) MAXDEPTH ${MAX_NEIGHBORS})
+        `;
         return { query, params };
     }
     return Subquery.parse({ ...opt, target: model.name, filters: subContainsClause(['name']) }).toString(paramIndex, prefix);
