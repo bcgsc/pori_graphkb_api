@@ -168,13 +168,16 @@ const descendants = (opt) => {
 
 
 const keywordSearch = ({
-    target, keyword, paramIndex, prefix, ...opt
+    target, keyword, paramIndex, prefix, operator = OPERATORS.CONTAINSTEXT, ...opt
 }) => {
     // circular dependency unavoidable
     const { Subquery } = require('./fragment'); // eslint-disable-line global-require
 
     const model = schema[target];
 
+    if (![OPERATORS.CONTAINSTEXT, OPERATORS.EQ].includes(operator)) {
+        throw new AttributeError(`Invalid operator (${operator}). Keyword search only accepts = or CONTAINSTEXT`);
+    }
     if (!model) {
         throw new AttributeError('Invalid target class');
     }
@@ -183,9 +186,11 @@ const keywordSearch = ({
     }
 
     // remove any duplicate words
-    const wordList = keyword.split(/\s+/).map(word => word.trim().toLowerCase());
+    const wordList = operator === OPERATORS.CONTAINSTEXT
+        ? keyword.split(/\s+/).map(word => word.trim().toLowerCase())
+        : [keyword.trim().toLowerCase()];
 
-    if (wordList.some(word => word.length < MIN_WORD_SIZE)) {
+    if (operator === OPERATORS.CONTAINSTEXT && wordList.some(word => word.length < MIN_WORD_SIZE)) {
         const shortWords = wordList.filter(word => word.length < MIN_WORD_SIZE);
         throw new AttributeError(
             `Keywords (${shortWords.join(', ')}) are too short to query with. Must be at least ${
@@ -209,12 +214,12 @@ const keywordSearch = ({
 
             if (props.length === 1) {
                 const [prop] = props;
-                clause = { [prop]: word, operator: OPERATORS.CONTAINSTEXT };
+                clause = { [prop]: word, operator };
             } else {
                 clause = { OR: [] };
 
                 for (const prop of props) {
-                    clause.OR.push({ [prop]: word, operator: OPERATORS.CONTAINSTEXT });
+                    clause.OR.push({ [prop]: word, operator });
                 }
             }
             filters.push(clause);
@@ -225,19 +230,27 @@ const keywordSearch = ({
     if (model.inherits.includes('Ontology') || model.name === 'Ontology') {
         return Subquery.parse({
             ...opt,
-            target: model.name,
-            filters: subContainsClause(['sourceId', 'name']),
+            queryType: 'similarTo',
+            target: {
+                target: model.name,
+                filters: subContainsClause(['sourceId', 'name']),
+            },
         }).toString(paramIndex, prefix);
     } if (model.name === 'Statement') {
         const { query: subquery, params } = Subquery.parse({
             ...opt,
-            target: 'Ontology',
-            filters: subContainsClause(['sourceId', 'name']),
+            queryType: 'similarTo',
+            target: {
+                target: 'Ontology',
+                filters: subContainsClause(['sourceId', 'name']),
+            },
         }).toString(paramIndex, prefix);
 
         const query = `SELECT expand($statements)
             LET $ont = (${subquery}),
-                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))),
+                $variants = (TRAVERSE both('Infers') FROM (
+                    SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
+                ) MAXDEPTH ${MAX_NEIGHBORS}),
                 $implicable = (SELECT expand(UNIONALL($ont, $variants))),
                 $statements = (SELECT * FROM Statement
                     WHERE
@@ -251,14 +264,19 @@ const keywordSearch = ({
     } if (model.inherits.includes('Variant') || model.name === 'Variant') {
         const { query: subquery, params } = Subquery.parse({
             ...opt,
-            target: 'Ontology',
-            filters: subContainsClause(['sourceId', 'name']),
+            queryType: 'similarTo',
+            target: {
+                target: 'Ontology',
+                filters: subContainsClause(['sourceId', 'name']),
+            },
         }).toString(paramIndex, prefix);
 
         const query = `SELECT expand($variants)
             LET $ont = (${subquery}),
-                $variants = (SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
-        )`;
+                $variants = (TRAVERSE both('Infers') FROM (
+                    SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
+                ) MAXDEPTH ${MAX_NEIGHBORS})
+        `;
         return { query, params };
     }
     return Subquery.parse({ ...opt, target: model.name, filters: subContainsClause(['name']) }).toString(paramIndex, prefix);
