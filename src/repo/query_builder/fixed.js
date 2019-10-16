@@ -230,14 +230,20 @@ const keywordSearch = ({
     if (model.inherits.includes('Ontology') || model.name === 'Ontology') {
         return Subquery.parse({
             ...opt,
-            target: model.name,
-            filters: subContainsClause(['sourceId', 'name']),
+            queryType: 'similarTo',
+            target: {
+                target: model.name,
+                filters: subContainsClause(['sourceId', 'name']),
+            },
         }).toString(paramIndex, prefix);
     } if (model.name === 'Statement') {
         const { query: subquery, params } = Subquery.parse({
             ...opt,
-            target: 'Ontology',
-            filters: subContainsClause(['sourceId', 'name']),
+            queryType: 'similarTo',
+            target: {
+                target: 'Ontology',
+                filters: subContainsClause(['sourceId', 'name']),
+            },
         }).toString(paramIndex, prefix);
 
         const query = `SELECT expand($statements)
@@ -256,8 +262,11 @@ const keywordSearch = ({
     } if (model.inherits.includes('Variant') || model.name === 'Variant') {
         const { query: subquery, params } = Subquery.parse({
             ...opt,
-            target: 'Ontology',
-            filters: subContainsClause(['sourceId', 'name']),
+            queryType: 'similarTo',
+            target: {
+                target: 'Ontology',
+                filters: subContainsClause(['sourceId', 'name']),
+            },
         }).toString(paramIndex, prefix);
 
         const query = `SELECT expand($variants)
