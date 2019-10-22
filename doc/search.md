@@ -142,7 +142,7 @@ edges which relate the result to putative equivalent records
     "target": "Variant",
     "filters": {"OR": [
         {"reference1": ["#3:4", "#4:5"], "operator": "IN"},
-        {"reference1": ["#3:4", "#4:5"], "operator": "IN"}
+        {"reference2": ["#3:4", "#4:5"], "operator": "IN"}
     ]}
 }
 ```
@@ -181,7 +181,7 @@ variants you are searching for).
                 "operator": "IN"
             },
             {
-                "reference1": {
+                "reference2": {
                     "queryType": "similarTo",
                     "target": "Feature",
                     "filters": {
