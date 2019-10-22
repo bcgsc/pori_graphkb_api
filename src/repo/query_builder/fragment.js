@@ -265,12 +265,12 @@ class Clause {
 
     static parse(model, content) {
         if (Object.keys(content).length !== 1) {
-            throw new AttributeError('Filter clauses must be an object with a single AND or OR key');
+            throw new AttributeError(`Filter clauses must be an object with a single AND or OR key. Found multiple keys (${Object.keys(content)})`);
         }
         const [operator] = Object.keys(content);
 
         if (!['AND', 'OR'].includes(operator)) {
-            throw new AttributeError('Filter clauses must be an object with a single AND or OR key');
+            throw new AttributeError(`Filter clauses must be an object with a single AND or OR key. Found ${operator}`);
         }
         if (!Array.isArray(content[operator])) {
             throw new AttributeError('Expected filter clause value to be an array');
