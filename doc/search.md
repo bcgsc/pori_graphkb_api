@@ -49,7 +49,9 @@ which take a series of custom inputs
 
 ## Operators
 
-These are similar to the operators for OrientDB (Since this is the backend DB used). However they are
+These are similar to the operators for [OrientDB](http://orientdb.com/docs/3.0.x/sql/SQL-Where.html#operators) (Since this is the backend DB used).
+
+However they are
 also summarized below for ease of use
 
 ### Comparing two iterables
