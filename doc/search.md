@@ -7,6 +7,9 @@ All queries use the `/query` endpoint.
   - [Clause](#clause)
   - [Comparison](#comparison)
   - [Fixed SubQuery](#fixed-subquery)
+- [Operators](#operators)
+  - [Comparing two iterables](#comparing-two-iterables)
+  - [Comparing a single record to an Iterable](#comparing-a-single-record-to-an-iterable)
 - [Examples](#examples)
   - [Returning Specific Properties](#returning-specific-properties)
   - [Select a list of Records by ID](#select-a-list-of-records-by-id)
@@ -42,6 +45,29 @@ as the value to compare to. More complicated examples may also include the opera
 While the above three patterns allow for a large amount of flexiblility, there may be additional things
 the user wishes to query for. For this there are the fixed sub queries. These are pre-determined queries
 which take a series of custom inputs
+
+
+## Operators
+
+These are similar to the operators for OrientDB (Since this is the backend DB used). However they are
+also summarized below for ease of use
+
+### Comparing two iterables
+
+This is useful in particular for statements where they have two direct properties (evidence, conditions)
+which are iterables. The following operators may be used here
+
+| Operator    | Description                                                                        |
+| ----------- | ---------------------------------------------------------------------------------- |
+| CONTAINSANY | Check if some iterable property has records in common with a subquery/record list  |
+| CONTAINSALL | Check if some iterable property contains all the records in a subquery/record list |
+| =           | Check if the 2 iterables have exactly the same records                             |
+
+### Comparing a single record to an Iterable
+
+| Operator | Description                                         |
+| -------- | --------------------------------------------------- |
+| IN       | Check if this record is in the subquery/record list |
 
 
 ## Examples
