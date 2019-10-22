@@ -148,12 +148,14 @@ this effect. This can either be done in two queries: first for the gene
 ```json
 {
     "queryType": "similarTo",
-    "target": "Feature",
-    "filters": {
-        "AND": [
-            {"biotype": "gene"},
-            {"OR": [{"name": "kras"}, {"sourceId": "kras"}]}
-        ]
+    "target": {
+        "target": "Feature",
+        "filters": {
+            "AND": [
+                {"biotype": "gene"},
+                {"OR": [{"name": "kras"}, {"sourceId": "kras"}]}
+            ]
+        }
     }
 }
 ```
