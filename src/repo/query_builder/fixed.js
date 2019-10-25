@@ -99,7 +99,7 @@ RETURN DISTINCT $pathElements)`;
 
 
 const similarTo = ({
-    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, ...rest
+    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, matchType, ...rest
 } = {}) => {
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
     let initialQuery,
@@ -127,10 +127,19 @@ const similarTo = ({
         $${prefix}Result = (${disambiguationClause(`(SELECT expand($${prefix}Union))`)})`;
 
     // filter duplicates and re-expand
-    const query = `SELECT expand(rid) FROM (SELECT distinct(@rid) as rid FROM (${innerQuery}))`;
+    let query = `SELECT expand(rid) FROM (SELECT distinct(@rid) as rid FROM (${innerQuery}))`;
 
-    if (!history) {
-        return { query: `SELECT * FROM (${query}) WHERE deletedAt IS NULL`, params };
+    if (matchType) {
+        if (!schema[matchType]) {
+            throw new AttributeError(`Did not recognize type matchType (${matchType})`);
+        }
+        if (!history) {
+            query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL AND @this INSTANCEOF ${schema[matchType].name}`;
+        } else {
+            query = `SELECT * FROM (${query}) WHERE @this INSTANCEOF ${schema[matchType].name}`;
+        }
+    } else if (!history) {
+        query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL`;
     }
     return { query, params };
 };
@@ -235,6 +244,7 @@ const keywordSearch = ({
                 target: model.name,
                 filters: subContainsClause(['sourceId', 'name']),
             },
+            matchType: model.name,
         }).toString(paramIndex, prefix);
     } if (model.name === 'Statement') {
         const { query: subquery, params } = Subquery.parse({
