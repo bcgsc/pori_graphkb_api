@@ -86,7 +86,7 @@ class ClassModel extends kbSchema.ClassModel {
 
                 if (graceful) {
                     try {
-                        const curr = await db.index.get(index.name);
+                        const curr = await db.index.get(index.name, true); // force refresh of cache
 
                         if (curr) {
                             exists = true;
@@ -94,9 +94,11 @@ class ClassModel extends kbSchema.ClassModel {
                     } catch (err) {}
 
                     if (exists) {
+                        logger.info(`index exists ${index.name}`);
                         return;
                     }
                 }
+                logger.info(`creating index ${index.name}`);
                 await db.index.create(index);
             };
             await Promise.all(
