@@ -144,7 +144,9 @@ class Comparison {
         let value = rest[name];
 
         const properties = getQueryableProps(model);
-        const prop = properties[name];
+        const prop = name === '@this'
+            ? { choices: Object.values(schema).map(m => m.name) }
+            : properties[name];
 
         if (!prop) {
             throw new AttributeError(`The property (${name}) does not exist on the model (${model.name})`);
@@ -187,9 +189,13 @@ class Comparison {
             );
         }
 
+        if (name === '@this' && operator !== OPERATORS.INSTANCEOF) {
+            throw new AttributeError(`Only the INSTANCEOF operator is valid to use with @this (${operator})`);
+        }
+
         const result = new this({
             name,
-            prop: properties[name],
+            prop,
             value,
             operator,
             negate,
@@ -233,6 +239,8 @@ class Comparison {
                     Array.from(Object.keys(params), p => `:${p}`).join(', ')
                 }]`;
             }
+        } else if (attr === '@this') {
+            query = `${attr} ${this.operator} ${this.value}`;
         } else {
             const pname = `${PARAM_PREFIX}${paramIndex}`;
 

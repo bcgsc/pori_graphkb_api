@@ -15,13 +15,14 @@ const { checkClassPermissions } = require('./../middleware/auth');
 const { parse } = require('./../repo/query_builder');
 
 const { checkStandardOptions } = require('../repo/query_builder/util');
+const { OPERATORS } = require('../repo/query_builder/constants');
 
 
 const activeRidQuery = (model, rid, opt = {}) => {
     const query = parse({
         ...opt,
         target: [rid],
-        filters: { '@class': model.name },
+        filters: { '@this': model.name, operator: OPERATORS.INSTANCEOF },
         history: false,
     });
     return query;
