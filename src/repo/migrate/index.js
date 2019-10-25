@@ -255,6 +255,18 @@ const migrate2to3From6xto0x = async (db) => {
 };
 
 
+const migrate3From0xto1x = async (db) => {
+    // remake any missing indices (were renamed here)
+    await ClassModel.create(SCHEMA_DEFN.Statement, db, { properties: false, indices: true, graceful: true });
+
+    // add source.sort property
+    logger.info('Adding Source.sort property');
+    const { sort } = SCHEMA_DEFN.Source.properties;
+    const source = await db.class.get(SCHEMA_DEFN.Source.name);
+    await Property.create(sort, source);
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -298,6 +310,7 @@ const migrate = async (db, opt = {}) => {
         ['2.4.0', '2.5.0', migrate2from4xto5x],
         ['2.5.0', '2.6.0', migrate2from5xto6x],
         ['2.6.0', '3.0.0', migrate2to3From6xto0x],
+        ['3.0.0', '3.1.0', migrate3From0xto1x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
