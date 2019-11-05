@@ -53,10 +53,10 @@ class WrapperQuery {
 
         let statement = query;
 
-        if (projection !== '*') {
-            statement = `SELECT ${projection} FROM (${query})`;
-        } else if (count) {
+        if (count) {
             statement = `SELECT count(*) AS count FROM (${query})`;
+        } else if (projection !== '*') {
+            statement = `SELECT ${projection} FROM (${query})`;
         }
 
         if (!count) {
