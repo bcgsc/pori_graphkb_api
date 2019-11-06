@@ -114,7 +114,9 @@ const create = async (db, opt) => {
 
     if (model.name === 'Statement') {
         if (!record.conditions.map(c => c.toString()).includes(record.subject.toString())) {
-            throw new AttributeError('Statement subject must also be present in the record conditions');
+            record.conditions.push(record.subject);
+            // TODO: handle this on the front-end instead of the API
+            // throw new AttributeError('Statement subject must also be present in the record conditions');
         }
     }
 
