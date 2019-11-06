@@ -8,37 +8,37 @@ module.exports = {
     collectCoverage: true,
     coverageDirectory: 'coverage',
     collectCoverageFrom: [
-        'app/**.js',
-        'app/**/*.js',
-        'app/**/**/*.js'
+        'src/**.js',
+        'src/**/*.js',
+        'src/**/**/*.js',
     ],
     coverageReporters: [
         'clover',
         'text',
         'json',
         'json-summary',
-        'lcov'
+        'lcov',
     ],
     reporters: [
         'default',
         [
             'jest-junit',
             {
-                output: '<rootDir>/coverage/junit.xml'
-            }
-        ]
+                output: '<rootDir>/coverage/junit.xml',
+            },
+        ],
     ],
     testRunner: 'jest-circus/runner',
     testRegex: 'test/.*\\.js',
     testEnvironment: 'node',
     testPathIgnorePatterns: [
         '/node_modules/',
-        'test/repo/query/util.js',
+        'test/repo/query_builder/util.js',
         'test/util.js',
-        'test/db_integration/util.js'
+        'test/db_integration/util.js',
     ],
     moduleFileExtensions: [
         'js',
-        'json'
-    ]
+        'json',
+    ],
 };
