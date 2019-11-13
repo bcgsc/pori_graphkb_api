@@ -137,7 +137,14 @@ const checkStandardOptions = (opt) => {
     return { ...opt, ...options };
 };
 
-
+/**
+ * Convert a list of property names to a nested object representing the projection of
+ * these properties. Validates the property list against the input model
+ *
+ * @param {ClassModel} model the model to validate the property list against
+ * @param {Array.<string>} properties the list of properties to be parsed/validated
+ * @param {boolean} allowDirectEmbedded flag to indicate if an error should be throw for embedded props without a subprop selection
+ */
 const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
     const projections = {};
     const propModels = getQueryableProps(model, allowDirectEmbedded);
