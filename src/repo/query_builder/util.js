@@ -40,11 +40,15 @@ const castBoolean = (value) => {
 };
 
 
-const getQueryableProps = (model) => {
+const getQueryableProps = (model, includeEmbedded = false) => {
     const allProps = {};
 
     for (const prop of Object.values(model.queryProperties)) {
         if (prop.linkedClass && !prop.iterable && prop.type.includes('embedded')) {
+            if (includeEmbedded) {
+                allProps[prop.name] = prop;
+            }
+
             for (const [subKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass))) {
                 allProps[`${prop.name}.${subKey}`] = subprop;
             }
@@ -134,9 +138,9 @@ const checkStandardOptions = (opt) => {
 };
 
 
-const parsePropertyList = (model, properties) => {
+const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
     const projections = {};
-    const propModels = getQueryableProps(model);
+    const propModels = getQueryableProps(model, allowDirectEmbedded);
 
     for (const prop of properties) {
         const [directProp] = prop.trim().split('.');
@@ -144,7 +148,7 @@ const parsePropertyList = (model, properties) => {
         projections[directProp] = projections[directProp] || {};
 
         if (!propModel) {
-            throw new AttributeError(`property ${directProp} does not exist on the model ${model.name}`);
+            throw new AttributeError(`property ${directProp} does not exist or cannot be accessed on the model ${model.name}`);
         }
 
         const nestedProps = prop.trim().slice(directProp.length + 1);
@@ -162,8 +166,8 @@ const parsePropertyList = (model, properties) => {
 };
 
 
-const propsToProjection = (model, properties) => {
-    const projection = parsePropertyList(model, properties);
+const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
+    const projection = parsePropertyList(model, properties, allowDirectEmbedded);
 
     const convertToString = (obj) => {
         const keyList = [];
