@@ -104,7 +104,7 @@ class WrapperQuery {
         let projection = '*';
 
         if (returnProperties) {
-            projection = propsToProjection(model || schema.V, returnProperties);
+            projection = propsToProjection(model || schema.V, returnProperties, true);
         } else if (neighbors) {
             projection = nestedProjection(neighbors, !history);
         }
