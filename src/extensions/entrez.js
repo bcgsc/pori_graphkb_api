@@ -11,13 +11,40 @@ const ajv = new Ajv();
 
 const publicationSpec = ajv.compile({
     type: 'object',
-    required: ['uid', 'title', 'fulljournalname'],
+    required: ['uid', 'fulljournalname', 'sorttitle'],
     properties: {
         uid: { type: 'string', pattern: '^\\d+$' },
         title: { type: 'string' },
+        sorttitle: { type: 'string' }, // use the sort title since normalized
         fulljournalname: { type: 'string' },
         sortpubdate: { type: 'string' },
         sortdate: { type: 'string' },
+        volume: { type: 'string' },
+        issue: { type: 'string' },
+        pages: { type: 'string' },
+        // create the authorList string
+        authors: {
+            type: 'array',
+            items: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                    name: { type: 'string' },
+                },
+            },
+        },
+        // get the doi
+        articleids: {
+            type: 'array',
+            items: {
+                type: 'object',
+                required: ['idtype', 'value'],
+                properties: {
+                    idtype: { type: 'string' },
+                    value: { type: 'string' },
+                },
+            },
+        },
     },
 });
 
@@ -58,9 +85,29 @@ const parsePubmedRecord = (record) => {
     }
     const parsed = {
         sourceId: record.uid,
-        name: record.title,
+        name: record.sorttitle,
         journalName: record.fulljournalname,
     };
+
+    for (const key of ['issue', 'volume', 'pages']) {
+        if (record[key]) {
+            parsed[key] = record[key];
+        }
+    }
+
+    if (record.authors) {
+        const authorList = record.authors.map(({ name }) => name).join(', ');
+        parsed.authors = authorList;
+    }
+
+    if (record.articleids) {
+        for (const { idtype, value } of record.articleids) {
+            if (idtype === 'doi') {
+                parsed.doi = value;
+                break;
+            }
+        }
+    }
 
     // sortpubdate: '1992/06/01 00:00'
     if (record.sortpubdate) {
@@ -106,4 +153,5 @@ const fetchRecord = async (db, id) => {
 
 module.exports = {
     fetchRecord,
+    parsePubmedRecord,
 };
