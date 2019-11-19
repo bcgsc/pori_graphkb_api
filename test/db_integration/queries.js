@@ -93,8 +93,8 @@ describeWithAuth('query builder', () => {
         });
 
         test('with source subgrouping', async () => {
-            const source = db.records.source['@rid'];
-            const counts = await selectCounts(session, { classList: ['Disease', 'Source'], groupBySource: true });
+            const source = db.records.source.displayName;
+            const counts = await selectCounts(session, { classList: ['Disease', 'Source'], groupBy: 'source' });
             expect(counts).toEqual({ Disease: { [source]: 3 }, Source: { null: 1 } });
         });
     });
