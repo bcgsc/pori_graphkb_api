@@ -274,10 +274,15 @@ describeWithAuth('api crud routes', () => {
             expect(res.body).toEqual({
                 result: {
                     sourceId: '30016509',
-                    name: 'MAVIS: merging, annotation, validation, and illustration of structural variants.',
+                    name: 'mavis merging annotation validation and illustration of structural variants',
                     journalName: 'Bioinformatics (Oxford, England)',
                     year: 2019,
                     displayName: 'pmid:30016509',
+                    doi: '10.1093/bioinformatics/bty621',
+                    volume: '35',
+                    issue: '3',
+                    pages: '515-517',
+                    authors: 'Reisle C, Mungall KL, Choo C, Paulino D, Bleile DW, Muhammadzadeh A, Mungall AJ, Moore RA, Shlafman I, Coope R, Pleasance S, Ma Y, Jones SJM',
                 },
             });
         });
