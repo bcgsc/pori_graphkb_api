@@ -2,7 +2,7 @@
 const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 
-const { error: { AttributeError }, schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError }, schema: { schema }, schema: schemaDefn } = require('@bcgsc/knowledgebase-schema');
 const { variant: { parse: variantParser }, error: { ParsingError } } = require('@bcgsc/knowledgebase-parser');
 
 const openapi = require('./openapi');
@@ -16,9 +16,12 @@ const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
 
 
+const parseClassListQueryParam = param => param.split(',').map(cls => schemaDefn.get(cls).name);
+
+
 const addStatsRoute = (app) => {
     // add the stats route
-    const classList = Object.keys(schema).filter(
+    const defaultClassList = Object.keys(schema).filter(
         name => !schema[name].isAbstract
             && schema[name].subclasses.length === 0 // terminal classes only
             && !schema[name].embedded,
@@ -33,8 +36,12 @@ const addStatsRoute = (app) => {
         }
 
         try {
-            const { groupBySource = false, history = false } = checkStandardOptions(req.query);
-            const stats = await selectCounts(session, { groupBySource, history, classList });
+            const { groupBy = '', history = false } = checkStandardOptions(req.query);
+
+            const classList = req.query.classList
+                ? parseClassListQueryParam(req.query.classList)
+                : defaultClassList;
+            const stats = await selectCounts(session, { groupBy, history, classList });
             session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({ result: stats }));
         } catch (err) {
