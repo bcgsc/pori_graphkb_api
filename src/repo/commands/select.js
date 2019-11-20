@@ -6,7 +6,7 @@
 /**
  * @ignore
  */
-const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema }, error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 const { variant: { VariantNotation } } = require('@bcgsc/knowledgebase-parser');
 
 const { logger } = require('../logging');
@@ -23,35 +23,44 @@ const { wrapIfTypeError } = require('./util');
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
 
+const groupableParams = Object.values(schema.V.queryProperties)
+    .filter(prop => prop.linkedClass && (
+        Object.keys(prop.linkedClass.queryProperties).includes('displayName')
+    ))
+    .map(prop => prop.name);
 
 /**
  * @param {orientjs.Db} db the database connection object
  * @param {Object} opt
  * @param {Array.<string>} opt.classList list of classes to gather stats for. Defaults to all
- * @param {Boolean} [opt.=true] ignore deleted records
- * @param {Boolean} [opt.groupBySource=false] group by class and source instead of class only
+ * @param {Boolean} [opt.history=true] ignore deleted records
+ * @param {Boolean} [opt.groupBy=''] linked property to group the results by (must be a class with the displayName property)
  */
 const selectCounts = async (db, opt = {}) => {
     const {
-        groupBySource = false,
+        groupBy = '',
         history = false,
         classList = Object.keys(schema),
     } = opt;
+
+    if (groupBy && !groupableParams.includes(groupBy)) {
+        throw new AttributeError(`Invalid groupBy parameter (${groupBy}) must be one of (${groupableParams.join(',')})`);
+    }
 
     const tempCounts = await Promise.all(classList.map(
         async (cls) => {
             let statement;
 
-            if (!groupBySource) {
+            if (!groupBy) {
                 statement = `SELECT count(*) as cnt FROM ${cls}`;
 
                 if (!history) {
                     statement = `${statement} WHERE deletedAt IS NULL`;
                 }
             } else if (!history) {
-                statement = `SELECT source, count(*) as cnt FROM ${cls} WHERE deletedAt IS NULL GROUP BY source`;
+                statement = `SELECT ${groupBy}.displayName as ${groupBy}, count(*) as cnt FROM ${cls} WHERE deletedAt IS NULL GROUP BY ${groupBy}`;
             } else {
-                statement = `SELECT source, count(*) as cnt FROM ${cls} GROUP BY source`;
+                statement = `SELECT ${groupBy}.displayName as ${groupBy}, count(*) as cnt FROM ${cls} GROUP BY ${groupBy}`;
             }
             logger.log('debug', statement);
             return db.query(statement).all();
@@ -65,8 +74,8 @@ const selectCounts = async (db, opt = {}) => {
         counts[name] = {};
 
         for (const record of tempCounts[i]) {
-            if (groupBySource) {
-                counts[name][record.source || null] = record.cnt;
+            if (groupBy) {
+                counts[name][record[groupBy] || null] = record.cnt;
             } else {
                 counts[name] = record.cnt;
             }
@@ -220,4 +229,5 @@ module.exports = {
     select,
     selectCounts,
     fetchDisplayName,
+    groupableParams,
 };
