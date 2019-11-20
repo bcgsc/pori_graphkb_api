@@ -31,6 +31,8 @@ module.exports = {
         GKB_DB_CREATE: false,
         GKB_LOG_MAX_FILES: 14,
         GKB_DB_NAME: 'production-sync-staging',
+        GKB_KEYCLOAK_KEY_FILE: 'config/keys/keycloak.key',
+        GKB_KEYCLOAK_URI: 'https://keycloak.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
         GKB_CORS_ORIGIN: 'https://graphkbstaging.bcgsc.ca',
     },
     local: {
