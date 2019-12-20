@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc/knowledgebase-api",
   "main": "server.js",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "repository": {
     "type": "git",
     "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
@@ -40,8 +40,8 @@
     "chai": "^3.5.0",
     "chai-http": "^4.3.0",
     "docdash": "^1.0.0",
-    "docsify": "^4.9.4",
-    "docsify-cli": "^4.3.0",
+    "docsify": "^4.10.2",
+    "docsify-cli": "^4.4.0",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.0.0",
     "eslint-plugin-import": "^2.13.0",
@@ -60,6 +60,7 @@
   "scripts": {
     "start": "NODE_ENV=development node server.js",
     "start:prod": "NODE_ENV=production node server.js",
+    "start:staging": "NODE_ENV=production node server.js",
     "start:dev": "NODE_ENV=development node server.js",
     "start:test": "NODE_ENV=test node server.js",
     "start:local": "NODE_ENV=local node server.js",

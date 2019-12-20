@@ -2,6 +2,8 @@
  * Route definition components (components/routes) that cannot be auto generated only from the schema
  * @module app/routes/openapi/routes
  */
+const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { groupableParams } = require('../../repo/commands/select');
 
 
 const POST_TOKEN = {
@@ -140,9 +142,21 @@ const GET_STATS = {
         { $ref: '#/components/parameters/history' },
         {
             in: 'query',
-            name: 'groupBySource',
-            schema: { type: 'boolean', default: false },
-            description: 'Count by class and source versus only by class',
+            name: 'groupBy',
+            schema: {
+                type: 'string', default: '', enum: groupableParams, example: 'source',
+            },
+            description: 'Group counts by this property',
+        },
+        {
+            in: 'query',
+            name: 'classList',
+            schema: {
+                type: 'string',
+                pattern: `^(${Object.values(schema).filter(model => !model.isAbstract).map(model => model.name).join('|')})+$`,
+                example: 'Statement',
+            },
+            description: 'List of db classes to create counts for',
         },
     ],
     responses: {
