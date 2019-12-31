@@ -150,9 +150,9 @@ const SubQuery = {
             ],
         },
         target: {
-            anyOf: [
+            oneOf: [
                 { type: 'string', enum: NODE_MODEL_NAMES },
-                { type: 'array', items: { $ref: `${PREFIX}/RecordId` } },
+                { type: 'array', items: { $ref: `${PREFIX}/RecordId` }, minItems: 1 },
                 { $ref: `${PREFIX}/SubQuery` },
                 { $ref: `${PREFIX}/FixedSubQuery` },
             ],
@@ -200,7 +200,14 @@ const SimilarityQuery = {
             },
             description: 'The edge classes to follow',
         },
-        target: { type: 'string', enum: NODE_MODEL_NAMES },
+        target: {
+            oneOf: [
+                { type: 'string', enum: NODE_MODEL_NAMES },
+                { type: 'array', items: { $ref: `${PREFIX}/RecordId` }, minItems: 1 },
+                { $ref: `${PREFIX}/SubQuery` },
+                { $ref: `${PREFIX}/FixedSubQuery` },
+            ],
+        },
     },
 };
 
@@ -208,7 +215,7 @@ const SimilarityQuery = {
 const TreeQuery = {
     type: 'object',
     description: 'Query for a given vertex and then follow edges for a given direction as long as possible',
-    required: ['queryType', 'target', 'filters'],
+    required: ['queryType', 'target'],
     properties: {
         queryType: {
             type: 'string', enum: ['ancestors', 'descendants'], description: 'The query type',
@@ -221,7 +228,12 @@ const TreeQuery = {
             },
             description: 'The edge classes to follow',
         },
-        target: { type: 'string', enum: NODE_MODEL_NAMES },
+        target: {
+            oneOf: [
+                { type: 'string', enum: NODE_MODEL_NAMES },
+                { type: 'array', items: { $ref: `${PREFIX}/RecordId` }, minItems: 1 },
+            ],
+        },
         filters: {
             anyOf: [
                 { $ref: `${PREFIX}/Clause` },
