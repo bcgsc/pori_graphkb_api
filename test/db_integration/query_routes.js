@@ -127,7 +127,7 @@ describeWithAuth('api read-only routes', () => {
             });
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
-            expect(response.body).toEqual({ result: [{ count: 2 }] });
+            expect(response.body).toEqual({ result: [{ count: 2 }], metadata: { records: 1 } });
         });
 
         test('get from related variant reference', async () => {
@@ -221,7 +221,7 @@ describeWithAuth('api read-only routes', () => {
             });
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
-            expect(response.body).toEqual({ result: [{ count: 2 }] });
+            expect(response.body).toEqual({ result: [{ count: 2 }], metadata: { records: 1 } });
         });
 
         test('apply skip', async () => {
