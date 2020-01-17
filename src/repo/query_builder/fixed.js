@@ -196,6 +196,10 @@ const keywordSearch = ({
         throw new AttributeError(`Cannot keyword search edge classes (${target})`);
     }
 
+    if (!keyword) {
+        throw new AttributeError('Missing required keyword parameter');
+    }
+
     // remove any duplicate words
     const wordList = operator === OPERATORS.CONTAINSTEXT
         ? keyword.split(/\s+/).map(word => word.trim().toLowerCase())
