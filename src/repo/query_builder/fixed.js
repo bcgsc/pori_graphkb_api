@@ -117,12 +117,14 @@ const similarTo = ({
         params = { ...initialParams };
     }
 
+    const treeEdges = ['SubclassOf', 'ElementOf'].map(e => `'${e}'`).join(', ');
+
     const disambiguationClause = cond => `TRAVERSE both(${edges.map(e => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
     // disambiguate
     const innerQuery = `SELECT expand($${prefix}Result)
         LET $${prefix}Initial = (${disambiguationClause(initialQuery)}),
-        $${prefix}Ancestors = (TRAVERSE in('SubClassOf') FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
-        $${prefix}Descendants = (TRAVERSE out('SubClassOf') FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
+        $${prefix}Ancestors = (TRAVERSE in(${treeEdges}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
+        $${prefix}Descendants = (TRAVERSE out(${treeEdges}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
         $${prefix}Union = (SELECT expand(UNIONALL($${prefix}Ancestors, $${prefix}Descendants))),
         $${prefix}Result = (${disambiguationClause(`(SELECT expand($${prefix}Union))`)})`;
 
@@ -192,6 +194,10 @@ const keywordSearch = ({
     }
     if (model.isEdge) {
         throw new AttributeError(`Cannot keyword search edge classes (${target})`);
+    }
+
+    if (!keyword) {
+        throw new AttributeError('Missing required keyword parameter');
     }
 
     // remove any duplicate words

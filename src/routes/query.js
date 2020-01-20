@@ -52,7 +52,7 @@ const addQueryRoute = (app) => {
                     throw new NoRecordFoundError(`expected ${query.expectedCount()} records but only found ${result.length}`);
                 }
                 session.close();
-                return res.json(jc.decycle({ result }));
+                return res.json(jc.decycle({ metadata: { records: result.length }, result }));
             } catch (err) {
                 session.close();
                 logger.log('debug', err);
