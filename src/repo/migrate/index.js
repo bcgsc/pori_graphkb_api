@@ -267,6 +267,36 @@ const migrate3From0xto1x = async (db) => {
 };
 
 
+const migrate3From1xto2x = async (db) => {
+    // convert evidence level to a linkset
+    logger.info('Converting Statement.evidenceLevel to a linkset instead of a link');
+
+    // create temp property
+    const tempProp = 'tempEvidenceLevels';
+    logger.info(`Adding Statement.${tempProp} property`);
+    const { evidenceLevel } = SCHEMA_DEFN.Statement.properties;
+    const Statement = await db.class.get(SCHEMA_DEFN.Statement.name);
+    await Property.create({ ...evidenceLevel, name: tempProp }, Statement);
+
+    logger.info('Copying the data into the new property');
+    await db.command(`UPDATE Statement SET ${tempProp} = [evidenceLevel] WHERE evidenceLevel IS NOT NULL`);
+    // drop the index on evidence level
+    logger.info('Drop the index on the current property');
+    await db.command('DROP INDEX Statement.evidenceLevel');
+    // delete the property
+    logger.info('Dropping the current property');
+    await db.command('UPDATE Statement REMOVE evidenceLevel');
+    await db.command('DROP Property Statement.evidenceLevel FORCE'); // FORCE = also drop indices
+    // rename the temp property to the old name
+    await db.command(`ALTER PROPERTY Statement.${tempProp} NAME evidenceLevel`);
+    // re-build the indices
+    logger.info('Indexing Statement.evidenceLevel');
+    await db.index.create(
+        SCHEMA_DEFN.Statement.indices.find(item => item.name === 'Statement.evidenceLevel'),
+    );
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -311,6 +341,7 @@ const migrate = async (db, opt = {}) => {
         ['2.5.0', '2.6.0', migrate2from5xto6x],
         ['2.6.0', '3.0.0', migrate2to3From6xto0x],
         ['3.0.0', '3.1.0', migrate3From0xto1x],
+        ['3.1.0', '3.2.0', migrate3From1xto2x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
