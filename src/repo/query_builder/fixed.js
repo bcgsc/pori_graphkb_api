@@ -89,15 +89,18 @@ RETURN DISTINCT $pathElements)`;
 
 
 const similarTo = ({
-    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = ['SubclassOf', 'ElementOf'], matchType, ...rest
+    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = TREE_EDGES, matchType, ...rest
 } = {}) => {
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
     let initialQuery,
         params = {};
 
-    if (treeEdges.some(edge => !schema[edge]) || edges.some(edge => !schema[edge])) {
-        throw new AttributeError('unrecognized edge class');
+    for (const edge of [...treeEdges, ...edges]) {
+        if (!schema[edge]) {
+            throw new AttributeError(`unrecognized edge class (${edge})`);
+        }
     }
+
     if (!edges.length) {
         throw new AttributeError('Must specify 1 or more edge types to follow');
     }
