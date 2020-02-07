@@ -61,7 +61,7 @@ const addParserRoute = (app) => {
         const { content, requireFeatures = true, ...rest } = req.body;
 
         if (Object.keys(rest).length) {
-            throw new AttributeError(`Unexpected attributes: ${Object.keys(rest).join(', ')}`);
+            return next(new AttributeError(`Unexpected attributes: ${Object.keys(rest).join(', ')}`));
         }
 
         try {
