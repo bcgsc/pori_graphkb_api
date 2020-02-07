@@ -10,19 +10,9 @@ const { util: { castToRID }, error: { AttributeError }, schema: { schema } } = r
 const { quoteWrap } = require('./../util');
 
 const {
-    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE,
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE, SIMILARITY_EDGES, TREE_EDGES,
 } = require('./constants');
 const { castRangeInt } = require('./util');
-
-
-const SIMILARITY_EDGES = [
-    'AliasOf',
-    'ElementOf',
-    'CrossReferenceOf',
-    'DeprecatedBy',
-    'GeneralizationOf',
-    'Infers',
-];
 
 
 /**

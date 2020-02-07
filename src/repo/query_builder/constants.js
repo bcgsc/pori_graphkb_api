@@ -60,7 +60,26 @@ const OPERATORS = {
 
 const DIRECTIONS = ['out', 'in', 'both'];
 
+const TREE_EDGES = ['SubClassOf', 'ElementOf'];
+
+const SIMILARITY_EDGES = [
+    'AliasOf',
+    'CrossReferenceOf',
+    'DeprecatedBy',
+    'GeneralizationOf',
+    'Infers',
+];
+
 
 module.exports = {
-    MAX_LIMIT, MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, OPERATORS, PARAM_PREFIX, DEFAULT_NEIGHBORS: 3, MIN_WORD_SIZE: 3, DIRECTIONS,
+    DEFAULT_NEIGHBORS: 3,
+    DIRECTIONS,
+    MAX_LIMIT,
+    MAX_NEIGHBORS,
+    MAX_TRAVEL_DEPTH,
+    MIN_WORD_SIZE: 3,
+    OPERATORS,
+    PARAM_PREFIX,
+    SIMILARITY_EDGES,
+    TREE_EDGES,
 };
