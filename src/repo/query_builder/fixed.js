@@ -10,19 +10,9 @@ const { util: { castToRID }, error: { AttributeError }, schema: { schema } } = r
 const { quoteWrap } = require('./../util');
 
 const {
-    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE,
+    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE, SIMILARITY_EDGES, TREE_EDGES,
 } = require('./constants');
 const { castRangeInt } = require('./util');
-
-
-const SIMILARITY_EDGES = [
-    'AliasOf',
-    'ElementOf',
-    'CrossReferenceOf',
-    'DeprecatedBy',
-    'GeneralizationOf',
-    'Infers',
-];
 
 
 /**
@@ -99,12 +89,21 @@ RETURN DISTINCT $pathElements)`;
 
 
 const similarTo = ({
-    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, matchType, ...rest
+    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = TREE_EDGES, matchType, ...rest
 } = {}) => {
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
     let initialQuery,
         params = {};
 
+    for (const edge of [...treeEdges, ...edges]) {
+        if (!schema[edge]) {
+            throw new AttributeError(`unrecognized edge class (${edge})`);
+        }
+    }
+
+    if (!edges.length) {
+        throw new AttributeError('Must specify 1 or more edge types to follow');
+    }
     if (Object.keys(rest).length) {
         throw new AttributeError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
     }
@@ -117,16 +116,24 @@ const similarTo = ({
         params = { ...initialParams };
     }
 
-    const treeEdges = ['SubclassOf', 'ElementOf'].map(e => `'${e}'`).join(', ');
+    const treeEdgeStrings = treeEdges.map(e => `'${e}'`).join(', ');
 
     const disambiguationClause = cond => `TRAVERSE both(${edges.map(e => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
     // disambiguate
-    const innerQuery = `SELECT expand($${prefix}Result)
-        LET $${prefix}Initial = (${disambiguationClause(initialQuery)}),
-        $${prefix}Ancestors = (TRAVERSE in(${treeEdges}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
-        $${prefix}Descendants = (TRAVERSE out(${treeEdges}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
-        $${prefix}Union = (SELECT expand(UNIONALL($${prefix}Ancestors, $${prefix}Descendants))),
-        $${prefix}Result = (${disambiguationClause(`(SELECT expand($${prefix}Union))`)})`;
+
+    let innerQuery;
+
+    if (treeEdges.length) {
+        innerQuery = `SELECT expand($${prefix}Result)
+            LET $${prefix}Initial = (${disambiguationClause(initialQuery)}),
+            $${prefix}Ancestors = (TRAVERSE in(${treeEdgeStrings}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
+            $${prefix}Descendants = (TRAVERSE out(${treeEdgeStrings}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
+            $${prefix}Union = (SELECT expand(UNIONALL($${prefix}Ancestors, $${prefix}Descendants))),
+            $${prefix}Result = (${disambiguationClause(`(SELECT expand($${prefix}Union))`)})`;
+    } else {
+        innerQuery = `SELECT expand($${prefix}Result)
+            LET $${prefix}Result = (${disambiguationClause(initialQuery)})`;
+    }
 
     // filter duplicates and re-expand
     let query = `SELECT expand(rid) FROM (SELECT distinct(@rid) as rid FROM (${innerQuery}))`;

@@ -10,7 +10,7 @@ const { schema } = require('@bcgsc/knowledgebase-schema');
 
 const {
     constants: {
-        OPERATORS, DIRECTIONS,
+        OPERATORS, DIRECTIONS, SIMILARITY_EDGES, TREE_EDGES,
     },
 } = require('./../../repo/query_builder');
 const {
@@ -192,12 +192,22 @@ const SimilarityQuery = {
         queryType: {
             type: 'string', enum: ['similarTo'], description: 'The query type',
         },
+        treeEdges: {
+            type: 'array',
+            items: {
+                type: 'string',
+                enum: EDGE_MODEL_NAMES,
+            },
+            default: TREE_EDGES,
+            description: 'The tree edge classes to follow up and down',
+        },
         edges: {
             type: 'array',
             items: {
                 type: 'string',
                 enum: EDGE_MODEL_NAMES,
             },
+            default: SIMILARITY_EDGES,
             description: 'The edge classes to follow',
         },
         target: {
