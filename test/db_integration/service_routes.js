@@ -82,6 +82,60 @@ describeWithAuth('api crud routes', () => {
             expect(res.body.result.break1Repr).toBe('p.G12');
             expect(res.body.result.untemplatedSeq).toBe('D');
         });
+
+        test('fail on missing required body attribute content', async () => {
+            try {
+                await request({
+                    uri: `${app.url}/parse`,
+                    body: {},
+                    method: 'POST',
+                });
+            } catch ({ response }) {
+                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
+
+        test('allows missing feature when requireFeatures flag is false', async () => {
+            const res = await request({
+                uri: `${app.url}/parse`,
+                body: { content: 'p.G12F', requireFeatures: false },
+                method: 'POST',
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(typeof res.body.result).toBe('object');
+            expect(res.body.result.break1Repr).toBe('p.G12');
+            expect(res.body.result.untemplatedSeq).toBe('F');
+        });
+
+        test('error on missing features when requireFeatures flag is default or true', async () => {
+            try {
+                await request({
+                    uri: `${app.url}/parse`,
+                    body: { content: 'p.G12F' },
+                    method: 'POST',
+                });
+            } catch ({ response }) {
+                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
+
+        test('error on unexpected attribute', async () => {
+            try {
+                await request({
+                    uri: `${app.url}/parse`,
+                    body: { content: 'KRAS:p.G12D', someOtherAttr: 'blargh' },
+                    method: 'POST',
+                });
+            } catch ({ response }) {
+                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
     });
 
     describe('/extensions', () => {

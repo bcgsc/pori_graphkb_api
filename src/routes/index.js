@@ -58,7 +58,11 @@ const addParserRoute = (app) => {
         if (!req.body || !req.body.content) {
             return next(new AttributeError('body.content is a required input'));
         }
-        const { content, requireFeatures = true } = req.body;
+        const { content, requireFeatures = true, ...rest } = req.body;
+
+        if (Object.keys(rest).length) {
+            return next(new AttributeError(`Unexpected attributes: ${Object.keys(rest).join(', ')}`));
+        }
 
         try {
             const parsed = variantParser(content, requireFeatures);

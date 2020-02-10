@@ -79,7 +79,7 @@ const POST_PARSE = {
                     required: ['content'],
                     properties: {
                         content: { type: 'string', description: 'the variant string representation', example: 'KRAS:p.G12D' },
-                        requiredFeatures: { type: 'boolean', description: 'flag to indicate features are not required in the variant string' },
+                        requireFeatures: { type: 'boolean', description: 'flag to indicate features are or are not required in the variant string' },
                     },
                 },
             },
