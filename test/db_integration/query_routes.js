@@ -210,6 +210,26 @@ describeWithAuth('api read-only routes', () => {
     });
 
     describe('/query', () => {
+        test('empty target array is bad request', async () => {
+            try {
+                await request({
+                    uri,
+                    headers: {
+                        Authorization: mockToken,
+                    },
+                    method: 'POST',
+                    body: {
+                        target: [],
+                    },
+                });
+            } catch ({ response }) {
+                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                expect(response.body).toHaveProperty('name', 'ValidationError');
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
+
         test('count ignores limit', async () => {
             const response = await request({
                 uri,
