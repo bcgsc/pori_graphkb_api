@@ -156,52 +156,29 @@ const createSchema = async (db) => {
     }
 
     // create the default user groups
-    const adminPermissions = {};
-    const regularPermissions = {};
-    const readOnlyPermissions = {};
+    const userGroups = {
+        admin: {}, readonly: {}, regular: {}, manager: {},
+    };
 
     for (const model of Object.values(SCHEMA_DEFN)) {
         // The permissions for operations against a class should be the intersection of the
         // exposed routes and the group type
-        const { name } = model;
-        const adminGroup = (['Permissions', 'UserGroup', 'User'].includes(model.name));
-        adminPermissions[name] = PERMISSIONS.READ;
-        regularPermissions[name] = PERMISSIONS.NONE;
-        readOnlyPermissions[name] = PERMISSIONS.NONE;
+        const { name, permissions } = model;
 
-        if (model.expose.QUERY || model.expose.GET) {
-            adminPermissions[name] |= PERMISSIONS.READ;
-            regularPermissions[name] |= PERMISSIONS.READ;
-            readOnlyPermissions[name] |= PERMISSIONS.READ;
-        }
-        if (model.expose.PATCH || model.expose.UPDATE) {
-            adminPermissions[name] |= PERMISSIONS.UPDATE;
-
-            if (!adminGroup) {
-                regularPermissions[name] |= PERMISSIONS.UPDATE;
-            }
-        }
-        if (model.expose.POST) {
-            adminPermissions[name] |= PERMISSIONS.CREATE;
-
-            if (!adminGroup) {
-                regularPermissions[name] |= PERMISSIONS.CREATE;
-            }
-        }
-        if (model.expose.DELETE) {
-            adminPermissions[name] |= PERMISSIONS.DELETE;
-
-            if (!adminGroup) {
-                regularPermissions[name] |= PERMISSIONS.DELETE;
+        for (const [groupName, group] of Object.entries(userGroups)) {
+            if (permissions[groupName] !== undefined) {
+                group[name] = permissions[groupName];
+            } else {
+                group[name] = permissions.default;
             }
         }
     }
+
     logger.log('info', 'creating the default user groups');
-    const defaultGroups = Array.from([
-        { name: 'admin', permissions: adminPermissions },
-        { name: 'regular', permissions: regularPermissions },
-        { name: 'readOnly', permissions: readOnlyPermissions },
-    ], rec => SCHEMA_DEFN.UserGroup.formatRecord(rec, { addDefaults: true }));
+    const defaultGroups = Object.entries(userGroups)
+        .map(([name, permissions]) => ({ name, permissions }))
+        .map(rec => SCHEMA_DEFN.UserGroup.formatRecord(rec, { addDefaults: true }));
+
     await Promise.all(Array.from(defaultGroups, async x => db.insert().into('UserGroup').set(x).one()));
 
     logger.log('info', 'Schema is Complete');

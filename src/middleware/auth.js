@@ -42,11 +42,8 @@ const checkToken = privateKey => async (req, res, next) => {
  */
 const checkClassPermissions = async (req, res, next) => {
     const { model, user } = req;
-    let operation = req.method;
+    const operation = req.method;
 
-    if (req.url.endsWith('/search')) {
-        operation = 'GET';
-    }
     const mapping = {
         GET: PERMISSIONS.READ,
         UPDATE: PERMISSIONS.UPDATE,
