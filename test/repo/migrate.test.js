@@ -22,9 +22,12 @@ describe('migrate', () => {
         modelMock,
         createRecordMock;
 
-    beforeAll(() => {
+    beforeEach(() => {
         createRecordMock = jest.fn();
-        const queryMock = jest.fn().mockReturnValue({ all: jest.fn(), one: jest.fn() });
+        const queryMock = jest.fn().mockReturnValue({
+            all: jest.fn().mockResolvedValue([]),
+            one: jest.fn(),
+        });
         db = {
             query: queryMock,
             command: queryMock,
@@ -150,6 +153,17 @@ describe('migrate', () => {
             expect(db.query).toHaveBeenCalledTimes(20); // 1.8 to 1.9
             expect(db.index.create).toHaveBeenCalledTimes(3); // 1.6 to 1.7
             expect(propertyMock).toHaveBeenCalledTimes(5); // mixed
+        });
+
+        test('2.0 to latest', async () => {
+            _version.getCurrentVersion = jest.fn().mockResolvedValue('2.0.0');
+            _version.getLoadVersion = getLoadVersion; // use original load version
+            await migrate(db);
+            // no errors
+            expect(createRecordMock).toHaveBeenCalled();
+            expect(db.query).toHaveBeenCalled();
+            expect(db.index.create).toHaveBeenCalled();
+            expect(propertyMock).toHaveBeenCalled();
         });
     });
 });
