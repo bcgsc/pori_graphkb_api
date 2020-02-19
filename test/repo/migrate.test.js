@@ -39,6 +39,14 @@ describe('migrate', () => {
                     create: createRecordMock,
                 }),
             },
+            insert: jest.fn().mockReturnValue({
+                into: jest.fn().mockReturnValue({
+                    set: queryMock,
+                }),
+            }),
+            update: jest.fn().mockReturnValue({
+                set: queryMock,
+            }),
         };
         const model = require('../../src/repo/model');  // eslint-disable-line
         propertyMock = model.Property.create;
