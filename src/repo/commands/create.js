@@ -1,12 +1,16 @@
-const { error: { AttributeError }, schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
-
+const {
+    error: { AttributeError },
+    schema: { schema: SCHEMA_DEFN },
+    constants: { PERMISSIONS },
+} = require('@bcgsc/knowledgebase-schema');
 const { logger } = require('../logging');
 const { parseRecord } = require('../query_builder');
 const {
-    RecordExistsError,
+    RecordExistsError, PermissionError,
 } = require('../error');
 const { select, getUserByName, fetchDisplayName } = require('./select');
 const { wrapIfTypeError, omitDBAttributes } = require('./util');
+const { checkUserAccessFor } = require('../../middleware/auth');
 
 /**
  * Create new User record
@@ -54,17 +58,23 @@ const createUser = async (db, opt) => {
 const createEdge = async (db, opt) => {
     const { content, model, user } = opt;
     content.createdBy = user['@rid'];
-    const record = model.formatRecord(content, { dropExtra: false, addDefaults: true });
-    const from = record.out;
-    const to = record.in;
+    const {
+        out: from, in: to, '@class': className, ...record
+    } = model.formatRecord(content, { dropExtra: false, addDefaults: true });
 
     // already checked not null in the format method
     if (from.toString() === to.toString()) {
         throw new AttributeError('an edge cannot be used to relate a node/vertex to itself');
     }
-    delete record.out;
-    delete record.in;
-    delete record['@class']; // Ignore if given since determined by the model
+
+    // check that the user has permissions to update at least one of the from/to vertices
+    const [source, target] = await db.record.get([from, to]);
+
+    if (!checkUserAccessFor(user, source['@class'], PERMISSIONS.UPDATE)
+        && !checkUserAccessFor(user, target['@class'], PERMISSIONS.UPDATE)
+    ) {
+        throw new PermissionError(`user has insufficient permissions to link records of types (${source['@class']}, ${target['@class']})`);
+    }
 
     try {
         return await db.create('EDGE', model.name).from(from).to(to).set(record)
