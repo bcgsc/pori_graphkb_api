@@ -9,8 +9,6 @@ const _ = require('lodash');
 const { RID } = require('orientjs');
 const { constants, schema: { schema: SCHEMA_DEFN }, util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
 
-const { PERMISSIONS } = constants;
-
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
 const { logger } = require('./logging');
@@ -107,6 +105,29 @@ const createSchemaHistory = async (db) => {
 };
 
 
+const generateDefaultGroups = () => {
+    // create the default user groups
+    const userGroups = {
+        admin: {}, readonly: {}, regular: {}, manager: {},
+    };
+
+    for (const model of Object.values(SCHEMA_DEFN)) {
+        // The permissions for operations against a class should be the intersection of the
+        // exposed routes and the group type
+        const { name, permissions } = model;
+
+        for (const [groupName, group] of Object.entries(userGroups)) {
+            if (permissions[groupName] !== undefined) {
+                group[name] = permissions[groupName];
+            } else {
+                group[name] = permissions.default;
+            }
+        }
+    }
+    return Object.entries(userGroups).map(([name, permissions]) => ({ name, permissions }));
+};
+
+
 /**
  * Defines and uilds the schema in the database
  *
@@ -156,27 +177,10 @@ const createSchema = async (db) => {
     }
 
     // create the default user groups
-    const userGroups = {
-        admin: {}, readonly: {}, regular: {}, manager: {},
-    };
-
-    for (const model of Object.values(SCHEMA_DEFN)) {
-        // The permissions for operations against a class should be the intersection of the
-        // exposed routes and the group type
-        const { name, permissions } = model;
-
-        for (const [groupName, group] of Object.entries(userGroups)) {
-            if (permissions[groupName] !== undefined) {
-                group[name] = permissions[groupName];
-            } else {
-                group[name] = permissions.default;
-            }
-        }
-    }
+    const userGroups = generateDefaultGroups();
 
     logger.log('info', 'creating the default user groups');
-    const defaultGroups = Object.entries(userGroups)
-        .map(([name, permissions]) => ({ name, permissions }))
+    const defaultGroups = userGroups
         .map(rec => SCHEMA_DEFN.UserGroup.formatRecord(rec, { addDefaults: true }));
 
     await Promise.all(Array.from(defaultGroups, async x => db.insert().into('UserGroup').set(x).one()));
@@ -229,6 +233,7 @@ const loadSchema = async (db) => {
 
 
 module.exports = {
+    generateDefaultGroups,
     createSchema,
     loadSchema,
     SCHEMA_DEFN,

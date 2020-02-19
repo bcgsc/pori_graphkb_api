@@ -51,14 +51,15 @@ const checkClassPermissions = async (req, res, next) => {
         POST: PERMISSIONS.CREATE,
         PATCH: PERMISSIONS.UPDATE,
     };
+    const operationPermission = mapping[operation];
 
     for (const group of user.groups) {
         // Default to no permissions
-        const permissions = group.permissions[model.name] === undefined
+        const groupPermission = group.permissions[model.name] === undefined
             ? PERMISSIONS.NONE
             : group.permissions[model.name];
 
-        if (mapping[operation] & permissions) {
+        if (operationPermission & groupPermission) {
             return next();
         }
     }
