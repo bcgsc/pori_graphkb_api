@@ -394,6 +394,9 @@ class Subquery {
             filters = null;
 
         if (Array.isArray(rawTarget)) {
+            if (!rawTarget.length) {
+                throw new AttributeError('target cannot be an empty array');
+            }
             target = rawTarget.map(castToRID);
         } else if (queryType) {
             // fixed query. pre-parse the target and filters
