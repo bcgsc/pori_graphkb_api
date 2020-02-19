@@ -70,8 +70,8 @@ const createEdge = async (db, opt) => {
     // check that the user has permissions to update at least one of the from/to vertices
     const [source, target] = await db.record.get([from, to]);
 
-    if (!checkUserAccessFor(user, source['@class'], PERMISSIONS.UPDATE)
-        && !checkUserAccessFor(user, target['@class'], PERMISSIONS.UPDATE)
+    if (!checkUserAccessFor(user, source['@class'], PERMISSIONS.CREATE)
+        && !checkUserAccessFor(user, target['@class'], PERMISSIONS.CREATE)
     ) {
         throw new PermissionError(`user has insufficient permissions to link records of types (${source['@class']}, ${target['@class']})`);
     }
