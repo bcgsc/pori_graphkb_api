@@ -7,6 +7,6 @@ module.exports = {
         '/node_modules/',
         'test/repo/query_builder/util.js',
         'test/util.js',
-        'test/db_integration'
-    ]
+        'test/db_integration',
+    ],
 };
