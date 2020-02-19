@@ -330,6 +330,7 @@ const remove = async (db, opt) => modify(db, Object.assign({}, opt, { changes: n
 
 
 module.exports = {
+    modifyEdgeTx,
     remove,
     update,
 };
