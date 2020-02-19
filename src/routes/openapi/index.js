@@ -144,7 +144,7 @@ const linkOrModel = (model, nullable = false) => {
 const describePost = (model) => {
     const links = {};
 
-    if (model.expose.GET) {
+    if (model.routes.GET) {
         links.getById = {
             parameters: { rid: '$response.body#/result.@rid' },
             operationId: `get_${model.routeName.slice(1)}__rid_`,
@@ -157,7 +157,7 @@ const describePost = (model) => {
             }__rid_) requests`,
         };
     }
-    if (model.expose.PATCH) {
+    if (model.routes.PATCH) {
         links.patchById = {
             parameters: { rid: '$response.body#/result.@rid' },
             operationId: `patch_${model.routeName.slice(1)}__rid_`,
@@ -170,7 +170,7 @@ const describePost = (model) => {
             }__rid_) requests`,
         };
     }
-    if (model.expose.DELETE) {
+    if (model.routes.DELETE) {
         links.deleteById = {
             parameters: { rid: '$response.body#/result.@rid' },
             operationId: `delete_${model.routeName.slice(1)}__rid_`,
@@ -326,23 +326,23 @@ const generateSwaggerSpec = (schema, metadata) => {
             properties: {},
         };
 
-        if (Object.values(model.expose).some(x => x) && docs.paths[model.routeName] === undefined) {
+        if (Object.values(model.routes).some(x => x) && docs.paths[model.routeName] === undefined) {
             docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
-        if (model.expose.POST && !docs.paths[model.routeName].post) {
+        if (model.routes.POST && !docs.paths[model.routeName].post) {
             docs.paths[model.routeName].post = describePost(model);
         }
-        if (model.expose.GET || model.expose.PATCH || model.expose.DELETE) {
+        if (model.routes.GET || model.routes.PATCH || model.routes.DELETE) {
             if (!docs.paths[`${model.routeName}/{rid}`]) {
                 docs.paths[`${model.routeName}/{rid}`] = {};
             }
-            if (model.expose.PATCH && !docs.paths[`${model.routeName}/{rid}`].patch) {
+            if (model.routes.PATCH && !docs.paths[`${model.routeName}/{rid}`].patch) {
                 docs.paths[`${model.routeName}/{rid}`].patch = describeOperationByID(model, 'patch');
             }
-            if (model.expose.DELETE && !docs.paths[`${model.routeName}/{rid}`].delete) {
+            if (model.routes.DELETE && !docs.paths[`${model.routeName}/{rid}`].delete) {
                 docs.paths[`${model.routeName}/{rid}`].delete = describeOperationByID(model, 'delete');
             }
-            if (model.expose.GET && !docs.paths[`${model.routeName}/{rid}`].get) {
+            if (model.routes.GET && !docs.paths[`${model.routeName}/{rid}`].get) {
                 docs.paths[`${model.routeName}/{rid}`].get = describeOperationByID(model, 'get');
             }
         }
