@@ -234,16 +234,16 @@ const addResourceRoutes = (app, model) => {
     });
     app.router.use(model.routeName, checkClassPermissions);
 
-    if (model.expose.GET) {
+    if (model.routes.GET) {
         getRoute(app, model);
     }
-    if (model.expose.POST) {
+    if (model.routes.POST) {
         postRoute(app, model);
     }
-    if (model.expose.DELETE) {
+    if (model.routes.DELETE) {
         deleteRoute(app, model);
     }
-    if (model.expose.PATCH && !model.isEdge) {
+    if (model.routes.PATCH && !model.isEdge) {
         updateRoute(app, model);
     }
 };
