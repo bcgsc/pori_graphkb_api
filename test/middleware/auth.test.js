@@ -6,7 +6,7 @@ const {
             Vocabulary, User, UserGroup, Source,
         },
     },
-} = require('../../../knowledgebase_schema/src');
+} = require('@bcgsc/knowledgebase-schema');
 
 const { checkClassPermissions } = require('../../src/middleware/auth');
 const { generateDefaultGroups } = require('../../src/repo/schema');
