@@ -249,7 +249,7 @@ const keywordSearch = ({
         return { AND: filters };
     };
 
-    if (model.inherits.includes('Ontology') || model.name === 'Ontology') {
+    if (model.inherits.includes('Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
         return Subquery.parse({
             ...opt,
             queryType: 'similarTo',
