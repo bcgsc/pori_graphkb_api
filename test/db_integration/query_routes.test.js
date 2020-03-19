@@ -176,21 +176,6 @@ describeWithAuth('api read-only routes', () => {
             throw new Error('Did not throw expected error');
         });
 
-        test('error on any keyword too short', async () => {
-            try {
-                await request({
-                    uri,
-                    method: 'POST',
-                    headers: { Authorization: mockToken },
-                    body: { keyword: 'kras m', target: 'Statement', queryType: 'keyword' },
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
-        });
-
         test('error on bad std option', async () => {
             try {
                 await request({
