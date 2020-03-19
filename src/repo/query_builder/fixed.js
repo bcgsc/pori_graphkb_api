@@ -289,18 +289,10 @@ const keywordSearch = ({
         ? keyword.split(/\s+/).map(word => word.trim().toLowerCase())
         : [keyword.trim().toLowerCase()];
 
-    if (operator === OPERATORS.CONTAINSTEXT && wordList.some(word => word.length < MIN_WORD_SIZE)) {
-        const shortWords = wordList.filter(word => word.length < MIN_WORD_SIZE);
-        throw new AttributeError(
-            `Keywords (${shortWords.join(', ')}) are too short to query with. Must be at least ${
-                MIN_WORD_SIZE
-            } letters after splitting on whitespace characters`,
-        );
-    }
     if (wordList.length < 1) {
         throw new AttributeError('missing keywords');
     }
-    const keywords = Array.from(new Set(wordList));
+    const keywords = Array.from(new Set(wordList)).filter(k => k);
 
     const params = {};
 
@@ -317,7 +309,9 @@ const keywordSearch = ({
                 : null,
             param,
             prefix: `${prefix}w${wordIndex}`,
-            operator,
+            operator: keyword.length >= MIN_WORD_SIZE
+                ? operator
+                : OPERATORS.EQ,
         });
     });
 
