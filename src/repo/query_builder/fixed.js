@@ -231,6 +231,7 @@ const singleKeywordSearch = ({
                     WHERE
                         conditions CONTAINSANY (SELECT expand($${prefix}implicable))
                         OR evidence CONTAINSANY (SELECT expand($${prefix}ont))
+                        OR evidenceLevel CONTAINSANY (SELECT expand($${prefix}ont))
                         OR subject IN (SELECT expand($${prefix}implicable))
                         OR relevance IN (SELECT expand($${prefix}ont))
                 )
