@@ -185,12 +185,89 @@ const descendants = (opt) => {
 };
 
 
-const keywordSearch = ({
-    target, keyword, paramIndex, prefix, operator = OPERATORS.CONTAINSTEXT, ...opt
+const singleKeywordSearch = ({
+    target,
+    param,
+    prefix = '',
+    operator = OPERATORS.CONTAINSTEXT,
+    targetQuery,
+    ...opt
 }) => {
-    // circular dependency unavoidable
-    const { Subquery } = require('./fragment'); // eslint-disable-line global-require
+    const model = schema[target];
 
+    if (model.inherits.includes('Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
+        return `SELECT *
+        FROM ${targetQuery || model.name}
+        WHERE name ${operator} :${param}
+            OR sourceId ${operator} :${param}`;
+    } if (model.name === 'Statement') {
+        const ontologySubq = singleKeywordSearch({
+            ...opt,
+            target: 'Ontology',
+            param,
+            prefix: `${prefix}ontologySubq`,
+            operator,
+        });
+
+        const variantSubq = singleKeywordSearch({
+            ...opt,
+            target: 'Variant',
+            param,
+            prefix: `${prefix}variantSubq`,
+            operator,
+        });
+
+        const query = `SELECT expand($${prefix}statements)
+            LET $${prefix}ont = (
+                    ${ontologySubq}
+                ),
+                $${prefix}variants = (
+                    ${variantSubq}
+                ),
+                $${prefix}implicable = (SELECT expand(UNIONALL($${prefix}ont, $${prefix}variants))),
+                $${prefix}statements = (
+                    SELECT *
+                    FROM ${targetQuery || model.name}
+                    WHERE
+                        conditions CONTAINSANY (SELECT expand($${prefix}implicable))
+                        OR evidence CONTAINSANY (SELECT expand($${prefix}ont))
+                        OR subject IN (SELECT expand($${prefix}implicable))
+                        OR relevance IN (SELECT expand($${prefix}ont))
+                )
+        `;
+        return query;
+    } if (model.inherits.includes('Variant') || model.name === 'Variant') {
+        const subquery = singleKeywordSearch({
+            ...opt,
+            target: 'Ontology',
+            prefix: `${prefix}ontologySubq`,
+            param,
+            operator,
+        });
+
+        return `SELECT expand($${prefix}variants)
+            LET $${prefix}ont = (
+                ${subquery}
+            ),
+                $${prefix}variants = (
+                    SELECT *
+                    FROM ${targetQuery || model.name}
+                    WHERE
+                        type IN (SELECT expand($${prefix}ont))
+                        OR reference1 IN (SELECT expand($${prefix}ont))
+                        OR reference2 IN (SELECT expand($${prefix}ont))
+                )
+        `;
+    }
+    return `SELECT *
+    FROM ${targetQuery || model.name}
+    WHERE name ${operator} :${param}`;
+};
+
+
+const keywordSearch = ({
+    target, keyword, paramIndex, prefix = '', operator = OPERATORS.CONTAINSTEXT, ...opt
+}) => {
     const model = schema[target];
 
     if (![OPERATORS.CONTAINSTEXT, OPERATORS.EQ].includes(operator)) {
@@ -225,84 +302,26 @@ const keywordSearch = ({
     }
     const keywords = Array.from(new Set(wordList));
 
+    const params = {};
 
-    // each queryword must be found but it can be in any of the prop
-    const subContainsClause = (props) => {
-        const filters = [];
+    let query;
 
-        // must contains all words but words can exist in any prop
-        for (const word of keywords) {
-            let clause;
-
-            if (props.length === 1) {
-                const [prop] = props;
-                clause = { [prop]: word, operator };
-            } else {
-                clause = { OR: [] };
-
-                for (const prop of props) {
-                    clause.OR.push({ [prop]: word, operator });
-                }
-            }
-            filters.push(clause);
-        }
-        return { AND: filters };
-    };
-
-    if (model.inherits.includes('Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
-        return Subquery.parse({
+    keywords.forEach((word, wordIndex) => {
+        const param = `${prefix}param${wordIndex}`;
+        params[param] = word;
+        query = singleKeywordSearch({
             ...opt,
-            queryType: 'similarTo',
-            target: {
-                target: model.name,
-                filters: subContainsClause(['sourceId', 'name']),
-            },
-            matchType: model.name,
-        }).toString(paramIndex, prefix);
-    } if (model.name === 'Statement') {
-        const { query: subquery, params } = Subquery.parse({
-            ...opt,
-            queryType: 'similarTo',
-            target: {
-                target: 'Ontology',
-                filters: subContainsClause(['sourceId', 'name']),
-            },
-        }).toString(paramIndex, prefix);
+            target: model.name,
+            targetQuery: query
+                ? `(${query})`
+                : null,
+            param,
+            prefix: `${prefix}w${wordIndex}`,
+            operator,
+        });
+    });
 
-        const query = `SELECT expand($statements)
-            LET $ont = (${subquery}),
-                $variants = (TRAVERSE both('Infers') FROM (
-                    SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
-                ) MAXDEPTH ${MAX_NEIGHBORS}),
-                $implicable = (SELECT expand(UNIONALL($ont, $variants))),
-                $statements = (SELECT * FROM Statement
-                    WHERE
-                        conditions CONTAINSANY (SELECT expand($implicable))
-                        OR evidence CONTAINSANY (SELECT expand($ont))
-                        OR subject IN (SELECT expand($implicable))
-                        OR relevance IN (SELECT expand($ont))
-                )
-        `;
-        return { query, params };
-    } if (model.inherits.includes('Variant') || model.name === 'Variant') {
-        const { query: subquery, params } = Subquery.parse({
-            ...opt,
-            queryType: 'similarTo',
-            target: {
-                target: 'Ontology',
-                filters: subContainsClause(['sourceId', 'name']),
-            },
-        }).toString(paramIndex, prefix);
-
-        const query = `SELECT expand($variants)
-            LET $ont = (${subquery}),
-                $variants = (TRAVERSE both('Infers') FROM (
-                    SELECT * FROM Variant WHERE type IN (SELECT expand($ont)) OR reference1 in (SELECT expand($ont)) OR reference2 IN (SELECT expand($ont))
-                ) MAXDEPTH ${MAX_NEIGHBORS})
-        `;
-        return { query, params };
-    }
-    return Subquery.parse({ ...opt, target: model.name, filters: subContainsClause(['name']) }).toString(paramIndex, prefix);
+    return { query: `SELECT DISTINCT * FROM (${query})`, params };
 };
 
 
