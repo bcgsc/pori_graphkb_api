@@ -135,7 +135,7 @@ describeWithAuth('query builder', () => {
                     session,
                     parse({ target: 'Statement', queryType: 'keyword', keyword: 'kras sensitivity' }),
                 ),
-            ).toHaveProperty('length', 0);
+            ).toHaveProperty('length', 1);
         });
     });
 
