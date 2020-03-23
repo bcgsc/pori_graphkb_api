@@ -23,6 +23,42 @@ if (!process.env.GKB_DBS_PASS) {
     console.warn('Cannot run tests without database password (GKB_DBS_PASS)');
 }
 
+const variantSetup = async ({ mockToken, app }) => {
+    const res = await request({
+        uri: `${app.url}/sources`,
+        method: 'POST',
+        body: {
+            name: 'bcgsc',
+            version: '2018',
+        },
+        headers: { Authorization: mockToken },
+    });
+    const source = res.body.result;
+    const type = (await request({
+        uri: `${app.url}/vocabulary`,
+        body: {
+            sourceId: 'variantType',
+            name: 'variantType',
+            source,
+        },
+        headers: { Authorization: mockToken },
+        method: 'POST',
+    })).body.result['@rid'];
+    const reference1 = (await request({
+        uri: `${app.url}/features`,
+        body: {
+            sourceId: 'variantReference',
+            name: 'variantReference',
+            biotype: 'gene',
+            source,
+        },
+        headers: { Authorization: mockToken },
+        method: 'POST',
+    })).body.result['@rid'];
+
+    return { type, source, reference1 };
+};
+
 describeWithAuth('api crud routes', () => {
     let db,
         app,
@@ -176,37 +212,7 @@ describeWithAuth('api crud routes', () => {
             source;
 
         beforeEach(async () => {
-            const res = await request({
-                uri: `${app.url}/sources`,
-                method: 'POST',
-                body: {
-                    name: 'bcgsc',
-                    version: '2018',
-                },
-                headers: { Authorization: mockToken },
-            });
-            source = res.body.result;
-            type = (await request({
-                uri: `${app.url}/vocabulary`,
-                body: {
-                    sourceId: 'variantType',
-                    name: 'variantType',
-                    source,
-                },
-                headers: { Authorization: mockToken },
-                method: 'POST',
-            })).body.result['@rid'];
-            reference1 = (await request({
-                uri: `${app.url}/features`,
-                body: {
-                    sourceId: 'variantReference',
-                    name: 'variantReference',
-                    biotype: 'gene',
-                    source,
-                },
-                headers: { Authorization: mockToken },
-                method: 'POST',
-            })).body.result['@rid'];
+            ({ type, reference1, source } = await variantSetup({ mockToken, app }));
         });
 
         test('create record with link property', async () => {
@@ -248,6 +254,9 @@ describeWithAuth('api crud routes', () => {
                 method: 'POST',
             });
             expect(resp.statusCode).toBe(HTTP_STATUS.CREATED);
+            expect(resp.body).toHaveProperty('result');
+            expect(resp.body.result).toHaveProperty('@rid');
+            expect(resp.body.result).toHaveProperty('displayName', 'variantreference:p.G12varianttype');
         });
     });
 
@@ -256,7 +265,8 @@ describeWithAuth('api crud routes', () => {
             let readOnly,
                 adminGroup,
                 user,
-                group;
+                group,
+                variant;
 
             beforeEach(async () => {
                 const res = await request({
@@ -296,6 +306,56 @@ describeWithAuth('api crud routes', () => {
                     },
                 });
                 group = result;
+
+                const { type, reference1 } = await variantSetup({ mockToken, app });
+                variant = (await request({
+                    uri: `${app.url}/positionalvariants`,
+                    body: {
+                        untemplatedSeq: 'R',
+                        untemplatedSeqSize: 1,
+                        type,
+                        break1Start: {
+                            '@class': 'ProteinPosition',
+                            refAA: 'G',
+                            pos: 12,
+                        },
+                        reference1,
+                        refSeq: 'G',
+                        break1Repr: 'p.G12',
+                        reference2: null,
+                    },
+                    headers: { Authorization: mockToken },
+                    method: 'POST',
+                })).body.result;
+            });
+
+            test('regenerates displayName on update if not given in changes', async () => {
+                // original variant
+                expect(variant).toHaveProperty('displayName', 'variantreference:p.G12varianttype');
+                const { body: { result } } = await request({
+                    uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
+                    headers: {
+                        Authorization: mockToken,
+                    },
+                    body: { break1Start: { '@class': 'ProteinPosition', refAA: 'H', pos: 12 } },
+                    method: 'PATCH',
+                });
+                expect(result).toHaveProperty('displayName', 'variantreference:p.H12varianttype');
+            });
+
+            test('use displayName on update if given in changes', async () => {
+                // original variant
+                expect(variant).toHaveProperty('displayName', 'variantreference:p.G12varianttype');
+                const { body: { result } } = await request({
+                    uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
+                    headers: {
+                        Authorization: mockToken,
+                    },
+                    body: { break1Start: { '@class': 'ProteinPosition', refAA: 'H', pos: 12 }, displayName: 'blargh' },
+                    method: 'PATCH',
+                });
+                expect(result).toHaveProperty('displayName', 'blargh');
+                expect(result).toHaveProperty('break1Repr', 'p.H12');
             });
 
             test('update a linkset property', async () => {

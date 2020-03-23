@@ -19,8 +19,10 @@ const {
     NotImplementedError,
     PermissionError,
 } = require('./../error');
-const { omitDBAttributes, wrapIfTypeError, hasRecordAccess } = require('./util');
-const { select } = require('./select');
+const {
+    omitDBAttributes, wrapIfTypeError, hasRecordAccess,
+} = require('./util');
+const { select, fetchDisplayName } = require('./select');
 const { nestedProjection } = require('../query_builder/util');
 const { checkUserAccessFor } = require('../../middleware/auth');
 
@@ -43,6 +45,26 @@ const updateNodeTx = async (db, opt) => {
         dropExtra: true,
         addDefaults: false,
     });
+
+    const postUpdateRecord = _.omit(
+        { ...content, ...changes },
+        ['displayName', 'break1Repr', 'break2Repr'],
+    );
+
+    if (model.name === 'PositionalVariant') {
+        // break1Repr and break2Repr require re-generating when changes are made
+        const reformatted = model.formatRecord(postUpdateRecord, { addDefaults: true });
+        changes.break1Repr = reformatted.break1Repr;
+        changes.break2Repr = reformatted.break2Repr;
+        Object.assign(postUpdateRecord, changes);
+    }
+
+    // regenerate the displayName if it was not given
+    if (!changes.displayName && model.properties.displayName) {
+        changes.displayName = await fetchDisplayName(
+            db, model, postUpdateRecord,
+        );
+    }
     content.deletedAt = timeStampNow();
     content.deletedBy = userRID;
 
