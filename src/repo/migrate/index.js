@@ -5,13 +5,19 @@
 const { RID } = require('orientjs');
 const semver = require('semver');
 
-const { constants, schema: { schema: SCHEMA_DEFN }, util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
+const {
+    constants,
+    schema: { schema: SCHEMA_DEFN },
+    util: { timeStampNow },
+    sentenceTemplates: { chooseDefaultTemplate },
+} = require('@bcgsc/knowledgebase-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 const { PERMISSIONS } = constants;
 
 const { logger } = require('./../logging');
 const { Property, ClassModel } = require('../model');
+const { generateDefaultGroups } = require('../schema');
 
 const _version = require('./version');
 
@@ -297,6 +303,75 @@ const migrate3From1xto2x = async (db) => {
 };
 
 
+const migrate3From2xto3x = async (db) => {
+    // add the new user groups
+    // modify the permissions on the existing groups
+    logger.info('fetching the existing user groups');
+    const groups = await db.query('SELECT * FROM UserGroup where deletedAt IS NULL').all();
+
+    // create the default user groups
+    const userGroups = generateDefaultGroups();
+
+    logger.info('get the user group class');
+
+    for (const group of userGroups) {
+        const existing = groups.find(g => g.name === group.name);
+
+        if (!existing) {
+            logger.info(`creating the user group (${group.name})`);
+            const content = SCHEMA_DEFN.UserGroup.formatRecord(group, { addDefaults: true });
+            await db.insert().into(SCHEMA_DEFN.UserGroup.name).set(content).one();
+        } else {
+            logger.info(`updating the group (${group.name}) permissions`);
+            await db.update(existing['@rid']).set({ permissions: group.permissions }).one();
+        }
+    }
+};
+
+
+const migrate3From3xto4x = async (db) => {
+    // add the new user groups
+    // modify the permissions on the existing groups
+    logger.info('assigning new statement templates');
+    const statements = await db.query(`
+        SELECT @rid,
+            conditions:{@rid,@class,displayName,name},
+            relevance:{@rid,@class,displayName,name},
+            subject:{@rid,@class,displayName,name},
+            evidence:{@rid,@class,displayName},
+            displayNameTemplate
+        FROM Statement
+        WHERE deletedAt IS NULL`).all();
+
+    const updatedTemplates = {};
+
+    for (const statement of statements) {
+        let newTemplate = statement.displayNameTemplate;
+
+        try {
+            newTemplate = chooseDefaultTemplate(statement);
+        } catch (err) {
+            logger.warn(`Failed to assign a new default template to statement (${statement['@rid']})`);
+            continue;
+        }
+
+        if (newTemplate !== statement.displayNameTemplate) {
+            if (updatedTemplates[newTemplate] === undefined) {
+                updatedTemplates[newTemplate] = [];
+            }
+            updatedTemplates[newTemplate].push(statement['@rid']);
+        }
+    }
+
+    for (const [template, recordList] of Object.entries(updatedTemplates)) {
+        logger.info(`Updating ${recordList.length} statements to use the template "${template}"`);
+        await db.command(`UPDATE Statement SET displayNameTemplate = :template WHERE @rid IN [${
+            recordList.map(r => r.toString()).join(', ')
+        }]`, { params: { template } }).all();
+    }
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -342,6 +417,8 @@ const migrate = async (db, opt = {}) => {
         ['2.6.0', '3.0.0', migrate2to3From6xto0x],
         ['3.0.0', '3.1.0', migrate3From0xto1x],
         ['3.1.0', '3.2.0', migrate3From1xto2x],
+        ['3.2.0', '3.3.0', migrate3From2xto3x],
+        ['3.3.0', '3.4.0', migrate3From3xto4x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {

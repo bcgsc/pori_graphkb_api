@@ -7,7 +7,11 @@
  */
 const _ = require('lodash');
 
-const { util: { castToRID, timeStampNow }, error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
+const {
+    util: { castToRID, timeStampNow },
+    error: { AttributeError },
+    constants: { PERMISSIONS },
+} = require('@bcgsc/knowledgebase-schema');
 
 const { logger } = require('./../logging');
 
@@ -15,9 +19,12 @@ const {
     NotImplementedError,
     PermissionError,
 } = require('./../error');
-const { omitDBAttributes, wrapIfTypeError, hasRecordAccess } = require('./util');
-const { select } = require('./select');
+const {
+    omitDBAttributes, wrapIfTypeError, hasRecordAccess,
+} = require('./util');
+const { select, fetchDisplayName } = require('./select');
 const { nestedProjection } = require('../query_builder/util');
+const { checkUserAccessFor } = require('../../middleware/auth');
 
 
 /**
@@ -38,6 +45,26 @@ const updateNodeTx = async (db, opt) => {
         dropExtra: true,
         addDefaults: false,
     });
+
+    const postUpdateRecord = _.omit(
+        { ...content, ...changes },
+        ['displayName', 'break1Repr', 'break2Repr'],
+    );
+
+    if (model.name === 'PositionalVariant') {
+        // break1Repr and break2Repr require re-generating when changes are made
+        const reformatted = model.formatRecord(postUpdateRecord, { addDefaults: true });
+        changes.break1Repr = reformatted.break1Repr;
+        changes.break2Repr = reformatted.break2Repr;
+        Object.assign(postUpdateRecord, changes);
+    }
+
+    // regenerate the displayName if it was not given
+    if (!changes.displayName && model.properties.displayName) {
+        changes.displayName = await fetchDisplayName(
+            db, model, postUpdateRecord,
+        );
+    }
     content.deletedAt = timeStampNow();
     content.deletedBy = userRID;
 
@@ -84,12 +111,17 @@ const updateNodeTx = async (db, opt) => {
  * @param {Object} opt.user the user performing the record update
  */
 const modifyEdgeTx = async (db, opt) => {
-    const { original, changes } = opt;
-    const userRID = castToRID(opt.user);
-    const [src, tgt] = await Promise.all(Array.from(
-        [original.out, original.in],
-        async rid => db.record.get(rid),
-    ));
+    const { original, changes, user } = opt;
+    const userRID = castToRID(user);
+    const [src, tgt] = await db.record.get([original.out, original.in]);
+
+    // check that the user has permissions to update at least one of the from/to vertices
+    if (!checkUserAccessFor(user, src['@class'], PERMISSIONS.DELETE)
+        && !checkUserAccessFor(user, tgt['@class'], PERMISSIONS.DELETE)
+    ) {
+        throw new PermissionError(`user has insufficient permissions to delete edges between records of types (${src['@class']}, ${tgt['@class']})`);
+    }
+
     const srcCopy = omitDBAttributes(src);
     srcCopy.deletedAt = timeStampNow();
     srcCopy.deletedBy = userRID;
@@ -320,6 +352,7 @@ const remove = async (db, opt) => modify(db, Object.assign({}, opt, { changes: n
 
 
 module.exports = {
+    modifyEdgeTx,
     remove,
     update,
 };

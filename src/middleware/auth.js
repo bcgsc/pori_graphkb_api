@@ -37,16 +37,31 @@ const checkToken = privateKey => async (req, res, next) => {
 };
 
 /**
+ * Check that the user has permissions for a gicven operation
+ */
+const checkUserAccessFor = (user, modelName, operationPermission) => {
+    for (const group of user.groups) {
+        // Default to no permissions
+        const groupPermission = group.permissions[modelName] === undefined
+            ? PERMISSIONS.NONE
+            : group.permissions[modelName];
+
+        if (operationPermission & groupPermission) {
+            return true;
+        }
+    }
+    return false;
+};
+
+
+/**
  * Check that the user has permissions for the intended operation on a given route
  * Note that to do this, model and user need to already be assigned to the request
  */
 const checkClassPermissions = async (req, res, next) => {
     const { model, user } = req;
-    let operation = req.method;
+    const operation = req.method;
 
-    if (req.url.endsWith('/search')) {
-        operation = 'GET';
-    }
     const mapping = {
         GET: PERMISSIONS.READ,
         UPDATE: PERMISSIONS.UPDATE,
@@ -54,16 +69,10 @@ const checkClassPermissions = async (req, res, next) => {
         POST: PERMISSIONS.CREATE,
         PATCH: PERMISSIONS.UPDATE,
     };
+    const operationPermission = mapping[operation];
 
-    for (const group of user.groups) {
-        // Default to no permissions
-        const permissions = group.permissions[model.name] === undefined
-            ? PERMISSIONS.NONE
-            : group.permissions[model.name];
-
-        if (mapping[operation] & permissions) {
-            return next();
-        }
+    if (checkUserAccessFor(user, model.name, operationPermission)) {
+        return next();
     }
     return res.status(HTTP_STATUS.FORBIDDEN).json(new PermissionError(
         `The user ${user.name} does not have sufficient permissions to perform a ${operation} operation on class ${model.name}`,
@@ -71,5 +80,5 @@ const checkClassPermissions = async (req, res, next) => {
 };
 
 module.exports = {
-    checkToken, checkClassPermissions,
+    checkToken, checkClassPermissions, checkUserAccessFor,
 };

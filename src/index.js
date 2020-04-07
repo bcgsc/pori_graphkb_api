@@ -2,6 +2,7 @@
 
 // required packages
 const express = require('express');
+const compression = require('compression');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const http = require('http');
@@ -84,6 +85,7 @@ class AppServer {
         // set up middleware parser to deal with jsons
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(bodyParser.json());
+        this.app.use(compression());
         // add some basic logging
         const originWhiteList = (conf.GKB_CORS_ORIGIN || '.*').split(/[\s,]+/g).map((patt) => {
             if (patt.startsWith('^') && patt.endsWith('$')) {

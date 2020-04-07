@@ -25,7 +25,6 @@ module.exports = {
         GKB_DB_CREATE: false,
         GKB_LOG_MAX_FILES: 7,
         GKB_DB_NAME: 'production-sync-dev',
-        GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca http://graphkbdev.bcgsc.ca:5000 http://localhost:3000',
     },
     staging: {
         GKB_DB_CREATE: false,

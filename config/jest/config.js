@@ -29,13 +29,10 @@ module.exports = {
         ],
     ],
     testRunner: 'jest-circus/runner',
-    testRegex: 'test/.*\\.js',
+    testRegex: 'test/.*\\.test\\.js',
     testEnvironment: 'node',
     testPathIgnorePatterns: [
         '/node_modules/',
-        'test/repo/query_builder/util.js',
-        'test/util.js',
-        'test/db_integration/util.js',
     ],
     moduleFileExtensions: [
         'js',
