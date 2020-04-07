@@ -157,7 +157,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
         for (const attr of keys) {
             const value = curr[attr];
 
-            if (attr === '@type' || attr === '@version') {
+            if (attr === '@type' || attr === '@version' || attr.startsWith('_$')) {
                 delete curr[attr];
             } else if (attr === 'history' && history) {
                 curr[attr] = castToRID(value);
