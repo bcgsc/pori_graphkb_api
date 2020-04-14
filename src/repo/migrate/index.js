@@ -375,11 +375,21 @@ const migrate3From4xto5x = async (db) => {
     // add the new user groups
     // modify the permissions on the existing groups
     logger.info('recreate fulltext index');
+
     for (const index of SCHEMA_DEFN.Ontology.indices.filter(i => i.type === 'FULLTEXT')) {
         await db.command(`DROP INDEX ${index.name}`).all();
         await db.index.create(index);
     }
+};
 
+const migrate3From5xto6x = async (db) => {
+    // add the new user groups
+    // modify the permissions on the existing groups
+    logger.info('default all empty Ontology.name to value of Ontology.sourceId');
+    await db.command('UPDATE Ontology SET name = sourceId WHERE name IS NULL').all();
+
+    logger.info('adding the not null constraint to Ontology.name');
+    await db.command('ALTER PROPERTY Ontology.name NOTNULL true').all();
 };
 
 
@@ -430,7 +440,8 @@ const migrate = async (db, opt = {}) => {
         ['3.1.0', '3.2.0', migrate3From1xto2x],
         ['3.2.0', '3.3.0', migrate3From2xto3x],
         ['3.3.0', '3.4.0', migrate3From3xto4x],
-        ['3.4.0', '3.5.0', migrate3From4xto5x]
+        ['3.4.0', '3.5.0', migrate3From4xto5x],
+        ['3.5.0', '3.6.0', migrate3From5xto6x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
