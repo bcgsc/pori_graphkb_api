@@ -385,8 +385,11 @@ const migrate3From4xto5x = async (db) => {
 const migrate3From5xto6x = async (db) => {
     // add the new user groups
     // modify the permissions on the existing groups
-    logger.info('default all empty names to value of sourceId');
-    db.command('UPDATE Ontology name = sourceId WHERE name IS NULL').all();
+    logger.info('default all empty Ontology.name to value of Ontology.sourceId');
+    await db.command('UPDATE Ontology SET name = sourceId WHERE name IS NULL').all();
+
+    logger.info('adding the not null constraint to Ontology.name');
+    await db.command('ALTER PROPERTY Ontology.name NOTNULL true').all();
 };
 
 
