@@ -382,6 +382,13 @@ const migrate3From4xto5x = async (db) => {
     }
 };
 
+const migrate3From5xto6x = async (db) => {
+    // add the new user groups
+    // modify the permissions on the existing groups
+    logger.info('default all empty names to value of sourceId');
+    db.command('UPDATE Ontology name = sourceId WHERE name IS NULL').all();
+};
+
 
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
@@ -431,6 +438,7 @@ const migrate = async (db, opt = {}) => {
         ['3.2.0', '3.3.0', migrate3From2xto3x],
         ['3.3.0', '3.4.0', migrate3From3xto4x],
         ['3.4.0', '3.5.0', migrate3From4xto5x],
+        ['3.5.0', '3.6.0', migrate3From5xto6x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
