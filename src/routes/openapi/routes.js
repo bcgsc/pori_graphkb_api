@@ -251,6 +251,59 @@ const QUERY = {
     },
 };
 
+
+const POST_SIGN_LICENSE = {
+    summary: 'Set the user sign off on the current license',
+    tags: ['General'],
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    $ref: '#/components/schemas/User',
+                },
+            },
+        },
+    },
+};
+
+const GET_LICENSE = {
+    summary: 'Get the current license user agreement',
+    tags: ['General'],
+    requestBody: {
+        required: true,
+        content: {
+            'application/json': {
+                schema: {
+                    $ref: '#/components/schemas/LicenseAgreement',
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    $ref: '#/components/schemas/LicenseAgreement',
+                },
+            },
+        },
+    },
+};
+
+const POST_LICENSE = {
+    summary: 'Get the current license user agreement',
+    tags: ['General'],
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    $ref: '#/components/schemas/LicenseAgreement',
+                },
+            },
+        },
+    },
+};
+
 module.exports = {
     POST_TOKEN,
     POST_PARSE,
@@ -258,4 +311,7 @@ module.exports = {
     GET_STATS,
     GET_VERSION,
     QUERY,
+    POST_SIGN_LICENSE,
+    GET_LICENSE,
+    POST_LICENSE,
 };

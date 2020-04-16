@@ -3,7 +3,11 @@ const HTTP_STATUS = require('http-status-codes');
 const { error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    DatabaseConnectionError, NoRecordFoundError, RecordExistsError,
+    DatabaseConnectionError,
+    NoRecordFoundError,
+    RecordExistsError,
+    AuthenticationError,
+    PermissionError,
 } = require('./../repo/error');
 const { logger } = require('./../repo/logging');
 
@@ -20,7 +24,11 @@ const addErrorRoute = (app) => {
         logger.info('unexpected error');
         logger.log('error', err.stack);
 
-        if (err instanceof AttributeError) {
+        if (err instanceof PermissionError) {
+            code = HTTP_STATUS.FORBIDDEN;
+        } else if (err instanceof AuthenticationError) {
+            code = HTTP_STATUS.UNAUTHORIZED;
+        } else if (err instanceof AttributeError) {
             code = HTTP_STATUS.BAD_REQUEST;
         } else if (err instanceof NoRecordFoundError) {
             code = HTTP_STATUS.NOT_FOUND;
