@@ -19,6 +19,9 @@ const {
     GET_VERSION,
     QUERY,
     GET_STATS,
+    POST_SIGN_LICENSE,
+    POST_LICENSE,
+    GET_LICENSE,
 } = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
@@ -42,6 +45,8 @@ const STUB = {
         '/parse': { post: POST_PARSE },
         '/schema': { get: GET_SCHEMA },
         '/version': { get: GET_VERSION },
+        '/license': { get: GET_LICENSE, post: POST_LICENSE },
+        '/license/sign': { post: POST_SIGN_LICENSE },
         '/query': { post: QUERY },
         '/spec': {
             get: {
