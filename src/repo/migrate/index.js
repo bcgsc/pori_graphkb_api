@@ -410,6 +410,13 @@ const migrate3xFrom6xto7x = async (db) => {
     await Property.create(signedLicenseAt, dbClass);
 };
 
+const migrate3xFrom7xto8x = async (db) => {
+    logger.info('adding the email property to the user class');
+    const { email } = SCHEMA_DEFN.User.properties;
+    const dbClass = await db.class.get(SCHEMA_DEFN.User.name);
+    await Property.create(email, dbClass);
+};
+
 
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
@@ -461,6 +468,7 @@ const migrate = async (db, opt = {}) => {
         ['3.4.0', '3.5.0', migrate3From4xto5x],
         ['3.5.0', '3.6.0', migrate3From5xto6x],
         ['3.6.0', '3.7.0', migrate3xFrom6xto7x],
+        ['3.7.0', '3.8.0', migrate3xFrom7xto8x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
