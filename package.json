@@ -13,7 +13,7 @@
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
     "@bcgsc/knowledgebase-parser": "^0.7.0",
-    "@bcgsc/knowledgebase-schema": "^3.8.0",
+    "@bcgsc/knowledgebase-schema": "^3.8.1",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
@@ -40,6 +40,8 @@
     "@bcgsc/jsdocref": "^1.0.2",
     "chai": "^3.5.0",
     "chai-http": "^4.3.0",
+    "commitizen": "^4.0.4",
+    "cz-conventional-changelog": "^3.1.0",
     "docdash": "^1.0.0",
     "docsify": "^4.10.2",
     "docsify-cli": "^4.4.0",
@@ -71,6 +73,12 @@
     "lint": "eslint -c .eslintrc.jon src test",
     "build:docs": "jsdocref --input src --output doc; cp README.md doc",
     "start:docs": "docsify serve doc",
-    "version": "echo $npm_package_version"
+    "version": "echo $npm_package_version",
+    "commit": "git-cz"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
