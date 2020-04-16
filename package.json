@@ -13,7 +13,7 @@
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
     "@bcgsc/knowledgebase-parser": "^0.7.0",
-    "@bcgsc/knowledgebase-schema": "^3.7.0",
+    "@bcgsc/knowledgebase-schema": "^3.8.0",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
