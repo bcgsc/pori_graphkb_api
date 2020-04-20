@@ -31,6 +31,7 @@ const createUser = async (db, opt) => {
     const record = SCHEMA_DEFN.User.formatRecord({
         name: userName,
         groups: groupIds,
+        signedLicenseAt: opt.signedLicenseAt || null,
     }, { dropExtra: false, addDefaults: true });
     await db.insert().into(SCHEMA_DEFN.User.name)
         .set(record)

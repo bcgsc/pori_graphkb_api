@@ -1,5 +1,7 @@
 const { OrientDBClient } = require('orientjs');
 
+const { util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
+
 const { logger } = require('./logging');
 const { loadSchema, createSchema } = require('./schema');
 const { migrate } = require('./migrate');
@@ -131,6 +133,7 @@ const connectDB = async ({
                 userName: process.env.USER,
                 groupNames: ['admin'],
                 existsOk: true,
+                signedLicenseAt: timeStampNow(),
             });
         } catch (err) {
             if (!(err instanceof RecordExistsError)) {

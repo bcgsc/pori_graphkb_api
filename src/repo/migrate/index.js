@@ -17,7 +17,7 @@ const { PERMISSIONS } = constants;
 
 const { logger } = require('./../logging');
 const { Property, ClassModel } = require('../model');
-const { generateDefaultGroups } = require('../schema');
+const { generateDefaultGroups, DEFAULT_LICENSE_CONTENT } = require('../schema');
 
 const _version = require('./version');
 
@@ -371,6 +371,52 @@ const migrate3From3xto4x = async (db) => {
     }
 };
 
+const migrate3From4xto5x = async (db) => {
+    // add the new user groups
+    // modify the permissions on the existing groups
+    logger.info('recreate fulltext index');
+
+    for (const index of SCHEMA_DEFN.Ontology.indices.filter(i => i.type === 'FULLTEXT')) {
+        await db.command(`DROP INDEX ${index.name}`).all();
+        await db.index.create(index);
+    }
+};
+
+const migrate3From5xto6x = async (db) => {
+    // add the new user groups
+    // modify the permissions on the existing groups
+    logger.info('default all empty Ontology.name to value of Ontology.sourceId');
+    await db.command('UPDATE Ontology SET name = sourceId WHERE name IS NULL').all();
+
+    logger.info('adding the not null constraint to Ontology.name');
+    await db.command('ALTER PROPERTY Ontology.name NOTNULL true').all();
+};
+
+const migrate3xFrom6xto7x = async (db) => {
+    logger.info('creating the new LicenseAgreement Table');
+    await ClassModel.create(SCHEMA_DEFN.LicenseAgreement, db);
+    await addClassToPermissionsSchema(db, SCHEMA_DEFN.LicenseAgreement);
+
+    // create the first agreement
+    await db.insert().into(SCHEMA_DEFN.LicenseAgreement.name).set({
+        content: DEFAULT_LICENSE_CONTENT,
+        enactedAt: timeStampNow(),
+    }).one();
+
+    logger.info('Adding the signedLicenseAt property to User');
+
+    const { signedLicenseAt } = SCHEMA_DEFN.User.properties;
+    const dbClass = await db.class.get(SCHEMA_DEFN.User.name);
+    await Property.create(signedLicenseAt, dbClass);
+};
+
+const migrate3xFrom7xto8x = async (db) => {
+    logger.info('adding the email property to the user class');
+    const { email } = SCHEMA_DEFN.User.properties;
+    const dbClass = await db.class.get(SCHEMA_DEFN.User.name);
+    await Property.create(email, dbClass);
+};
+
 
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
@@ -419,6 +465,10 @@ const migrate = async (db, opt = {}) => {
         ['3.1.0', '3.2.0', migrate3From1xto2x],
         ['3.2.0', '3.3.0', migrate3From2xto3x],
         ['3.3.0', '3.4.0', migrate3From3xto4x],
+        ['3.4.0', '3.5.0', migrate3From4xto5x],
+        ['3.5.0', '3.6.0', migrate3From5xto6x],
+        ['3.6.0', '3.7.0', migrate3xFrom6xto7x],
+        ['3.7.0', '3.8.0', migrate3xFrom7xto8x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {

@@ -21,6 +21,7 @@ const { addExtensionRoutes } = require('./extensions');
 const { generateSwaggerSpec, registerSpecEndpoints } = require('./routes/openapi');
 const { addResourceRoutes } = require('./routes/resource');
 const { addPostToken } = require('./routes/auth');
+const { addEulaRoutes } = require('./routes/eula');
 const {
     addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute,
 } = require('./routes');
@@ -182,12 +183,16 @@ class AppServer {
 
         this.router.use(checkToken(this.conf.GKB_KEY));
 
+        addEulaRoutes(this);
+
         addQueryRoute(this);
         addStatsRoute(this);
 
         // simple routes
         for (const model of Object.values(this.schema)) {
-            addResourceRoutes(this, model);
+            if (model.name !== 'LicenseAgreement') {
+                addResourceRoutes(this, model);
+            }
         }
         addExtensionRoutes(this);
 
