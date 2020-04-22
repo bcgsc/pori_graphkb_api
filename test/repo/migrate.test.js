@@ -9,8 +9,8 @@ const {
 
 jest.mock('../../src/repo/migrate/version');
 jest.mock('../../src/repo/model', () => ({
-    Property: { create: jest.fn() },
     ClassModel: { create: jest.fn() },
+    Property: { create: jest.fn() },
 }));
 
 const { getCurrentVersion, getLoadVersion } = jest.requireActual('./../../src/repo/migrate/version');
@@ -29,21 +29,21 @@ describe('migrate', () => {
             one: jest.fn(),
         });
         db = {
-            query: queryMock,
-            command: queryMock,
-            index: {
-                create: jest.fn(),
-            },
             class: {
                 get: jest.fn().mockResolvedValue({
                     create: createRecordMock,
                 }),
+            },
+            command: queryMock,
+            index: {
+                create: jest.fn(),
             },
             insert: jest.fn().mockReturnValue({
                 into: jest.fn().mockReturnValue({
                     set: queryMock,
                 }),
             }),
+            query: queryMock,
             update: jest.fn().mockReturnValue({
                 set: queryMock,
             }),

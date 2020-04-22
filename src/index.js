@@ -153,7 +153,7 @@ class AppServer {
 
 
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(this.schema, { port: this.port, host: this.host });
+        this.spec = generateSwaggerSpec(this.schema, { host: this.host, port: this.port });
         registerSpecEndpoints(this.router, this.spec);
 
         this.router.get('/schema', async (req, res) => {
@@ -202,10 +202,10 @@ class AppServer {
         // last catch any errors for undefined routes. all actual routes should be defined above
         this.app.use((req, res) => res.status(HTTP_STATUS.NOT_FOUND).json({
             error: `Not Found: ${req.route}`,
-            name: 'UrlNotFound',
             message: `The requested url does not exist: ${req.url}`,
-            url: req.url,
             method: req.method,
+            name: 'UrlNotFound',
+            url: req.url,
         }));
 
         if (!this.port) {

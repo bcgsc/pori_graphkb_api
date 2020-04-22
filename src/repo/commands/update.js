@@ -42,8 +42,8 @@ const updateNodeTx = async (db, opt) => {
     const userRID = castToRID(opt.user);
 
     const content = model.formatRecord(omitDBAttributes(original), {
-        dropExtra: true,
         addDefaults: false,
+        dropExtra: true,
     });
 
     const postUpdateRecord = _.omit(
@@ -144,14 +144,14 @@ const modifyEdgeTx = async (db, opt) => {
             .set(srcCopy))
         .let('src', tx => tx.update(src['@rid'])
             .set('history = $srcCopy[0]')
-            .set({ createdBy: userRID, createdAt: timeStampNow() })
+            .set({ createdAt: timeStampNow(), createdBy: userRID })
             .where({ createdAt: src.createdAt })
             .return('AFTER @rid'))
         .let('tgtCopy', tx => tx.create('VERTEX', tgt['@class'])
             .set(tgtCopy))
         .let('tgt', tx => tx.update(tgt['@rid'])
             .set('history = $tgtCopy[0]')
-            .set({ createdBy: userRID, createdAt: timeStampNow() })
+            .set({ createdAt: timeStampNow(), createdBy: userRID })
             .where({ createdAt: tgt.createdAt })
             .return('AFTER @rid'));
 
@@ -235,7 +235,7 @@ const deleteNodeTx = async (db, opt) => {
                         .set(targetContent))
                     .let(`vertex${Object.keys(updatedVertices).length}`, tx => tx.update(target)
                         .set(`history = $${name}[0]`)
-                        .set({ createdBy: userRID, createdAt: timeStampNow() })
+                        .set({ createdAt: timeStampNow(), createdBy: userRID })
                         .where({ createdAt: targetContent.createdAt })
                         .return('AFTER @rid'));
                 updatedVertices[target.toString()] = name;
@@ -277,10 +277,10 @@ const modify = async (db, opt) => {
     const changes = opt.changes === null
         ? null
         : Object.assign({}, model.formatRecord(opt.changes, {
-            dropExtra: false,
             addDefaults: false,
-            ignoreMissing: true,
+            dropExtra: false,
             ignoreExtra: false,
+            ignoreMissing: true,
         }));
     query.projection = nestedProjection(2);
     // select the original record and check permissions
@@ -296,14 +296,14 @@ const modify = async (db, opt) => {
     let commit;
 
     if (model.isEdge) {
-        commit = await modifyEdgeTx(db, { original, user, changes });
+        commit = await modifyEdgeTx(db, { changes, original, user });
     } else if (changes === null) {
         // vertex deletion
         commit = await deleteNodeTx(db, { original, user });
     } else {
         // vertex update
         commit = await updateNodeTx(db, {
-            original, user, changes, model,
+            changes, model, original, user,
         });
     }
     logger.log('debug', commit.buildStatement());

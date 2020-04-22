@@ -10,15 +10,99 @@ const BASE_URL = 'https://clinicaltrials.gov/ct2/show';
 const ajv = new Ajv();
 
 const singleItemArray = (spec = { type: 'string' }) => ({
-    type: 'array', maxItems: 1, minItems: 1, items: { ...spec },
+    items: { ...spec }, maxItems: 1, minItems: 1, type: 'array',
 });
 
 const validateAPITrialRecord = ajv.compile({
-    type: 'object',
-    required: ['clinical_study'],
     properties: {
         clinical_study: {
-            type: 'object',
+            properties: {
+                completion_date: singleItemArray({
+                    properties: {
+                        _: { type: 'string' },
+                    },
+                    required: ['_'],
+                    type: 'object',
+                }),
+                condition: {
+                    items: { type: 'string' },
+                    type: 'array',
+                },
+                detailed_description: singleItemArray({
+                    properties: {
+                        textblock: singleItemArray({ type: 'string' }),
+                    },
+                    required: ['textblock'],
+                    type: 'object',
+                }),
+                id_info: singleItemArray({
+                    properties: { nct_id: singleItemArray({ pattern: '^NCT\\d+$' }) },
+                    required: ['nct_id'],
+                    type: 'object',
+                }),
+                intervention: {
+                    items: {
+                        properties: {
+                            intervention_name: singleItemArray(),
+                            intervention_type: singleItemArray(),
+                        },
+                        required: [
+                            'intervention_type',
+                            'intervention_name',
+                        ],
+                        type: 'object',
+                    },
+                    type: 'array',
+                },
+                last_update_posted: singleItemArray({
+                    properties: { _: { type: 'string' } },
+                    required: ['_'],
+                    type: 'object',
+                }),
+                location: {
+                    items: {
+                        properties: {
+                            facility: singleItemArray({
+                                properties: {
+                                    address: singleItemArray({
+                                        properties: {
+                                            city: singleItemArray(),
+                                            country: singleItemArray(),
+                                        },
+                                        required: ['city', 'country'],
+                                        type: 'object',
+                                    }),
+                                },
+                                required: ['address'],
+                                type: 'object',
+                            }),
+                        },
+                        required: ['facility'],
+                        type: 'object',
+                    },
+                    minItems: 1,
+                    type: 'array',
+                },
+                official_title: singleItemArray(),
+                phase: singleItemArray(),
+                required_header: singleItemArray({
+                    properties: { url: singleItemArray() },
+                    required: ['url'],
+                    type: 'object',
+                }),
+                start_date: singleItemArray({
+                    oneOf: [
+                        {
+                            properties: {
+                                _: { type: 'string' },
+                            },
+                            required: ['_'],
+                            type: 'object',
+                        },
+                        { type: 'string' },
+                    ],
+                }),
+            },
             required: [
                 'id_info',
                 'official_title',
@@ -29,95 +113,11 @@ const validateAPITrialRecord = ajv.compile({
                 'required_header',
                 'location',
             ],
-            properties: {
-                required_header: singleItemArray({
-                    type: 'object',
-                    required: ['url'],
-                    properties: { url: singleItemArray() },
-                }),
-                start_date: singleItemArray({
-                    oneOf: [
-                        {
-                            type: 'object',
-                            required: ['_'],
-                            properties: {
-                                _: { type: 'string' },
-                            },
-                        },
-                        { type: 'string' },
-                    ],
-                }),
-                completion_date: singleItemArray({
-                    type: 'object',
-                    required: ['_'],
-                    properties: {
-                        _: { type: 'string' },
-                    },
-                }),
-                id_info: singleItemArray({
-                    type: 'object',
-                    required: ['nct_id'],
-                    properties: { nct_id: singleItemArray({ pattern: '^NCT\\d+$' }) },
-                }),
-                official_title: singleItemArray(),
-                phase: singleItemArray(),
-                condition: {
-                    type: 'array',
-                    items: { type: 'string' },
-                },
-                intervention: {
-                    type: 'array',
-                    items: {
-                        type: 'object',
-                        required: [
-                            'intervention_type',
-                            'intervention_name',
-                        ],
-                        properties: {
-                            intervention_name: singleItemArray(),
-                            intervention_type: singleItemArray(),
-                        },
-                    },
-                },
-                last_update_posted: singleItemArray({
-                    type: 'object',
-                    required: ['_'],
-                    properties: { _: { type: 'string' } },
-                }),
-                location: {
-                    type: 'array',
-                    minItems: 1,
-                    items: {
-                        type: 'object',
-                        required: ['facility'],
-                        properties: {
-                            facility: singleItemArray({
-                                type: 'object',
-                                required: ['address'],
-                                properties: {
-                                    address: singleItemArray({
-                                        type: 'object',
-                                        required: ['city', 'country'],
-                                        properties: {
-                                            city: singleItemArray(),
-                                            country: singleItemArray(),
-                                        },
-                                    }),
-                                },
-                            }),
-                        },
-                    },
-                },
-                detailed_description: singleItemArray({
-                    type: 'object',
-                    required: ['textblock'],
-                    properties: {
-                        textblock: singleItemArray({ type: 'string' }),
-                    },
-                }),
-            },
+            type: 'object',
         },
     },
+    required: ['clinical_study'],
+    type: 'object',
 });
 
 
@@ -175,15 +175,15 @@ const parseRecord = (result) => {
     } catch (err) {}
 
     const content = {
-        sourceId: record.id_info[0].nct_id[0],
-        name: record.official_title[0],
-        url: record.required_header[0].url[0],
-        sourceIdVersion: standardizeDate(record.last_update_posted[0]._),
+        completionDate,
         diseases: record.condition,
         drugs: [],
-        startDate,
-        completionDate,
         locations: [],
+        name: record.official_title[0],
+        sourceId: record.id_info[0].nct_id[0],
+        sourceIdVersion: standardizeDate(record.last_update_posted[0]._),
+        startDate,
+        url: record.required_header[0].url[0],
     };
 
     if (record.detailed_description) {
@@ -201,7 +201,7 @@ const parseRecord = (result) => {
 
     for (const location of record.location || []) {
         const { facility: [{ address: [{ country: [country], city: [city] }] }] } = location;
-        content.locations.push({ country: country.toLowerCase(), city: city.toLowerCase() });
+        content.locations.push({ city: city.toLowerCase(), country: country.toLowerCase() });
     }
     return content;
 };
@@ -218,11 +218,11 @@ const fetchRecord = async (id) => {
     logger.info(`loading: ${url}`);
     // fetch from the external api
     const resp = await requestWithRetry({
-        method: 'GET',
-        uri: url,
-        qs: { displayxml: true },
         headers: { Accept: 'application/xml' },
         json: true,
+        method: 'GET',
+        qs: { displayxml: true },
+        uri: url,
     });
     const result = await parseXmlToJson(resp);
     return parseRecord(result);

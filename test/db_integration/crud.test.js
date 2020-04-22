@@ -45,12 +45,12 @@ describeWithAuth('CRUD operations', () => {
     });
 
     afterEach(async () => {
-        await clearDB({ session, admin: db.admin });
+        await clearDB({ admin: db.admin, session });
     });
 
     test('update error on missing changes argument', async () => {
         try {
-            await update(session, { query: {}, user: db.admin, model: schema.User });
+            await update(session, { model: schema.User, query: {}, user: db.admin });
         } catch (err) {
             expect(err.message).toContain('opt.changes is a required argument');
             return;
@@ -121,7 +121,7 @@ describeWithAuth('CRUD operations', () => {
                     },
                 );
                 const updated = await update(session, {
-                    changes: { name: 'bob' }, query, user: db.admin, model: schema.User,
+                    changes: { name: 'bob' }, model: schema.User, query, user: db.admin,
                 });
                 expect(updated).toHaveProperty('name', 'bob');
                 expect(updated).toHaveProperty('history');
@@ -139,7 +139,7 @@ describeWithAuth('CRUD operations', () => {
                 );
                 const deleted = await remove(
                     session,
-                    { query, user: db.admin, model: schema.User },
+                    { model: schema.User, query, user: db.admin },
                 );
                 expect(deleted).toHaveProperty('deletedAt');
                 expect(deleted.deletedAt).not.toBeNull();
@@ -179,12 +179,12 @@ describeWithAuth('CRUD operations', () => {
         describe('create new', () => {
             test('ok', async () => {
                 const edge = await create(session, {
-                    model: schema.AliasOf,
                     content: {
-                        out: srcVertex,
                         in: tgtVertex,
+                        out: srcVertex,
                         source,
                     },
+                    model: schema.AliasOf,
                     user: db.admin,
                 });
                 expect(edge).toHaveProperty('source');
@@ -196,12 +196,12 @@ describeWithAuth('CRUD operations', () => {
             test('error on src = tgt', async () => {
                 try {
                     await create(session, {
-                        model: schema.AliasOf,
                         content: {
-                            out: srcVertex,
                             in: srcVertex,
+                            out: srcVertex,
                             source,
                         },
+                        model: schema.AliasOf,
                         user: db.admin,
                     });
                 } catch (err) {
@@ -215,12 +215,12 @@ describeWithAuth('CRUD operations', () => {
             test('error on no src (out) vertex', async () => {
                 try {
                     await create(session, {
-                        model: schema.AliasOf,
                         content: {
-                            out: null,
                             in: tgtVertex,
+                            out: null,
                             source,
                         },
+                        model: schema.AliasOf,
                         user: db.admin,
                     });
                 } catch (err) {
@@ -234,12 +234,12 @@ describeWithAuth('CRUD operations', () => {
             test('error on no tgt (in) vertex', async () => {
                 try {
                     await create(session, {
-                        model: schema.AliasOf,
                         content: {
-                            out: srcVertex,
                             in: null,
+                            out: srcVertex,
                             source,
                         },
+                        model: schema.AliasOf,
                         user: db.admin,
                     });
                 } catch (err) {
@@ -252,12 +252,12 @@ describeWithAuth('CRUD operations', () => {
 
             test('allows null source', async () => {
                 const record = await create(session, {
-                    model: schema.AliasOf,
                     content: {
-                        out: srcVertex,
                         in: tgtVertex,
+                        out: srcVertex,
                         source: null,
                     },
+                    model: schema.AliasOf,
                     user: db.admin,
                 });
                 expect(record).toHaveProperty('source', null);
@@ -269,13 +269,13 @@ describeWithAuth('CRUD operations', () => {
 
             beforeEach(async () => {
                 original = await create(session, {
-                    model: schema.AliasOf,
                     content: {
-                        out: srcVertex,
-                        in: tgtVertex,
                         comment: 'some original comment',
+                        in: tgtVertex,
+                        out: srcVertex,
                         source,
                     },
+                    model: schema.AliasOf,
                     user: db.admin,
                 });
             });
@@ -287,9 +287,9 @@ describeWithAuth('CRUD operations', () => {
                 );
                 // now update the edge, both src and target node should have history after
                 const result = await remove(session, {
+                    model: schema.AliasOf,
                     query,
                     user: db.admin,
-                    model: schema.AliasOf,
                 });
                 expect(result).toHaveProperty('deletedBy');
                 expect(result.createdBy).toEqual(db.admin['@rid']);
@@ -309,10 +309,10 @@ describeWithAuth('CRUD operations', () => {
                 // now update the edge, both src and target node should have history after
                 try {
                     await update(session, {
+                        changes: { source: null },
+                        model: schema.AliasOf,
                         query,
                         user: db.admin,
-                        model: schema.AliasOf,
-                        changes: { source: null },
                     });
                 } catch (err) {
                     expect(err).toBeInstanceOf(NotImplementedError);
@@ -327,10 +327,10 @@ describeWithAuth('CRUD operations', () => {
         describe('create new', () => {
             test('ok', async () => {
                 const record = await create(session, {
-                    model: schema.Source,
                     content: {
                         name: 'blargh',
                     },
+                    model: schema.Source,
                     user: db.admin,
                 });
                 expect(record).toHaveProperty('name', 'blargh');
@@ -339,8 +339,8 @@ describeWithAuth('CRUD operations', () => {
             test('missing required property', async () => {
                 try {
                     await create(session, {
-                        model: schema.Source,
                         content: {},
+                        model: schema.Source,
                         user: db.admin,
                     });
                 } catch (err) {
@@ -358,26 +358,26 @@ describeWithAuth('CRUD operations', () => {
 
             beforeEach(async () => {
                 source = await create(session, {
-                    model: schema.Source,
                     content: { name: 'blargh' },
+                    model: schema.Source,
                     user: db.admin,
                 });
                 ([cancer, carcinoma] = await Promise.all([
                     create(session, {
+                        content: { source, sourceId: 'cancer' },
                         model: schema.Disease,
-                        content: { sourceId: 'cancer', source },
                         user: db.admin,
                     }),
                     create(session, {
+                        content: { source, sourceId: 'carcinoma' },
                         model: schema.Disease,
-                        content: { sourceId: 'carcinoma', source },
                         user: db.admin,
                     }),
                 ]));
                 // add a link
                 await create(
                     session,
-                    { content: { out: cancer, in: carcinoma }, model: schema.AliasOf, user: db.admin },
+                    { content: { in: carcinoma, out: cancer }, model: schema.AliasOf, user: db.admin },
                 );
             });
 
@@ -385,7 +385,7 @@ describeWithAuth('CRUD operations', () => {
                 const { name = null, sourceId, '@rid': rid } = cancer;
                 const query = parseRecord(
                     schema.Disease,
-                    { sourceId, source, name },
+                    { name, source, sourceId },
                     {
                         history: false,
                         neighbors: 3,
@@ -398,8 +398,8 @@ describeWithAuth('CRUD operations', () => {
                         name: 'new name',
                     },
                     model: schema.Disease,
-                    user: db.admin,
                     query,
+                    user: db.admin,
                 });
                 // check that a history link has been added to the node
                 expect(updated).toHaveProperty('name', 'new name');
@@ -408,7 +408,7 @@ describeWithAuth('CRUD operations', () => {
                 // select the original node
                 const reselectQuery = parseRecord(
                     schema.Disease,
-                    { sourceId, source, name },
+                    { name, source, sourceId },
                     {
                         history: true,
                         neighbors: 3,
@@ -418,7 +418,7 @@ describeWithAuth('CRUD operations', () => {
                 const [reselected] = await select(
                     session,
                     reselectQuery,
-                    { user: db.admin, exactlyN: 1 },
+                    { exactlyN: 1, user: db.admin },
                 );
                 expect(updated.history).toEqual(reselected['@rid']);
                 expect(reselected.deletedBy['@rid']).toEqual(db.admin['@rid']);
@@ -432,7 +432,7 @@ describeWithAuth('CRUD operations', () => {
                 const original = cancer;
                 const query = parseRecord(
                     schema.Disease,
-                    { sourceId: original.sourceId, source },
+                    { source, sourceId: original.sourceId },
                     {
                         history: true,
                         neighbors: 3,
@@ -441,8 +441,8 @@ describeWithAuth('CRUD operations', () => {
                 // change the name
                 const deleted = await remove(session, {
                     model: schema.Disease,
-                    user: db.admin,
                     query,
+                    user: db.admin,
                 });
 
                 // check that a history link has been added to the node
@@ -488,9 +488,9 @@ describeWithAuth('CRUD operations', () => {
                 {
                     content: {
                         conditions: [disease],
-                        subject: disease,
-                        relevance,
                         evidence: [publication],
+                        relevance,
+                        subject: disease,
                     },
                     model: schema.Statement,
                     user: db.admin,
@@ -504,9 +504,9 @@ describeWithAuth('CRUD operations', () => {
                     {
                         content: {
                             conditions: [disease],
-                            subject: disease,
-                            relevance,
                             evidence: [publication],
+                            relevance,
+                            subject: disease,
                         },
                         model: schema.Statement,
                         user: db.admin,

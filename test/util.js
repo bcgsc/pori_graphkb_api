@@ -15,7 +15,7 @@ const setUpEmptyDB = async (conf) => {
     const user = await getUserByName(db, process.env.USER || 'admin');
 
     return {
-        server, db, schema, admin: user, conf, dbName: conf.GKB_DB_NAME,
+        admin: user, conf, db, dbName: conf.GKB_DB_NAME, schema, server,
     };
 };
 
@@ -29,4 +29,4 @@ const clearDB = async (db, admin) => {
 };
 
 
-module.exports = { setUpEmptyDB, clearDB };
+module.exports = { clearDB, setUpEmptyDB };

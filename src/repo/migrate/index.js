@@ -257,13 +257,13 @@ const migrate2to3From6xto0x = async (db) => {
     }
 
     // remake any indices
-    await ClassModel.create(SCHEMA_DEFN.Statement, db, { properties: false, indices: true, graceful: true });
+    await ClassModel.create(SCHEMA_DEFN.Statement, db, { graceful: true, indices: true, properties: false });
 };
 
 
 const migrate3From0xto1x = async (db) => {
     // remake any missing indices (were renamed here)
-    await ClassModel.create(SCHEMA_DEFN.Statement, db, { properties: false, indices: true, graceful: true });
+    await ClassModel.create(SCHEMA_DEFN.Statement, db, { graceful: true, indices: true, properties: false });
 
     // add source.sort property
     logger.info('Adding Source.sort property');
@@ -421,10 +421,10 @@ const migrate3xFrom7xto8x = async (db) => {
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
-        version,
+        createdAt: timeStampNow(),
         name,
         url,
-        createdAt: timeStampNow(),
+        version,
     });
     return version;
 };

@@ -22,7 +22,7 @@ const getLoadVersion = () => {
     );
     // must be a global require, currently no other way to obtain dependency package version info of the actual install
     const {version, name, _resolved} = require(pathToVersionInfo); // eslint-disable-line
-    return { version, name, url: _resolved };
+    return { name, url: _resolved, version };
 };
 
 

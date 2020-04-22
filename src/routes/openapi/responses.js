@@ -6,7 +6,6 @@
  * @ignore
  */
 const Forbidden = {
-    description: 'The current user does not have the required permissions to access this content',
     content: {
         'application/json': {
             schema: {
@@ -15,9 +14,9 @@ const Forbidden = {
             },
         },
     },
+    description: 'The current user does not have the required permissions to access this content',
 };
 const NotAuthorized = {
-    description: 'Authorization failed or insufficient permissions were found',
     content: {
         'application/json': {
             schema: {
@@ -25,9 +24,9 @@ const NotAuthorized = {
             },
         },
     },
+    description: 'Authorization failed or insufficient permissions were found',
 };
 const RecordExistsError = {
-    description: 'The record cannot be created, the record already exists',
     content: {
         'application/json': {
             schema: {
@@ -36,9 +35,9 @@ const RecordExistsError = {
             },
         },
     },
+    description: 'The record cannot be created, the record already exists',
 };
 const BadInput = {
-    description: 'Bad request contains invalid input',
     content: {
         'application/json': {
             schema: {
@@ -47,10 +46,10 @@ const BadInput = {
             },
         },
     },
+    description: 'Bad request contains invalid input',
 };
 
 const RecordNotFound = {
-    description: 'The record does not exist',
     content: {
         'application/json': {
             schema: {
@@ -58,8 +57,9 @@ const RecordNotFound = {
             },
         },
     },
+    description: 'The record does not exist',
 };
 
 module.exports = {
-    Forbidden, NotAuthorized, RecordExistsError, BadInput, RecordNotFound,
+    BadInput, Forbidden, NotAuthorized, RecordExistsError, RecordNotFound,
 };

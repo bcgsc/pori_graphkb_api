@@ -12,7 +12,8 @@
     ],
     "plugins": [
         "jest",
-        "jest-formatting"
+        "jest-formatting",
+        "sort-keys-fix"
     ],
     "rules": {
         "indent": [
@@ -104,6 +105,8 @@
             "error",
             "always"
         ],
+        "sort-keys": "warn",
+        "sort-keys-fix/sort-keys-fix": "warn",
         "space-in-parens": [
             "error",
             "never"

@@ -8,140 +8,140 @@
 const { MAX_JUMPS, MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('./constants');
 
 const GENERAL_QUERY_PARAMS = {
-    neighbors: {
+    count: {
+        description: 'Return a count of the records for this query instead of the query itself',
         in: 'query',
-        name: 'neighbors',
-        schema: {
-            type: 'integer',
-            minimum: 0,
-            maximum: MAX_JUMPS,
-        },
-        description: 'Return neighbors of the selected record(s) up to \'n\' edges away. If this is set to 0, no neighbors will be returned. To collect all immediate neighbors this must be set to 2.',
+        name: 'count',
+        nullable: false,
+        schema: { type: 'boolean' },
+    },
+    createdAt: {
+        description: 'The timestamp when the record was created',
+        in: 'query',
+        name: 'createdAt',
+        nullable: false,
+        schema: { type: 'integer' },
+    },
+    deletedAt: {
+        description: 'The timestamp when the record was deleted',
+        in: 'query',
+        name: 'deletedAt',
+        nullable: true,
+        schema: { type: 'integer' },
     },
     history: {
+        description: 'Include deleted records in the query result',
         in: 'query',
         name: 'history',
         schema: {
-            type: 'boolean',
             default: false,
+            type: 'boolean',
         },
-        description: 'Include deleted records in the query result',
+    },
+    limit: {
+        default: DEFAULT_QUERY_LIMIT,
+        description: 'Limits the number of records to return (useful for paginating queries)',
+        in: 'query',
+        name: 'limit',
+        schema: {
+            maximum: MAX_QUERY_LIMIT,
+            minimum: 1,
+            type: 'integer',
+        },
+    },
+    neighbors: {
+        description: 'Return neighbors of the selected record(s) up to \'n\' edges away. If this is set to 0, no neighbors will be returned. To collect all immediate neighbors this must be set to 2.',
+        in: 'query',
+        name: 'neighbors',
+        schema: {
+            maximum: MAX_JUMPS,
+            minimum: 0,
+            type: 'integer',
+        },
+    },
+    or: {
+        description: 'CSV list of class properties which should be joined as an OR statment instead of the default AND',
+        in: 'query',
+        name: 'or',
+        nullable: false,
+        schema: { type: 'string' },
+    },
+    orderBy: {
+        description: 'CSV list of properties to order the results by',
+        in: 'query',
+        name: 'orderBy',
+        nullable: false,
+        schema: { type: 'string' },
+    },
+    orderByDirection: {
+        description: 'When orderBy is given, this property is used to determine the direction of that ordering',
+        in: 'query',
+        name: 'orderByDirection',
+        nullable: false,
+        schema: { enum: ['ASC', 'DESC'], type: 'string' },
     },
     returnProperties: {
+        description: 'CSV list of attributes to return. Returns the whole record if not specified',
         in: 'query',
         name: 'returnProperties',
         schema: {
             type: 'string',
         },
-        description: 'CSV list of attributes to return. Returns the whole record if not specified',
-    },
-    limit: {
-        in: 'query',
-        name: 'limit',
-        schema: {
-            type: 'integer',
-            minimum: 1,
-            maximum: MAX_QUERY_LIMIT,
-        },
-        description: 'Limits the number of records to return (useful for paginating queries)',
-        default: DEFAULT_QUERY_LIMIT,
     },
     skip: {
+        description: 'Number of records to skip (useful for paginating queries)',
         in: 'query',
         name: 'skip',
         schema: {
-            type: 'integer',
             minimum: 1,
+            type: 'integer',
         },
-        description: 'Number of records to skip (useful for paginating queries)',
-    },
-    deletedAt: {
-        in: 'query',
-        name: 'deletedAt',
-        schema: { type: 'integer' },
-        nullable: true,
-        description: 'The timestamp when the record was deleted',
-    },
-    createdAt: {
-        in: 'query',
-        name: 'createdAt',
-        schema: { type: 'integer' },
-        nullable: false,
-        description: 'The timestamp when the record was created',
-    },
-    or: {
-        in: 'query',
-        name: 'or',
-        schema: { type: 'string' },
-        nullable: false,
-        description: 'CSV list of class properties which should be joined as an OR statment instead of the default AND',
-    },
-    orderBy: {
-        in: 'query',
-        name: 'orderBy',
-        schema: { type: 'string' },
-        nullable: false,
-        description: 'CSV list of properties to order the results by',
-    },
-    orderByDirection: {
-        in: 'query',
-        name: 'orderByDirection',
-        nullable: false,
-        description: 'When orderBy is given, this property is used to determine the direction of that ordering',
-        schema: { type: 'string', enum: ['ASC', 'DESC'] },
-    },
-    count: {
-        in: 'query',
-        name: 'count',
-        nullable: false,
-        description: 'Return a count of the records for this query instead of the query itself',
-        schema: { type: 'boolean' },
     },
 };
 
 
 const ONTOLOGY_QUERY_PARAMS = {
     subsets: {
+        description: 'Check if an ontology term belongs to a given subset',
         in: 'query',
         name: 'subsets',
         schema: {
             type: 'string',
         },
-        description: 'Check if an ontology term belongs to a given subset',
     },
 };
 
 
 const BASIC_HEADER_PARAMS = {
-    Authorization: {
-        in: 'header',
-        name: 'Authorization',
-        schema: {
-            type: 'string',
-            format: 'token',
-        },
-        required: true,
-        description: 'Token containing the user information/authentication',
-    },
     Accept: {
+        description: 'The content type you expect to recieve. Currently only supports application/json',
         in: 'header',
         name: 'Accept',
-        schema: {
-            type: 'string',
-            enum: ['application/json'],
-        },
         required: true,
-        description: 'The content type you expect to recieve. Currently only supports application/json',
+        schema: {
+            enum: ['application/json'],
+            type: 'string',
+        },
+    },
+    Authorization: {
+        description: 'Token containing the user information/authentication',
+        in: 'header',
+        name: 'Authorization',
+        required: true,
+        schema: {
+            format: 'token',
+            type: 'string',
+        },
     },
     'Content-Type': {
+        description: 'The content type you expect to send. Currently only supports application/json',
         in: 'header',
         name: 'Content-Type',
-        schema: {
-            type: 'string',
-            enum: ['application/json'],
-        },
         required: true,
-        description: 'The content type you expect to send. Currently only supports application/json',
+        schema: {
+            enum: ['application/json'],
+            type: 'string',
+        },
     },
 };
 
