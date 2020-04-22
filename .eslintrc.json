@@ -28,6 +28,7 @@
                 "fn": "test"
             }
         ],
+        "jest/prefer-hooks-on-top": "error",
         "linebreak-style": [
             "error",
             "unix"
