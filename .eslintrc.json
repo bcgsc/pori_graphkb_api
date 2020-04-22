@@ -13,8 +13,7 @@
     "plugins": [
         "jest",
         "jest-formatting",
-        "sort-keys-fix",
-        "sort-requires"
+        "sort-keys-fix"
     ],
     "rules": {
         "indent": [
@@ -108,7 +107,6 @@
         ],
         "sort-keys": "warn",
         "sort-keys-fix/sort-keys-fix": "warn",
-        "sort-requires/sort-requires": "warn",
         "space-in-parens": [
             "error",
             "never"

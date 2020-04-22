@@ -3,14 +3,14 @@ const {
     schema: { schema: SCHEMA_DEFN },
     constants: { PERMISSIONS },
 } = require('@bcgsc/knowledgebase-schema');
+const { logger } = require('../logging');
+const { parseRecord } = require('../query_builder');
 const {
     RecordExistsError, PermissionError,
 } = require('../error');
-const { checkUserAccessFor } = require('../../middleware/auth');
-const { logger } = require('../logging');
-const { parseRecord } = require('../query_builder');
 const { select, getUserByName, fetchDisplayName } = require('./select');
 const { wrapIfTypeError, omitDBAttributes } = require('./util');
+const { checkUserAccessFor } = require('../../middleware/auth');
 
 /**
  * Create new User record

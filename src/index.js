@@ -1,31 +1,31 @@
 
 
 // required packages
-const bodyParser = require('body-parser');
-const compression = require('compression');
-const cors = require('cors');
 const express = require('express');
+const compression = require('compression');
+const bodyParser = require('body-parser');
 const fs = require('fs');
 const http = require('http');
-const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
+const cors = require('cors');
+const HTTP_STATUS = require('http-status-codes');
 const { getPortPromise } = require('portfinder');
 
-const config = require('./config');
+const { logger } = require('./repo/logging');
+const {
+    checkToken,
+} = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
+const { connectDB } = require('./repo');
+const { getLoadVersion } = require('./repo/migrate/version');
+const { addExtensionRoutes } = require('./extensions');
+const { generateSwaggerSpec, registerSpecEndpoints } = require('./routes/openapi');
+const { addResourceRoutes } = require('./routes/resource');
+const { addPostToken } = require('./routes/auth');
+const { addEulaRoutes } = require('./routes/eula');
 const {
     addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute,
 } = require('./routes');
-const {
-    checkToken,
-} = require('./middleware/auth');
-const { addEulaRoutes } = require('./routes/eula');
-const { addExtensionRoutes } = require('./extensions');
-const { addPostToken } = require('./routes/auth');
-const { addResourceRoutes } = require('./routes/resource');
-const { connectDB } = require('./repo');
-const { generateSwaggerSpec, registerSpecEndpoints } = require('./routes/openapi');
-const { getLoadVersion } = require('./repo/migrate/version');
-const { logger } = require('./repo/logging');
+const config = require('./config');
 
 const BOOLEAN_FLAGS = [
     'GKB_USER_CREATE',

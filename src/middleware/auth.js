@@ -9,8 +9,8 @@ const jwt = require('jsonwebtoken');
 
 const { constants: { PERMISSIONS } } = require('@bcgsc/knowledgebase-schema');
 
-const { logger } = require('./../repo/logging');
 const { PermissionError } = require('./../repo/error');
+const { logger } = require('./../repo/logging');
 
 
 /*

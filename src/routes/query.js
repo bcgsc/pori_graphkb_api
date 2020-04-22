@@ -3,9 +3,9 @@ const jc = require('json-cycle');
 
 const { error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 const { logger } = require('./../repo/logging');
-const { NoRecordFoundError } = require('../repo/error');
 const { parse } = require('../repo/query_builder');
 const { select } = require('../repo/commands');
+const { NoRecordFoundError } = require('../repo/error');
 
 
 /**

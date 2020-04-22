@@ -1,12 +1,12 @@
-const form = require('form-urlencoded').default;
-const HTTP_STATUS = require('http-status-codes');
-const jc = require('json-cycle');
 const jwt = require('jsonwebtoken');
+const jc = require('json-cycle');
+const form = require('form-urlencoded').default;
 const request = require('request-promise');
+const HTTP_STATUS = require('http-status-codes');
 
-const { AuthenticationError, PermissionError, NoRecordFoundError } = require('./../repo/error');
 const { getUserByName } = require('./../repo/commands');
 const { logger } = require('./../repo/logging');
+const { AuthenticationError, PermissionError, NoRecordFoundError } = require('./../repo/error');
 
 const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
 

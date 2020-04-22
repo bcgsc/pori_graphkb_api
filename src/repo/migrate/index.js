@@ -2,8 +2,8 @@
  * This module will contain migrations that are determined by the content of the SchemaHistory table
  */
 
-const semver = require('semver');
 const { RID } = require('orientjs');
+const semver = require('semver');
 
 const {
     constants,
@@ -15,9 +15,9 @@ const {
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 const { PERMISSIONS } = constants;
 
-const { generateDefaultGroups, DEFAULT_LICENSE_CONTENT } = require('../schema');
 const { logger } = require('./../logging');
 const { Property, ClassModel } = require('../model');
+const { generateDefaultGroups, DEFAULT_LICENSE_CONTENT } = require('../schema');
 
 const _version = require('./version');
 

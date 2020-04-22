@@ -2,8 +2,8 @@
 
 const uuidV4 = require('uuid/v4');
 
-const { connectDB } = require('../src/repo');
 const { getUserByName } = require('../src/repo/commands');
+const { connectDB } = require('../src/repo');
 
 const setUpEmptyDB = async (conf) => {
     conf.GKB_DB_NAME = `test_${uuidV4()}`;

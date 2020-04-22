@@ -10,7 +10,6 @@ dist
 *tar
 .vscode/
 id_rsa*
-odb_bugs
 out
 external_data
 jsdoc/

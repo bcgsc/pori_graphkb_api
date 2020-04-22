@@ -1,3 +1,4 @@
+const { create, createUser } = require('./create');
 const {
     getUserByName,
     QUERY_LIMIT,
@@ -9,7 +10,6 @@ const {
     searchSelect,
     fetchDisplayName,
 } = require('./select');
-const { create, createUser } = require('./create');
 const { remove, update } = require('./update');
 
 module.exports = {

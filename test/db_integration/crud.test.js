@@ -7,11 +7,11 @@ const {
     select,
 } = require('../../src/repo/commands');
 const {
-    parseRecord,
-} = require('../../src/repo/query_builder');
-const {
     RecordExistsError, AttributeError, NotImplementedError,
 } = require('../../src/repo/error');
+const {
+    parseRecord,
+} = require('../../src/repo/query_builder');
 
 
 const { clearDB, createEmptyDb, tearDownDb } = require('./util');

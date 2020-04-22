@@ -7,10 +7,10 @@ const {
     },
 } = require('@bcgsc/knowledgebase-schema');
 
+const { create } = require('../../../src/repo/commands/create');
 const {
     PermissionError, AttributeError,
 } = require('../../../src/repo/error');
-const { create } = require('../../../src/repo/commands/create');
 const { generateDefaultGroups } = require('../../../src/repo/schema');
 
 const groups = generateDefaultGroups();
