@@ -13,4 +13,4 @@ const printFunctionName = (func, value) => {
     return value;
 };
 
-module.exports = { stripSQL, printFunctionName };
+module.exports = { printFunctionName, stripSQL };

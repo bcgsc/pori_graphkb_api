@@ -194,12 +194,12 @@ class Comparison {
         }
 
         const result = new this({
+            isLength,
             name,
+            negate,
+            operator,
             prop,
             value,
-            operator,
-            negate,
-            isLength,
         });
         result.validate();
         return result;
@@ -259,7 +259,7 @@ class Comparison {
         if (this.negate) {
             query = `NOT (${query})`;
         }
-        return { query, params };
+        return { params, query };
     }
 }
 
@@ -332,7 +332,7 @@ class Clause {
             paramIndex = Object.values(params).length + initialParamIndex;
         }
         const query = components.join(` ${this.operator} `);
-        return { query, params };
+        return { params, query };
     }
 }
 
@@ -383,7 +383,7 @@ class Subquery {
             statement = `SELECT * FROM (${statement}) WHERE deletedAt IS NULL`;
         }
 
-        return { query: statement, params };
+        return { params, query: statement };
     }
 
     static parse(opt) {
@@ -429,15 +429,15 @@ class Subquery {
         if (queryType) {
             if (!filters) {
                 return FixedSubquery.parse({
-                    ...rest, queryType, target, history,
+                    ...rest, history, queryType, target,
                 });
             }
             return FixedSubquery.parse({
-                ...rest, queryType, filters, target, history,
+                ...rest, filters, history, queryType, target,
             });
         }
         return new this({
-            target, history, filters,
+            filters, history, target,
         });
     }
 }

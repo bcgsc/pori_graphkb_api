@@ -210,12 +210,12 @@ const displayQuery = ({ query: statement, params = {} }) => {
 
 
 module.exports = {
+    castBoolean,
+    castRangeInt,
     checkStandardOptions,
-    propsToProjection,
-    parsePropertyList,
     displayQuery,
     getQueryableProps,
     nestedProjection,
-    castBoolean,
-    castRangeInt,
+    parsePropertyList,
+    propsToProjection,
 };

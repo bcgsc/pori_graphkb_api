@@ -19,10 +19,10 @@ class Property extends kbSchema.Property {
      */
     static async create(model, dbClass) {
         const dbProperties = {
-            name: model.name,
-            type: model.type,
-            notNull: !model.nullable,
             mandatory: model.mandatory,
+            name: model.name,
+            notNull: !model.nullable,
+            type: model.type,
         };
 
         if (model.linkedClass) {

@@ -53,7 +53,7 @@ const treeQuery = (opt) => {
     if (!history) {
         statement = `SELECT * FROM (${statement}) WHERE deletedAt IS NULL`;
     }
-    return { query: statement, params };
+    return { params, query: statement };
 };
 
 /**
@@ -84,7 +84,7 @@ const neighborhood = ({
     {class: ${target}, WHERE: (${query})}
         .both(${edges.map(quoteWrap).join(', ')}){WHILE: ($depth < ${depth})}
 RETURN DISTINCT $pathElements)`;
-    return { query: statement, params };
+    return { params, query: statement };
 };
 
 
@@ -150,7 +150,7 @@ const similarTo = ({
     } else if (!history) {
         query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL`;
     }
-    return { query, params };
+    return { params, query };
 };
 
 
@@ -203,18 +203,18 @@ const singleKeywordSearch = ({
     } if (model.name === 'Statement') {
         const ontologySubq = singleKeywordSearch({
             ...opt,
-            target: 'Ontology',
+            operator,
             param,
             prefix: `${prefix}ontologySubq`,
-            operator,
+            target: 'Ontology',
         });
 
         const variantSubq = singleKeywordSearch({
             ...opt,
-            target: 'Variant',
+            operator,
             param,
             prefix: `${prefix}variantSubq`,
-            operator,
+            target: 'Variant',
         });
 
         const query = `SELECT expand($${prefix}statements)
@@ -240,10 +240,10 @@ const singleKeywordSearch = ({
     } if (model.inherits.includes('Variant') || model.name === 'Variant') {
         const subquery = singleKeywordSearch({
             ...opt,
-            target: 'Ontology',
-            prefix: `${prefix}ontologySubq`,
-            param,
             operator,
+            param,
+            prefix: `${prefix}ontologySubq`,
+            target: 'Ontology',
         });
 
         return `SELECT expand($${prefix}variants)
@@ -304,19 +304,19 @@ const keywordSearch = ({
         params[param] = word;
         query = singleKeywordSearch({
             ...opt,
+            operator: keyword.length >= MIN_WORD_SIZE
+                ? operator
+                : OPERATORS.EQ,
+            param,
+            prefix: `${prefix}w${wordIndex}`,
             target: model.name,
             targetQuery: query
                 ? `(${query})`
                 : null,
-            param,
-            prefix: `${prefix}w${wordIndex}`,
-            operator: keyword.length >= MIN_WORD_SIZE
-                ? operator
-                : OPERATORS.EQ,
         });
     });
 
-    return { query: `SELECT DISTINCT * FROM (${query})`, params };
+    return { params, query: `SELECT DISTINCT * FROM (${query})` };
 };
 
 

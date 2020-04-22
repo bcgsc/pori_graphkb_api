@@ -35,16 +35,16 @@ class DatabaseRequestError extends ErrorMixin {}
 
 
 module.exports = {
-    RecordExistsError,
-    ErrorMixin,
     AttributeError,
-    ParsingError,
+    AuthenticationError,
+    ControlledVocabularyError,
     DatabaseConnectionError,
     DatabaseRequestError,
-    ControlledVocabularyError,
-    NoRecordFoundError,
+    ErrorMixin,
     MultipleRecordsFoundError,
-    PermissionError,
+    NoRecordFoundError,
     NotImplementedError,
-    AuthenticationError,
+    ParsingError,
+    PermissionError,
+    RecordExistsError,
 };

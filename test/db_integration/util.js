@@ -18,10 +18,10 @@ const clearDB = async ({ session, admin }) => {
 
 const createEmptyDb = async () => {
     const conf = createConfig({
+        GKB_DB_CREATE: true,
+        GKB_DB_NAME: `test_${uuidV4()}`,
         GKB_DISABLE_AUTH: true,
         GKB_PORT: null,
-        GKB_DB_NAME: `test_${uuidV4()}`,
-        GKB_DB_CREATE: true,
         GKB_USER_CREATE: true,
     });
     const { server, pool } = await connectDB(conf);
@@ -29,7 +29,7 @@ const createEmptyDb = async () => {
     const user = await getUserByName(session, process.env.USER || 'admin');
     session.close();
     return {
-        pool, conf, admin: user, server,
+        admin: user, conf, pool, server,
     };
 };
 
@@ -66,14 +66,14 @@ const createSeededDb = async () => {
         resistance,
         drug,
     ] = await Promise.all([
-        { content: { sourceId: 'mutation', displayName: 'mutation' }, model: schema.Vocabulary },
-        { content: { sourceId: 'substitution', displayName: 'substitution' }, model: schema.Vocabulary },
+        { content: { displayName: 'mutation', sourceId: 'mutation' }, model: schema.Vocabulary },
+        { content: { displayName: 'substitution', sourceId: 'substitution' }, model: schema.Vocabulary },
         { content: { sourceId: 'gain of function' }, model: schema.Vocabulary },
         { content: { sourceId: 'cancer', subsets: ['singleSubset'] }, model: schema.Disease },
         { content: { sourceId: 'disease of cellular proliferation', subsets: ['wordy', 'singleSubset'] }, model: schema.Disease },
         { content: { sourceId: 'carcinomas' }, model: schema.Disease },
-        { content: { sourceId: 'kras', biotype: 'gene', displayName: 'KRAS' }, model: schema.Feature },
-        { content: { sourceId: 'kras1', biotype: 'gene', displayName: 'KRAS1' }, model: schema.Feature },
+        { content: { biotype: 'gene', displayName: 'KRAS', sourceId: 'kras' }, model: schema.Feature },
+        { content: { biotype: 'gene', displayName: 'KRAS1', sourceId: 'kras1' }, model: schema.Feature },
         { content: { sourceId: '1234' }, model: schema.Publication },
         { content: { sourceId: 'sensitivity' }, model: schema.Vocabulary },
         { content: { sourceId: 'resistance' }, model: schema.Vocabulary },
@@ -84,29 +84,29 @@ const createSeededDb = async () => {
     const query = `SELECT * FROM [${carcinomas['@rid']}]`;
     const carcinoma = await update(session, {
         changes: { sourceId: 'carcinoma' },
-        user: db.admin,
         model: schema.Disease,
         query: {
-            toString: () => ({ query, params: {} }),
             displayString: () => query,
+            toString: () => ({ params: {}, query }),
         },
+        user: db.admin,
     });
 
     // add some default relationships
     await Promise.all([
-        { content: { out: cancer, in: proliferation }, model: schema.AliasOf },
-        { content: { out: carcinoma, in: cancer }, model: schema.SubClassOf },
-        { content: { out: substitution, in: mutation }, model: schema.SubClassOf },
-        { content: { out: kras1, in: kras }, model: schema.DeprecatedBy },
+        { content: { in: proliferation, out: cancer }, model: schema.AliasOf },
+        { content: { in: cancer, out: carcinoma }, model: schema.SubClassOf },
+        { content: { in: mutation, out: substitution }, model: schema.SubClassOf },
+        { content: { in: kras, out: kras1 }, model: schema.DeprecatedBy },
     ].map(createRecord));
 
     // create a positional variant
     const [krasSub, krasMut] = await Promise.all([
         create(session, {
             content: {
+                break1Start: { '@class': 'ProteinPosition', pos: 12, refAA: 'G' },
                 reference1: kras1,
                 type: substitution,
-                break1Start: { refAA: 'G', pos: 12, '@class': 'ProteinPosition' },
                 untemplatedSeq: 'D',
                 untemplatedSeqSize: 1,
             },
@@ -122,54 +122,54 @@ const createSeededDb = async () => {
             user: admin,
         }),
     ]);
-    await createRecord({ content: { out: krasSub, in: krasMut }, model: schema.Infers });
+    await createRecord({ content: { in: krasMut, out: krasSub }, model: schema.Infers });
     // create a statement
     const [sensToDrug, resToDrug, mutIsGof] = await Promise.all([
         create(session, {
             content: {
-                relevance: sensitivity,
-                subject: drug,
                 conditions: [cancer, krasMut, drug],
                 evidence: [publication],
+                relevance: sensitivity,
+                subject: drug,
             },
-            user: admin,
             model: schema.Statement,
+            user: admin,
         }),
         create(session, {
             content: {
-                relevance: resistance,
-                subject: drug,
                 conditions: [carcinoma, drug],
                 evidence: [publication],
+                relevance: resistance,
+                subject: drug,
             },
-            user: admin,
             model: schema.Statement,
+            user: admin,
         }),
         create(session, {
             content: {
-                relevance: gof,
-                subject: kras,
                 conditions: [proliferation, krasMut, kras],
                 evidence: [publication],
+                relevance: gof,
+                subject: kras,
             },
-            user: admin,
             model: schema.Statement,
+            user: admin,
         }),
     ]);
     await session.close();
     return {
         records: {
-            source,
-            sensToDrug,
-            resToDrug,
-            mutIsGof,
-            krasMut,
-            krasSub,
-            kras,
-            kras1,
             cancer,
             carcinoma,
+            kras,
+            kras1,
+            krasMut,
+            krasSub,
+            mutIsGof,
             proliferation,
+            resToDrug,
+            sensToDrug,
+            source,
         },
         ...db,
     };
@@ -180,8 +180,8 @@ const tearDownDb = async ({ server, conf }) => {
     if (server) {
         await server.dropDatabase({
             name: conf.GKB_DB_NAME,
-            username: conf.GKB_DBS_USER,
             password: conf.GKB_DBS_PASS,
+            username: conf.GKB_DBS_USER,
         });
     }
 };

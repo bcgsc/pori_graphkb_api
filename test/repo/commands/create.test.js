@@ -18,12 +18,6 @@ const groups = generateDefaultGroups();
 
 describe('create (createEdge)', () => {
     const db = {
-        record: {
-            get: jest.fn().mockResolvedValue([
-                { '@class': 'Vocabulary' },
-                { '@class': 'Vocabulary' },
-            ]),
-        },
         create: jest.fn().mockReturnValue({
             from: jest.fn().mockReturnValue({
                 to: jest.fn().mockReturnValue({
@@ -33,6 +27,12 @@ describe('create (createEdge)', () => {
                 }),
             }),
         }),
+        record: {
+            get: jest.fn().mockResolvedValue([
+                { '@class': 'Vocabulary' },
+                { '@class': 'Vocabulary' },
+            ]),
+        },
     };
 
     afterEach(() => {
@@ -42,9 +42,9 @@ describe('create (createEdge)', () => {
     test('throws permission error when user cannot create node types', async () => {
         try {
             await create(db, {
-                content: { out: '#3:4', in: '#4:3', '@class': 'SubClassOf' },
-                user: { groups: groups.filter(g => g.name === 'regular'), '@rid': '#45:1' },
+                content: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
                 model: SubClassOf,
+                user: { '@rid': '#45:1', groups: groups.filter(g => g.name === 'regular') },
             });
         } catch (err) {
             expect(err).toBeInstanceOf(PermissionError);
@@ -57,9 +57,9 @@ describe('create (createEdge)', () => {
     test('throws error when user creates a loop', async () => {
         try {
             await create(db, {
-                content: { out: '#3:4', in: '#3:4', '@class': 'SubClassOf' },
-                user: { groups: groups.filter(g => g.name === 'admin'), '@rid': '#45:1' },
+                content: { '@class': 'SubClassOf', in: '#3:4', out: '#3:4' },
                 model: SubClassOf,
+                user: { '@rid': '#45:1', groups: groups.filter(g => g.name === 'admin') },
             });
         } catch (err) {
             expect(err).toBeInstanceOf(AttributeError);

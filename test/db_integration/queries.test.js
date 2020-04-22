@@ -75,8 +75,8 @@ describeWithAuth('query builder', () => {
 
         test('skip and limit', async () => {
             const query = parse({
-                skip: 1,
                 limit: 1,
+                skip: 1,
                 target: 'Disease',
             });
             const records = await select(session, query, { user: db.admin });
@@ -118,7 +118,7 @@ describeWithAuth('query builder', () => {
 
     describe('selectByKeyword', () => {
         test('get from related variant reference', async () => {
-            const query = parse({ target: 'Statement', queryType: 'keyword', keyword: 'kras' });
+            const query = parse({ keyword: 'kras', queryType: 'keyword', target: 'Statement' });
             const result = await select(session, query);
             expect(result).toHaveProperty('length', 2);
         });
@@ -127,13 +127,13 @@ describeWithAuth('query builder', () => {
             expect(
                 await select(
                     session,
-                    parse({ target: 'Statement', queryType: 'keyword', keyword: 'kras resistance' }),
+                    parse({ keyword: 'kras resistance', queryType: 'keyword', target: 'Statement' }),
                 ),
             ).toHaveProperty('length', 0);
             expect(
                 await select(
                     session,
-                    parse({ target: 'Statement', queryType: 'keyword', keyword: 'kras sensitivity' }),
+                    parse({ keyword: 'kras sensitivity', queryType: 'keyword', target: 'Statement' }),
                 ),
             ).toHaveProperty('length', 1);
         });
@@ -143,7 +143,7 @@ describeWithAuth('query builder', () => {
         const { kras } = db.records;
         const result = await select(
             session,
-            parse({ target: [kras], returnProperties: ['sourceId'] }),
+            parse({ returnProperties: ['sourceId'], target: [kras] }),
         );
         // fetches the related gene kras1
         expect(result).toEqual([{ sourceId: 'kras' }]);
@@ -152,17 +152,17 @@ describeWithAuth('query builder', () => {
     test('select for embedded iterable', async () => {
         let result = await select(
             session,
-            parse({ target: 'Disease', filters: { subsets: ['wordy', 'singlesubseT'] } }),
+            parse({ filters: { subsets: ['wordy', 'singlesubseT'] }, target: 'Disease' }),
         );
         expect(result).toHaveProperty('length', 1);
         result = await select(
             session,
-            parse({ target: 'Disease', filters: { subsets: ['wordy', 'singlesubseT'], operator: 'CONTAINSANY' } }),
+            parse({ filters: { operator: 'CONTAINSANY', subsets: ['wordy', 'singlesubseT'] }, target: 'Disease' }),
         );
         expect(result).toHaveProperty('length', 2);
         const noResult = await select(
             session,
-            parse({ target: 'Disease', filters: { subsets: ['blargh monkeys'] } }),
+            parse({ filters: { subsets: ['blargh monkeys'] }, target: 'Disease' }),
         );
         expect(noResult).toHaveProperty('length', 0);
     });
@@ -173,7 +173,7 @@ describeWithAuth('query builder', () => {
                 session,
                 parse({
                     queryType: 'similarTo',
-                    target: { target: 'Feature', filters: { sourceId: 'kras' } },
+                    target: { filters: { sourceId: 'kras' }, target: 'Feature' },
                 }),
             );
             // fetches the related gene kras1
@@ -184,13 +184,13 @@ describeWithAuth('query builder', () => {
             const result = await select(
                 session,
                 parse({
-                    target: 'Variant',
                     filters: {
                         reference1: {
                             queryType: 'similarTo',
-                            target: { target: 'Feature', filters: { sourceId: 'kras' } },
+                            target: { filters: { sourceId: 'kras' }, target: 'Feature' },
                         },
                     },
+                    target: 'Variant',
                 }),
             );
             // fetches the related gene kras1 and then the variants on it
@@ -202,13 +202,13 @@ describeWithAuth('query builder', () => {
             const result = await select(
                 session,
                 parse({
-                    target: 'Statement',
                     filters: {
                         conditions: {
                             queryType: 'similarTo',
                             target: [krasSub],
                         },
                     },
+                    target: 'Statement',
                 }),
             );
             // krasMut is inferred by krasSub

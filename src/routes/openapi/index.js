@@ -35,80 +35,80 @@ const SCHEMA_PREFIX = '#/components/schemas';
 
 
 const STUB = {
-    openapi: '3.0.0',
+    components: {
+        parameters: {
+            in: {
+                description: 'The record ID of the vertex the edge goes into, the target/destination vertex',
+                in: 'query',
+                name: 'in',
+                schema: { $ref: `${SCHEMA_PREFIX}/RecordLink` },
+            },
+            out: {
+                description: 'The record ID of the vertex the edge comes from, the source vertex',
+                in: 'query',
+                name: 'out',
+                schema: { $ref: `${SCHEMA_PREFIX}/RecordLink` },
+            },
+        },
+        responses,
+        schemas: Object.assign({
+            '@rid': {
+                description: 'Record ID',
+                example: '#44:0',
+                pattern: '^#\\d+:\\d+$',
+                type: 'string',
+            },
+            RecordId: { $ref: '#/components/schemas/@rid' },
+        }, schemas),
+    },
     info: {
         title: 'GraphKB',
         version: process.env.npm_package_version,
     },
+    openapi: '3.0.0',
     paths: {
-        '/token': { post: POST_TOKEN },
-        '/parse': { post: POST_PARSE },
-        '/schema': { get: GET_SCHEMA },
-        '/version': { get: GET_VERSION },
         '/license': { get: GET_LICENSE, post: POST_LICENSE },
         '/license/sign': { post: POST_SIGN_LICENSE },
+        '/parse': { post: POST_PARSE },
         '/query': { post: QUERY },
+        '/schema': { get: GET_SCHEMA },
         '/spec': {
             get: {
-                summary: 'Returns this specification',
-                tags: ['Metadata'],
                 parameters: [
                     {
-                        in: 'query',
-                        schema: { type: 'string', enum: ['swagger', 'redoc'] },
                         description: 'rendering style to apply to the spec',
+                        in: 'query',
                         name: 'display',
+                        schema: { enum: ['swagger', 'redoc'], type: 'string' },
                     },
                 ],
                 responses: {
                     200: {},
                 },
+                summary: 'Returns this specification',
+                tags: ['Metadata'],
             },
         },
         '/spec.json': {
             get: {
-                summary: 'Returns the JSON format of this specification',
-                tags: ['Metadata'],
                 responses: {
                     200: {
                         schema: { type: 'object' },
                     },
                 },
+                summary: 'Returns the JSON format of this specification',
+                tags: ['Metadata'],
             },
         },
         '/stats': { get: GET_STATS },
-    },
-    components: {
-        schemas: Object.assign({
-            '@rid': {
-                type: 'string',
-                pattern: '^#\\d+:\\d+$',
-                description: 'Record ID',
-                example: '#44:0',
-            },
-            RecordId: { $ref: '#/components/schemas/@rid' },
-        }, schemas),
-        parameters: {
-            in: {
-                in: 'query',
-                name: 'in',
-                schema: { $ref: `${SCHEMA_PREFIX}/RecordLink` },
-                description: 'The record ID of the vertex the edge goes into, the target/destination vertex',
-            },
-            out: {
-                in: 'query',
-                name: 'out',
-                schema: { $ref: `${SCHEMA_PREFIX}/RecordLink` },
-                description: 'The record ID of the vertex the edge comes from, the source vertex',
-            },
-        },
-        responses,
+        '/token': { post: POST_TOKEN },
+        '/version': { get: GET_VERSION },
     },
     tags: [{
-        name: 'Metadata', description: 'routes dealing with app metadata',
+        description: 'routes dealing with app metadata', name: 'Metadata',
     },
     {
-        name: 'General', description: 'non-class specific routes',
+        description: 'non-class specific routes', name: 'General',
     }],
 };
 
@@ -151,8 +151,6 @@ const describePost = (model) => {
 
     if (model.routes.GET) {
         links.getById = {
-            parameters: { rid: '$response.body#/result.@rid' },
-            operationId: `get_${model.routeName.slice(1)}__rid_`,
             description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [GET \`${
                 model.routeName
             }/{rid}\`](.#/${
@@ -160,12 +158,12 @@ const describePost = (model) => {
             }/get_${
                 model.routeName.slice(1)
             }__rid_) requests`,
+            operationId: `get_${model.routeName.slice(1)}__rid_`,
+            parameters: { rid: '$response.body#/result.@rid' },
         };
     }
     if (model.routes.PATCH) {
         links.patchById = {
-            parameters: { rid: '$response.body#/result.@rid' },
-            operationId: `patch_${model.routeName.slice(1)}__rid_`,
             description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [PATCH \`${
                 model.routeName
             }/{rid}\`](.#/${
@@ -173,12 +171,12 @@ const describePost = (model) => {
             }/patch_${
                 model.routeName.slice(1)
             }__rid_) requests`,
+            operationId: `patch_${model.routeName.slice(1)}__rid_`,
+            parameters: { rid: '$response.body#/result.@rid' },
         };
     }
     if (model.routes.DELETE) {
         links.deleteById = {
-            parameters: { rid: '$response.body#/result.@rid' },
-            operationId: `delete_${model.routeName.slice(1)}__rid_`,
             description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [DELETE \`${
                 model.routeName
             }/{rid}\`](.#/${
@@ -186,36 +184,38 @@ const describePost = (model) => {
             }/delete_${
                 model.routeName.slice(1)
             }__rid_) requests`,
+            operationId: `delete_${model.routeName.slice(1)}__rid_`,
+            parameters: { rid: '$response.body#/result.@rid' },
         };
     }
     const post = {
-        summary: `create a new ${model.name} record`,
-        tags: [model.name],
         parameters: Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({ $ref: `#/components/parameters/${p.name}` })),
         requestBody: {
-            required: true,
             content: { 'application/json': { schema: { $ref: `${SCHEMA_PREFIX}/${model.name}` } } },
+            required: true,
         },
         responses: {
             201: {
-                description: 'A new record was created',
                 content: {
                     'application/json': {
                         schema: {
-                            type: 'object',
                             properties: {
                                 result: { $ref: `${SCHEMA_PREFIX}/${model.name}` },
                             },
+                            type: 'object',
                         },
                     },
                 },
+                description: 'A new record was created',
                 links,
             },
-            401: { $ref: '#/components/responses/NotAuthorized' },
             400: { $ref: '#/components/responses/BadInput' },
-            409: { $ref: '#/components/responses/RecordExistsError' },
+            401: { $ref: '#/components/responses/NotAuthorized' },
             403: { $ref: '#/components/responses/Forbidden' },
+            409: { $ref: '#/components/responses/RecordExistsError' },
         },
+        summary: `create a new ${model.name} record`,
+        tags: [model.name],
     };
     return post;
 };
@@ -230,37 +230,37 @@ const describePost = (model) => {
  */
 const describeOperationByID = (model, operation = 'delete') => {
     const description = {
-        summary: `${operation} ${model.name} record by ID`,
-        tags: [model.name],
         parameters: _.concat(Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({ $ref: `#/components/parameters/${p.name}` })),
             [{
-                in: 'path',
-                name: 'rid',
-                schema: { $ref: `${SCHEMA_PREFIX}/@rid` },
                 description: 'The record identifier',
                 example: '#34:1',
+                in: 'path',
+                name: 'rid',
                 required: true,
+                schema: { $ref: `${SCHEMA_PREFIX}/@rid` },
             }]),
         responses: {
             200: {
                 content: {
                     'application/json': {
                         schema: {
-                            type: 'object',
                             properties: {
                                 result: {
                                     $ref: `${SCHEMA_PREFIX}/${model.name}`,
                                 },
                             },
+                            type: 'object',
                         },
                     },
                 },
             },
-            401: { $ref: '#/components/responses/NotAuthorized' },
             400: { $ref: '#/components/responses/BadInput' },
-            404: { $ref: '#/components/responses/RecordNotFound' },
+            401: { $ref: '#/components/responses/NotAuthorized' },
             403: { $ref: '#/components/responses/Forbidden' },
+            404: { $ref: '#/components/responses/RecordNotFound' },
         },
+        summary: `${operation} ${model.name} record by ID`,
+        tags: [model.name],
     };
 
     if (operation !== 'delete') {
@@ -323,12 +323,12 @@ const generateSwaggerSpec = (schema, metadata) => {
     // simple routes
     for (const model of Object.values(schema)) {
         if (model.description) {
-            docs.tags.push({ name: model.name, description: model.description });
+            docs.tags.push({ description: model.description, name: model.name });
         }
         // create the model in the schemas section
         docs.components.schemas[model.name] = {
-            type: 'object',
             properties: {},
+            type: 'object',
         };
 
         if (Object.values(model.routes).some(x => x) && docs.paths[model.routeName] === undefined) {
@@ -381,7 +381,7 @@ const generateSwaggerSpec = (schema, metadata) => {
 
             if (isList) {
                 propDefn.type = 'array';
-                propDefn.items = { minItems: prop.minItems, maxItems: prop.maxItems };
+                propDefn.items = { maxItems: prop.maxItems, minItems: prop.minItems };
                 propDefn = propDefn.items;
             }
             if (prop.name === 'subsets') {
@@ -477,15 +477,15 @@ const registerSpecEndpoints = (router, spec) => {
     });
     // set up the swagger-ui docs
     router.use('/spec/swagger', swaggerUi.serve, swaggerUi.setup(spec, {
+        customCss: '.swagger-ui .info pre > code { display: block; color: #373939}',
         swaggerOptions: {
             deepLinking: true,
-            displayOperationId: true,
             defaultModelRendering: 'model',
+            displayOperationId: true,
+            docExpansion: 'none',
             operationsSorter: 'alpha',
             tagsSorter,
-            docExpansion: 'none',
         },
-        customCss: '.swagger-ui .info pre > code { display: block; color: #373939}',
     }));
 
     // serve with re-doc

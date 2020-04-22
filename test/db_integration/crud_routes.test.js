@@ -9,7 +9,7 @@ const { generateToken } = require('../../src/routes/auth');
 
 const { createEmptyDb, tearDownDb, clearDB } = require('./util');
 
-const request = async opt => requestPromise({ resolveWithFullResponse: true, json: true, ...opt });
+const request = async opt => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 
 const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
@@ -25,38 +25,38 @@ if (!process.env.GKB_DBS_PASS) {
 
 const variantSetup = async ({ mockToken, app }) => {
     const res = await request({
-        uri: `${app.url}/sources`,
-        method: 'POST',
         body: {
             name: 'bcgsc',
             version: '2018',
         },
         headers: { Authorization: mockToken },
+        method: 'POST',
+        uri: `${app.url}/sources`,
     });
     const source = res.body.result;
     const type = (await request({
-        uri: `${app.url}/vocabulary`,
         body: {
-            sourceId: 'variantType',
             name: 'variantType',
             source,
+            sourceId: 'variantType',
         },
         headers: { Authorization: mockToken },
         method: 'POST',
+        uri: `${app.url}/vocabulary`,
     })).body.result['@rid'];
     const reference1 = (await request({
-        uri: `${app.url}/features`,
         body: {
-            sourceId: 'variantReference',
-            name: 'variantReference',
             biotype: 'gene',
+            name: 'variantReference',
             source,
+            sourceId: 'variantReference',
         },
         headers: { Authorization: mockToken },
         method: 'POST',
+        uri: `${app.url}/features`,
     })).body.result['@rid'];
 
-    return { type, source, reference1 };
+    return { reference1, source, type };
 };
 
 describeWithAuth('api crud routes', () => {
@@ -84,28 +84,28 @@ describeWithAuth('api crud routes', () => {
         if (app) {
             await app.close(); // shut down the http server
         }
-        await tearDownDb({ server: db.server, conf: db.conf }); // destroy the test db
+        await tearDownDb({ conf: db.conf, server: db.server }); // destroy the test db
         // close the db connections so that you can create more in the app.listen
         await db.pool.close();
         await db.server.close();
     });
 
     afterEach(async () => {
-        await clearDB({ session, admin: db.admin });
+        await clearDB({ admin: db.admin, session });
     });
 
     describe('/:model create new record', () => {
         describe('post/create', () => {
             test('create new', async () => {
                 const res = await request({
-                    uri: `${app.url}/users`,
                     body: {
                         name: 'blargh monkeys',
                     },
-                    method: 'POST',
                     headers: {
                         Authorization: mockToken,
                     },
+                    method: 'POST',
+                    uri: `${app.url}/users`,
                 });
                 expect(res.statusCode).toBe(HTTP_STATUS.CREATED);
                 expect(typeof res.body.result).toBe('object');
@@ -115,15 +115,15 @@ describeWithAuth('api crud routes', () => {
             test('error on query params given', async () => {
                 try {
                     await request({
-                        uri: `${app.url}/users`,
                         body: {
                             name: 'blargh monkeys',
                         },
-                        method: 'POST',
                         headers: {
                             Authorization: mockToken,
                         },
+                        method: 'POST',
                         qs: { history: true },
+                        uri: `${app.url}/users`,
                     });
                 } catch (err) {
                     const res = err.response;
@@ -136,13 +136,13 @@ describeWithAuth('api crud routes', () => {
             test('error on missing required property', async () => {
                 try {
                     await request({
-                        uri: `${app.url}/users`,
                         body: {
                         },
-                        method: 'POST',
                         headers: {
                             Authorization: mockToken,
                         },
+                        method: 'POST',
+                        uri: `${app.url}/users`,
                     });
                 } catch ({ response }) {
                     expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
@@ -155,11 +155,11 @@ describeWithAuth('api crud routes', () => {
             test('error on missing token', async () => {
                 try {
                     await request({
-                        uri: `${app.url}/users`,
                         body: {
                             name: 'blargh monkeys',
                         },
                         method: 'POST',
+                        uri: `${app.url}/users`,
                     });
                 } catch ({ response }) {
                     expect(response.statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -171,14 +171,14 @@ describeWithAuth('api crud routes', () => {
             test('error on duplicate record conflict', async () => {
                 try {
                     await request({
-                        uri: `${app.url}/users`,
+                        body: {
+                            name: db.admin.name,
+                        },
                         headers: {
                             Authorization: mockToken,
                         },
                         method: 'POST',
-                        body: {
-                            name: db.admin.name,
-                        },
+                        uri: `${app.url}/users`,
                     });
                 } catch ({ response }) {
                     expect(response.statusCode).toBe(HTTP_STATUS.CONFLICT);
@@ -189,15 +189,15 @@ describeWithAuth('api crud routes', () => {
 
             test('create record with embedded property', async () => {
                 const { body: { result } } = await request({
-                    uri: `${app.url}/usergroups`,
-                    headers: {
-                        Authorization: mockToken,
-                    },
-                    method: 'POST',
                     body: {
                         name: 'wonderland',
                         permissions: { V: 15 },
                     },
+                    headers: {
+                        Authorization: mockToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/usergroups`,
                 });
                 expect(result).toHaveProperty('createdAt');
                 expect(result).toHaveProperty('@class', 'UserGroup');
@@ -212,20 +212,20 @@ describeWithAuth('api crud routes', () => {
             source;
 
         beforeEach(async () => {
-            ({ type, reference1, source } = await variantSetup({ mockToken, app }));
+            ({ type, reference1, source } = await variantSetup({ app, mockToken }));
         });
 
         test('create record with link property', async () => {
             const res = await request({
-                uri: `${app.url}/diseases`,
+                body: {
+                    source,
+                    sourceId: 'cancer',
+                },
                 headers: {
                     Authorization: mockToken,
                 },
                 method: 'POST',
-                body: {
-                    sourceId: 'cancer',
-                    source,
-                },
+                uri: `${app.url}/diseases`,
             });
             expect(res.statusCode).toBe(HTTP_STATUS.CREATED);
             expect(typeof res.body.result).toBe('object');
@@ -235,23 +235,23 @@ describeWithAuth('api crud routes', () => {
 
         test('create record with embedded class property', async () => {
             const resp = await request({
-                uri: `${app.url}/positionalvariants`,
                 body: {
-                    untemplatedSeq: 'R',
-                    untemplatedSeqSize: 1,
-                    type,
+                    break1Repr: 'p.G12',
                     break1Start: {
                         '@class': 'ProteinPosition',
-                        refAA: 'G',
                         pos: 12,
+                        refAA: 'G',
                     },
-                    reference1,
                     refSeq: 'G',
-                    break1Repr: 'p.G12',
+                    reference1,
                     reference2: null,
+                    type,
+                    untemplatedSeq: 'R',
+                    untemplatedSeqSize: 1,
                 },
                 headers: { Authorization: mockToken },
                 method: 'POST',
+                uri: `${app.url}/positionalvariants`,
             });
             expect(resp.statusCode).toBe(HTTP_STATUS.CREATED);
             expect(resp.body).toHaveProperty('result');
@@ -270,12 +270,12 @@ describeWithAuth('api crud routes', () => {
 
             beforeEach(async () => {
                 const res = await request({
-                    uri: `${app.url}/query`,
+                    body: { target: 'UserGroup' },
                     headers: {
                         Authorization: mockToken,
                     },
-                    body: { target: 'UserGroup' },
                     method: 'POST',
+                    uri: `${app.url}/query`,
                 });
                 readOnly = res.body.result.find(g => g.name === 'readonly');
                 adminGroup = res.body.result.find(g => g.name === 'admin');
@@ -285,47 +285,47 @@ describeWithAuth('api crud routes', () => {
                     throw new Error('failed to find the readonly and admin user groups');
                 }
                 user = (await request({
-                    uri: `${app.url}/users`,
-                    method: 'POST',
                     body: {
-                        name: 'alice',
                         groups: [readOnly['@rid']],
+                        name: 'alice',
                     },
                     headers: { Authorization: mockToken },
+                    method: 'POST',
+                    uri: `${app.url}/users`,
                 })
                 ).body.result;
                 const { body: { result } } = await request({
-                    uri: `${app.url}/usergroups`,
-                    headers: {
-                        Authorization: mockToken,
-                    },
-                    method: 'POST',
                     body: {
                         name: 'wonderland',
                         permissions: { V: 15 },
                     },
+                    headers: {
+                        Authorization: mockToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/usergroups`,
                 });
                 group = result;
 
-                const { type, reference1 } = await variantSetup({ mockToken, app });
+                const { type, reference1 } = await variantSetup({ app, mockToken });
                 variant = (await request({
-                    uri: `${app.url}/positionalvariants`,
                     body: {
-                        untemplatedSeq: 'R',
-                        untemplatedSeqSize: 1,
-                        type,
+                        break1Repr: 'p.G12',
                         break1Start: {
                             '@class': 'ProteinPosition',
-                            refAA: 'G',
                             pos: 12,
+                            refAA: 'G',
                         },
-                        reference1,
                         refSeq: 'G',
-                        break1Repr: 'p.G12',
+                        reference1,
                         reference2: null,
+                        type,
+                        untemplatedSeq: 'R',
+                        untemplatedSeqSize: 1,
                     },
                     headers: { Authorization: mockToken },
                     method: 'POST',
+                    uri: `${app.url}/positionalvariants`,
                 })).body.result;
             });
 
@@ -333,12 +333,12 @@ describeWithAuth('api crud routes', () => {
                 // original variant
                 expect(variant).toHaveProperty('displayName', 'variantreference:p.G12varianttype');
                 const { body: { result } } = await request({
-                    uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
+                    body: { break1Start: { '@class': 'ProteinPosition', pos: 12, refAA: 'H' } },
                     headers: {
                         Authorization: mockToken,
                     },
-                    body: { break1Start: { '@class': 'ProteinPosition', refAA: 'H', pos: 12 } },
                     method: 'PATCH',
+                    uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
                 });
                 expect(result).toHaveProperty('displayName', 'variantreference:p.H12varianttype');
             });
@@ -347,12 +347,12 @@ describeWithAuth('api crud routes', () => {
                 // original variant
                 expect(variant).toHaveProperty('displayName', 'variantreference:p.G12varianttype');
                 const { body: { result } } = await request({
-                    uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
+                    body: { break1Start: { '@class': 'ProteinPosition', pos: 12, refAA: 'H' }, displayName: 'blargh' },
                     headers: {
                         Authorization: mockToken,
                     },
-                    body: { break1Start: { '@class': 'ProteinPosition', refAA: 'H', pos: 12 }, displayName: 'blargh' },
                     method: 'PATCH',
+                    uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
                 });
                 expect(result).toHaveProperty('displayName', 'blargh');
                 expect(result).toHaveProperty('break1Repr', 'p.H12');
@@ -360,12 +360,12 @@ describeWithAuth('api crud routes', () => {
 
             test('update a linkset property', async () => {
                 const { body: { result } } = await request({
-                    uri: `${app.url}/users/${user['@rid'].slice(1)}`,
+                    body: { groups: [adminGroup['@rid']] },
                     headers: {
                         Authorization: mockToken,
                     },
-                    body: { groups: [adminGroup['@rid']] },
                     method: 'PATCH',
+                    uri: `${app.url}/users/${user['@rid'].slice(1)}`,
                 });
                 expect(result).toHaveProperty('groups');
                 expect(result.groups).toHaveProperty('length', 1);
@@ -375,12 +375,12 @@ describeWithAuth('api crud routes', () => {
 
             test('update a required and indexed property', async () => {
                 const { body: { result } } = await request({
-                    uri: `${app.url}/users/${user['@rid'].slice(1)}`,
+                    body: { name: 'bob' },
                     headers: {
                         Authorization: mockToken,
                     },
-                    body: { name: 'bob' },
                     method: 'PATCH',
+                    uri: `${app.url}/users/${user['@rid'].slice(1)}`,
                 });
                 expect(result).toHaveProperty('groups');
                 expect(result.groups).toHaveProperty('length', 1);
@@ -390,14 +390,14 @@ describeWithAuth('api crud routes', () => {
 
             test('update an embedded property', async () => {
                 const { body: { result } } = await request({
-                    uri: `${app.url}/usergroups/${group['@rid'].toString().slice(1)}`,
+                    body: {
+                        permissions: { E: 15, V: 15 },
+                    },
                     headers: {
                         Authorization: mockToken,
                     },
                     method: 'PATCH',
-                    body: {
-                        permissions: { V: 15, E: 15 },
-                    },
+                    uri: `${app.url}/usergroups/${group['@rid'].toString().slice(1)}`,
                 });
                 expect(result).toHaveProperty('@rid', group['@rid'].toString());
                 expect(result).toHaveProperty('history');
@@ -408,12 +408,12 @@ describeWithAuth('api crud routes', () => {
 
                 try {
                     res = await request({
-                        uri: `${app.url}/diseases/456:0`,
                         body: {
                             sourceId: 'cancer',
                         },
-                        method: 'PATCH',
                         headers: { Authorization: mockToken },
+                        method: 'PATCH',
+                        uri: `${app.url}/diseases/456:0`,
                     });
                 } catch (err) {
                     res = err.response;
@@ -424,24 +424,24 @@ describeWithAuth('api crud routes', () => {
 
             test('error on update conflict', async () => {
                 let res = await request({
-                    uri: `${app.url}/users`,
                     body: {
                         name: 'dummy',
                     },
-                    method: 'POST',
                     headers: { Authorization: mockToken },
+                    method: 'POST',
+                    uri: `${app.url}/users`,
                 });
                 expect(res.statusCode).toBe(HTTP_STATUS.CREATED);
                 const { body: { result: { '@rid': original } } } = res;
 
                 try {
                     res = await request({
-                        uri: `${app.url}/users/${encodeURIComponent(original)}`,
                         body: {
                             name: db.admin.name,
                         },
-                        method: 'PATCH',
                         headers: { Authorization: mockToken },
+                        method: 'PATCH',
+                        uri: `${app.url}/users/${encodeURIComponent(original)}`,
                     });
                 } catch (err) {
                     res = err.response;
@@ -457,12 +457,12 @@ describeWithAuth('api crud routes', () => {
 
             beforeEach(async () => {
                 const res = await request({
-                    uri: `${app.url}/query`,
+                    body: { target: 'UserGroup' },
                     headers: {
                         Authorization: mockToken,
                     },
                     method: 'POST',
-                    body: { target: 'UserGroup' },
+                    uri: `${app.url}/query`,
                 });
 
                 for (const group of res.body.result) {
@@ -477,25 +477,25 @@ describeWithAuth('api crud routes', () => {
                     throw new Error('failed to find the readonly and admin user groups');
                 }
                 user = (await request({
-                    uri: `${app.url}/users`,
                     body: {
-                        name: 'alice',
                         groups: [readOnly['@rid']],
+                        name: 'alice',
                     },
-                    method: 'POST',
                     headers: {
                         Authorization: mockToken,
                     },
+                    method: 'POST',
+                    uri: `${app.url}/users`,
                 })).body.result;
             });
 
             test('delete the current user', async () => {
                 const { body: { result } } = await request({
-                    uri: `${app.url}/users/${user['@rid'].slice(1)}`,
                     headers: {
                         Authorization: mockToken,
                     },
                     method: 'DELETE',
+                    uri: `${app.url}/users/${user['@rid'].slice(1)}`,
                 });
                 expect(result).toHaveProperty('deletedAt');
                 expect(result.deletedBy).toBe(db.admin['@rid'].toString());
@@ -504,9 +504,9 @@ describeWithAuth('api crud routes', () => {
             test('error on delete non-existant record', async () => {
                 try {
                     await request({
-                        uri: `${app.url}/diseases/456:0`,
-                        method: 'DELETE',
                         headers: { Authorization: mockToken },
+                        method: 'DELETE',
+                        uri: `${app.url}/diseases/456:0`,
                     });
                 } catch ({ response: res }) {
                     expect(res.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
@@ -519,9 +519,9 @@ describeWithAuth('api crud routes', () => {
             test('error on malformed rid', async () => {
                 try {
                     await request({
-                        uri: `${app.url}/diseases/k`,
-                        method: 'DELETE',
                         headers: { Authorization: mockToken },
+                        method: 'DELETE',
+                        uri: `${app.url}/diseases/k`,
                     });
                 } catch ({ response: res }) {
                     expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
@@ -534,10 +534,10 @@ describeWithAuth('api crud routes', () => {
             test('error query params given', async () => {
                 try {
                     await request({
-                        uri: `${app.url}/diseases/456:0`,
+                        headers: { Authorization: mockToken },
                         method: 'DELETE',
                         qs: { history: true },
-                        headers: { Authorization: mockToken },
+                        uri: `${app.url}/diseases/456:0`,
                     });
                 } catch ({ response: res }) {
                     expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);

@@ -17,9 +17,9 @@ describe('WrapperQuery.parseRecord', () => {
 
     test('select record with embedded properties', () => {
         const record = {
+            break1Start: { '@class': 'ProteinPosition', pos: 12, refAA: 'G' },
             reference1: '#4:3',
             type: '5:3',
-            break1Start: { refAA: 'G', pos: 12, '@class': 'ProteinPosition' },
             untemplatedSeq: 'D',
             untemplatedSeqSize: 1,
         };
@@ -42,10 +42,10 @@ describe('WrapperQuery.parseRecord', () => {
 describe('WrapperQuery.parse', () => {
     test('parses a simple single Comparison', () => {
         const parsed = parse({
-            target: 'Disease',
             filters: { name: 'thing' },
             history: false,
             limit: null,
+            target: 'Disease',
         });
         const { query, params } = parsed.toString();
         expect(query).toEqual('SELECT * FROM (SELECT * FROM Disease WHERE name = :param0) WHERE deletedAt IS NULL');
@@ -54,10 +54,10 @@ describe('WrapperQuery.parse', () => {
 
     test('parses a simple single Comparison including history', () => {
         const parsed = parse({
-            target: 'Disease',
             filters: { name: 'thing' },
             history: true,
             limit: null,
+            target: 'Disease',
         });
         const { query, params } = parsed.toString();
         expect(query).toEqual('SELECT * FROM Disease WHERE name = :param0');
@@ -66,10 +66,10 @@ describe('WrapperQuery.parse', () => {
 
     test('add size check for equals comparison of iterables', () => {
         const parsed = parse({
-            target: 'Statement',
             filters: { conditions: ['#3:2', '#4:3'] },
             history: true,
             limit: null,
+            target: 'Statement',
         });
         const { query, params } = parsed.toString();
         expect(query).toEqual('SELECT * FROM Statement WHERE (conditions CONTAINSALL [:param0, :param1] AND conditions.size() = :param2)');
@@ -80,10 +80,10 @@ describe('WrapperQuery.parse', () => {
 
     test('specify custom operator for iterables', () => {
         const parsed = parse({
-            target: 'Statement',
             filters: { conditions: ['#3:2', '#4:3'], operator: 'CONTAINSALL' },
             history: true,
             limit: null,
+            target: 'Statement',
         });
         const { query, params } = parsed.toString();
         expect(query).toEqual('SELECT * FROM Statement WHERE conditions CONTAINSALL [:param0, :param1]');
@@ -93,7 +93,6 @@ describe('WrapperQuery.parse', () => {
 
     test('parses embedded attribute traversal', () => {
         const parsed = parse({
-            target: 'PositionalVariant',
             filters: {
                 AND: [
                     { 'break1Start.refAA': 'G' },
@@ -115,6 +114,7 @@ describe('WrapperQuery.parse', () => {
             },
             history: false,
             limit: 1000,
+            target: 'PositionalVariant',
         });
 
         const statement = parsed.displayString();
@@ -161,8 +161,8 @@ describe('WrapperQuery.parse', () => {
         test('parses a multiple ordering columns', () => {
             const parsed = parse({
                 history: true,
-                orderBy: ['@rid', '@class'],
                 limit: null,
+                orderBy: ['@rid', '@class'],
                 target: 'Disease',
             });
 
@@ -178,8 +178,8 @@ describe('WrapperQuery.parse', () => {
             const parsed = parse({
                 filters: {
                     source: {
-                        target: 'Source',
                         filters: { name: 'disease-ontology' },
+                        target: 'Source',
                     },
                 },
                 target: 'Disease',
@@ -201,10 +201,10 @@ describe('WrapperQuery.parse', () => {
             const parsed = parse({
                 filters: {
                     source: {
-                        target: 'Source',
                         filters: { name: 'disease-ontology' },
-                        queryType: 'neighborhood',
                         history: true,
+                        queryType: 'neighborhood',
+                        target: 'Source',
                     },
                 },
                 history: true,
@@ -222,8 +222,8 @@ describe('WrapperQuery.parse', () => {
     describe('top level treeQuery', () => {
         test('target ridList', () => {
             const parsed = parse({
-                queryType: 'ancestors',
                 history: true,
+                queryType: 'ancestors',
                 target: ['#3:2', '#4:5'],
             });
             const sql = 'TRAVERSE in(\'SubclassOf\') FROM [#3:2, #4:5] MAXDEPTH 50 LIMIT 1000';
@@ -234,8 +234,8 @@ describe('WrapperQuery.parse', () => {
 
         test('target ridList without history', () => {
             const parsed = parse({
-                queryType: 'descendants',
                 history: false,
+                queryType: 'descendants',
                 target: ['#3:2', '#4:5'],
             });
             const sql = `SELECT * FROM (
@@ -248,10 +248,10 @@ describe('WrapperQuery.parse', () => {
 
         test('custom edges', () => {
             const parsed = parse({
-                queryType: 'descendants',
-                history: false,
-                target: ['#3:2', '#4:5'],
                 edges: ['AliasOf', 'DeprecatedBy'],
+                history: false,
+                queryType: 'descendants',
+                target: ['#3:2', '#4:5'],
             });
             const sql = `SELECT * FROM (
                 TRAVERSE out('AliasOf', 'DeprecatedBy') FROM [#3:2, #4:5] MAXDEPTH 50

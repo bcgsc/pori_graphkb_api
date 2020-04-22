@@ -34,10 +34,10 @@ describe('remove (delete edge)', () => {
     test('throws permission error when user cannot delete node types', async () => {
         try {
             await modifyEdgeTx(db, {
-                original: { out: '#3:4', in: '#4:3', '@class': 'SubClassOf' },
                 changes: null,
-                user: { groups: groups.filter(g => g.name === 'regular'), '@rid': '#45:1' },
                 model: SubClassOf,
+                original: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
+                user: { '@rid': '#45:1', groups: groups.filter(g => g.name === 'regular') },
             });
         } catch (err) {
             expect(err).toBeInstanceOf(PermissionError);

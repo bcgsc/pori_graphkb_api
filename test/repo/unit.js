@@ -12,44 +12,44 @@ const {
 describe('groupRecordsBy', () => {
     test('groups single level', () => {
         const records = [
-            { name: 'bob', city: 'van' },
-            { name: 'alice', city: 'van' },
-            { name: 'blargh', city: 'monkeys' },
+            { city: 'van', name: 'bob' },
+            { city: 'van', name: 'alice' },
+            { city: 'monkeys', name: 'blargh' },
         ];
         expect(groupRecordsBy(records, ['city'], { value: 'name' })).toEqual({
-            van: ['bob', 'alice'],
             monkeys: ['blargh'],
+            van: ['bob', 'alice'],
         });
     });
 
     test('error on no aggregate and non-unique grouping', () => {
         const records = [
-            { name: 'bob', city: 'van' },
-            { name: 'alice', city: 'van' },
-            { name: 'blargh', city: 'monkeys' },
+            { city: 'van', name: 'bob' },
+            { city: 'van', name: 'alice' },
+            { city: 'monkeys', name: 'blargh' },
         ];
         expect(() => {
-            groupRecordsBy(records, ['city'], { value: 'name', aggregate: false });
+            groupRecordsBy(records, ['city'], { aggregate: false, value: 'name' });
         }).toThrow('non-unique grouping');
     });
 
     test('uses the whole record when nestedProperty is null', () => {
         const records = [
-            { name: 'bob', city: 'van' },
-            { name: 'alice', city: 'van' },
-            { name: 'blargh', city: 'monkeys' },
+            { city: 'van', name: 'bob' },
+            { city: 'van', name: 'alice' },
+            { city: 'monkeys', name: 'blargh' },
         ];
         expect(groupRecordsBy(records, ['city'])).toEqual({
-            van: [{ name: 'bob', city: 'van' }, { name: 'alice', city: 'van' }],
-            monkeys: [{ name: 'blargh', city: 'monkeys' }],
+            monkeys: [{ city: 'monkeys', name: 'blargh' }],
+            van: [{ city: 'van', name: 'bob' }, { city: 'van', name: 'alice' }],
         });
     });
 
     test('groups 2+ levels', () => {
         const records = [
-            { name: 'bob', city: 'van', country: 'canada' },
-            { name: 'alice', city: 'van', country: 'canada' },
-            { name: 'blargh', city: 'monkeys', country: 'narnia' },
+            { city: 'van', country: 'canada', name: 'bob' },
+            { city: 'van', country: 'canada', name: 'alice' },
+            { city: 'monkeys', country: 'narnia', name: 'blargh' },
         ];
         expect(groupRecordsBy(records, ['country', 'city'], { value: 'name' })).toEqual({
             canada: { van: ['bob', 'alice'] },
@@ -59,11 +59,11 @@ describe('groupRecordsBy', () => {
 
     test('no aggregate', () => {
         const records = [
-            { name: 'bob', city: 'van', country: 'canada' },
-            { name: 'alice', city: 'van', country: 'mordor' },
-            { name: 'blargh', city: 'monkeys', country: 'narnia' },
+            { city: 'van', country: 'canada', name: 'bob' },
+            { city: 'van', country: 'mordor', name: 'alice' },
+            { city: 'monkeys', country: 'narnia', name: 'blargh' },
         ];
-        expect(groupRecordsBy(records, ['country', 'city'], { value: 'name', aggregate: false })).toEqual({
+        expect(groupRecordsBy(records, ['country', 'city'], { aggregate: false, value: 'name' })).toEqual({
             canada: { van: 'bob' },
             mordor: { van: 'alice' },
             narnia: { monkeys: 'blargh' },
@@ -109,7 +109,7 @@ describe('trimRecords', () => {
     test('removes protected records (default ok)', async () => {
         const records = [
             { name: 'bob' },
-            { name: 'alice', link: { name: 'george', '@rid': '#44:0' } },
+            { link: { '@rid': '#44:0', name: 'george' }, name: 'alice' },
         ];
         const trimmed = await trimRecords(records, { history: true, user: { groups: [{ '@rid': '#1:0' }] } });
         expect(trimmed).toEqual(records);
@@ -117,58 +117,58 @@ describe('trimRecords', () => {
 
     test('removes protected records (explicit group)', async () => {
         const records = [
-            { name: 'bob', groupRestrictions: [{ '@rid': '#2:0' }] },
-            { name: 'alice', groupRestrictions: [{ '@rid': '#1:0' }] },
+            { groupRestrictions: [{ '@rid': '#2:0' }], name: 'bob' },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'alice' },
         ];
         const trimmed = await trimRecords(records, { history: true, user: { groups: [{ '@rid': '#1:0' }] } });
-        expect(trimmed).toEqual([{ name: 'alice', groupRestrictions: [{ '@rid': '#1:0' }] }]);
+        expect(trimmed).toEqual([{ groupRestrictions: [{ '@rid': '#1:0' }], name: 'alice' }]);
     });
 
     test('removes protected edges (default ok)', async () => {
         const records = [
-            { name: 'bob', groupRestrictions: [{ '@rid': '#1:0' }] },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'bob' },
             {
+                groupRestrictions: [{ '@rid': '#1:0' }],
                 name: 'alice',
                 out_link: { '@rid': '44:1', groupRestrictions: [{ '@rid': '#2:2' }] },
-                groupRestrictions: [{ '@rid': '#1:0' }],
             },
         ];
         const trimmed = await trimRecords(records, { history: true, user: { groups: [{ '@rid': '#1:0' }] } });
         expect(trimmed).toEqual([
-            { name: 'bob', groupRestrictions: [{ '@rid': '#1:0' }] },
-            { name: 'alice', groupRestrictions: [{ '@rid': '#1:0' }] },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'bob' },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'alice' },
         ]);
     });
 
     test('removes protected edges (explicit group)', async () => {
         const records = [
-            { name: 'bob', groupRestrictions: [{ '@rid': '#1:0' }] },
-            { name: 'alice', out_link: { '@rid': '44:1', groupRestrictions: [{ '@rid': '#2:0' }] }, groupRestrictions: [{ '@rid': '#1:0' }] },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'bob' },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'alice', out_link: { '@rid': '44:1', groupRestrictions: [{ '@rid': '#2:0' }] } },
         ];
         const trimmed = await trimRecords(records, { history: true, user: { groups: [{ '@rid': '#1:0' }] } });
         expect(trimmed).toEqual([
-            { name: 'bob', groupRestrictions: [{ '@rid': '#1:0' }] },
-            { name: 'alice', groupRestrictions: [{ '@rid': '#1:0' }] },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'bob' },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'alice' },
         ]);
     });
 
     test('allows protected edges (explicit group)', async () => {
         const records = [
-            { name: 'bob', groupRestrictions: [{ '@rid': '#1:0' }] },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'bob' },
             {
+                groupRestrictions: [{ '@rid': '#1:0' }],
                 name: 'alice',
                 out_edgeType: [
                     { '@rid': '44:1', groupRestrictions: [{ '@rid': '#2:0' }] },
                 ],
-                groupRestrictions: [{ '@rid': '#1:0' }],
             },
         ];
         const trimmed = await trimRecords(records, { history: true, user: { groups: [{ '@rid': '#1:0' }, { '@rid': '#2:0' }] } });
         expect(trimmed).toEqual([
-            { name: 'bob', groupRestrictions: [{ '@rid': '#1:0' }] },
+            { groupRestrictions: [{ '@rid': '#1:0' }], name: 'bob' },
             {
-                name: 'alice',
                 groupRestrictions: [{ '@rid': '#1:0' }],
+                name: 'alice',
                 out_edgeType: [
                     { '@rid': '44:1', groupRestrictions: [{ '@rid': '#2:0' }] },
                 ],
@@ -179,12 +179,12 @@ describe('trimRecords', () => {
     test('removes nested protected records', async () => {
         const records = [
             { name: 'bob' },
-            { name: 'alice', link: { name: 'george', '@rid': '#44:1', groupRestrictions: [{ '@rid': '#55:5' }] }, groupRestrictions: [{ '@rid': '#2:1' }] },
+            { groupRestrictions: [{ '@rid': '#2:1' }], link: { '@rid': '#44:1', groupRestrictions: [{ '@rid': '#55:5' }], name: 'george' }, name: 'alice' },
         ];
         const trimmed = await trimRecords(records, { user: { groups: [{ '@rid': '#2:1' }] } });
         expect(trimmed).toEqual([
             { name: 'bob' },
-            { name: 'alice', groupRestrictions: [{ '@rid': '#2:1' }] },
+            { groupRestrictions: [{ '@rid': '#2:1' }], name: 'alice' },
         ]);
     });
 });
