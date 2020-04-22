@@ -4,9 +4,9 @@
 /**
  * @ignore
  */
-const winston = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
+const winston = require('winston');
 
 const transports = [
     new winston.transports.Console({

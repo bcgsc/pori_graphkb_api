@@ -2,10 +2,10 @@ const { OrientDBClient } = require('orientjs');
 
 const { util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
 
-const { logger } = require('./logging');
-const { loadSchema, createSchema } = require('./schema');
-const { migrate } = require('./migrate');
 const { createUser } = require('./commands');
+const { loadSchema, createSchema } = require('./schema');
+const { logger } = require('./logging');
+const { migrate } = require('./migrate');
 const { RecordExistsError } = require('./error');
 
 

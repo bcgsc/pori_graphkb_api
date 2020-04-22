@@ -12,6 +12,11 @@ const HTTP_STATUS = require('http-status-codes');
 const swaggerUi = require('swagger-ui-express');
 
 
+const responses = require('./responses');
+const schemas = require('./schemas');
+const {
+    ABOUT_FILE, QUERY_ABOUT,
+} = require('./constants');
 const {
     POST_TOKEN,
     POST_PARSE,
@@ -23,12 +28,7 @@ const {
     POST_LICENSE,
     GET_LICENSE,
 } = require('./routes');
-const responses = require('./responses');
-const schemas = require('./schemas');
 const { GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS } = require('./params');
-const {
-    ABOUT_FILE, QUERY_ABOUT,
-} = require('./constants');
 
 
 const SCHEMA_PREFIX = '#/components/schemas';

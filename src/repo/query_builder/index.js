@@ -2,11 +2,11 @@
 
 const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
 
+const constants = require('./constants');
 const {
     propsToProjection, checkStandardOptions, nestedProjection, displayQuery, getQueryableProps,
 } = require('./util');
 const { Subquery } = require('./fragment');
-const constants = require('./constants');
 
 const { MAX_LIMIT } = constants;
 

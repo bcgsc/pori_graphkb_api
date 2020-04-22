@@ -3,9 +3,9 @@ const uuidV4 = require('uuid/v4');
 const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
 
 
-const { getUserByName, create, update } = require('../../src/repo/commands');
 const { connectDB } = require('../../src/repo');
 const { createConfig } = require('../../src');
+const { getUserByName, create, update } = require('../../src/repo/commands');
 
 const clearDB = async ({ session, admin }) => {
     // clear all V/E records

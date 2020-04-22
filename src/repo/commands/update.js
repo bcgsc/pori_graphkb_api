@@ -22,9 +22,9 @@ const {
 const {
     omitDBAttributes, wrapIfTypeError, hasRecordAccess,
 } = require('./util');
-const { select, fetchDisplayName } = require('./select');
-const { nestedProjection } = require('../query_builder/util');
 const { checkUserAccessFor } = require('../../middleware/auth');
+const { nestedProjection } = require('../query_builder/util');
+const { select, fetchDisplayName } = require('./select');
 
 
 /**

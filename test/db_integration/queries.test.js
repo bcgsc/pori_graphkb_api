@@ -4,17 +4,17 @@
 const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    select,
-    selectCounts,
-    fetchDisplayName,
-    getUserByName,
-} = require('../../src/repo/commands');
-const {
     AttributeError, NoRecordFoundError,
 } = require('../../src/repo/error');
 const {
     parse,
 } = require('../../src/repo/query_builder');
+const {
+    select,
+    selectCounts,
+    fetchDisplayName,
+    getUserByName,
+} = require('../../src/repo/commands');
 
 
 const { createSeededDb, tearDownDb } = require('./util');

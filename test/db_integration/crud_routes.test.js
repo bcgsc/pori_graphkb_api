@@ -1,8 +1,8 @@
 /**
  * Tests for building read only queries including their routing
  */
-const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
+const requestPromise = require('request-promise');
 
 const { AppServer } = require('../../src');
 const { generateToken } = require('../../src/routes/auth');

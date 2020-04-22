@@ -6,14 +6,14 @@
  */
 const _ = require('lodash');
 
-const { RID } = require('orientjs');
 const { constants, schema: { schema: SCHEMA_DEFN }, util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
+const { RID } = require('orientjs');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
-const { logger } = require('./logging');
 const { ClassModel, Property } = require('./model');
 const { getLoadVersion } = require('./migrate/version');
+const { logger } = require('./logging');
 
 const DEFAULT_LICENSE_CONTENT = [
     { content: 'Canada\'s Michael Smith Genome Sciences Centre retains ownership of all intellectual property rights of any kind related to the Platform and Service, including applicable copyrights, patents, trademarks, and other proprietary rights. Other trademarks, service marks, graphics and logos used in connection with the GraphKB platform and its services may be the trademarks of users and third parties. Canada\'s Michael Smith Genome Sciences Centre does not transfer to users any intellectual property. All rights, titles and interests in and to such property will remain solely with the original owner. Canada\'s Michael Smith Genome Sciences Centre reserve all rights that are not expressly granted under this Term of Use.', id: 'copyright', label: 'Copyright' },

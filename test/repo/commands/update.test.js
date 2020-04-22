@@ -7,11 +7,11 @@ const {
     },
 } = require('@bcgsc/knowledgebase-schema');
 
-const { modifyEdgeTx } = require('../../../src/repo/commands/update');
 const {
     PermissionError,
 } = require('../../../src/repo/error');
 const { generateDefaultGroups } = require('../../../src/repo/schema');
+const { modifyEdgeTx } = require('../../../src/repo/commands/update');
 
 
 const groups = generateDefaultGroups();

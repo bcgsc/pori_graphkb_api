@@ -5,9 +5,9 @@ const { RecordID: RID } = require('orientjs');
 const { error: { AttributeError }, schema: { schema }, util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
 
 
-const { OPERATORS, PARAM_PREFIX } = require('./constants');
 const { FixedSubquery } = require('./fixed');
 const { getQueryableProps } = require('./util');
+const { OPERATORS, PARAM_PREFIX } = require('./constants');
 
 const NUMBER_ONLY_OPERATORS = [OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE];
 

@@ -1,17 +1,17 @@
+const _ = require('lodash');
 const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
-const _ = require('lodash');
 
 const { util: { looksLikeRID }, error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
 
 const {
     NoRecordFoundError,
 } = require('./../repo/error');
-const { logger } = require('./../repo/logging');
 const {
     select, create, update, remove,
 } = require('./../repo/commands');
 const { checkClassPermissions } = require('./../middleware/auth');
+const { logger } = require('./../repo/logging');
 const { parse } = require('./../repo/query_builder');
 
 const { checkStandardOptions } = require('../repo/query_builder/util');

@@ -1,6 +1,6 @@
+const HTTP_STATUS_CODES = require('http-status-codes');
 const request = require('request-promise');
 const sleep = require('sleep-promise');
-const HTTP_STATUS_CODES = require('http-status-codes');
 const xml2js = require('xml2js');
 
 /**

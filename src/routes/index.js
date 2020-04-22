@@ -7,13 +7,13 @@ const { variant: { parse: variantParser }, error: { ParsingError } } = require('
 
 const openapi = require('./openapi');
 const resource = require('./resource');
-const { logger } = require('./../repo/logging');
 const {
     checkStandardOptions,
 } = require('../repo/query_builder/util');
-const { selectCounts } = require('../repo/commands');
 const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
+const { logger } = require('./../repo/logging');
+const { selectCounts } = require('../repo/commands');
 
 
 const parseClassListQueryParam = param => param.split(',').map(cls => schemaDefn.get(cls).name);
