@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc/knowledgebase-api",
   "main": "server.js",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "repository": {
     "type": "git",
     "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
@@ -12,8 +12,8 @@
   "license": "ISC",
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
-    "@bcgsc/knowledgebase-parser": "^0.7.0",
-    "@bcgsc/knowledgebase-schema": "^3.8.1",
+    "@bcgsc/knowledgebase-parser": "^0.7.2",
+    "@bcgsc/knowledgebase-schema": "^3.9.0",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
@@ -52,6 +52,7 @@
     "eslint-plugin-jest-formatting": "^1.1.0",
     "eslint-plugin-jsx-a11y": "^6.1.1",
     "eslint-plugin-react": "^7.10.0",
+    "eslint-plugin-sort-keys-fix": "^1.1.1",
     "jest": "^24.8.0",
     "jest-bamboo-formatter": "^1.0.1",
     "jest-circus": "^24.8.0",

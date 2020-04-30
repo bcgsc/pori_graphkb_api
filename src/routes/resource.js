@@ -21,9 +21,9 @@ const { OPERATORS } = require('../repo/query_builder/constants');
 const activeRidQuery = (model, rid, opt = {}) => {
     const query = parse({
         ...opt,
-        target: [rid],
         filters: { '@this': model.name, operator: OPERATORS.INSTANCEOF },
         history: false,
+        target: [rid],
     });
     return query;
 };
@@ -102,7 +102,7 @@ const postRoute = (app, model) => {
 
             try {
                 const result = await create(session, {
-                    model, content: req.body, user: req.user, schema: app.schema,
+                    content: req.body, model, schema: app.schema, user: req.user,
                 });
                 session.close();
                 return res.status(HTTP_STATUS.CREATED).json(jc.decycle({ result }));
@@ -152,11 +152,11 @@ const updateRoute = (app, model) => {
 
             try {
                 const result = await update(session, {
-                    model,
                     changes: req.body,
+                    model,
                     query: activeRidQuery(model, rid),
-                    user: req.user,
                     schema: app.schema,
+                    user: req.user,
                 });
                 session.close();
                 return res.json(jc.decycle({ result }));
@@ -202,9 +202,9 @@ const deleteRoute = (app, model) => {
             try {
                 const result = await remove(
                     session, {
+                        model,
                         query: activeRidQuery(model, rid),
                         user: req.user,
-                        model,
                     },
                 );
                 session.close();

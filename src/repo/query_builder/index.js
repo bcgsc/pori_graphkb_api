@@ -48,7 +48,7 @@ class WrapperQuery {
 
         if (!count && !orderBy && !skip && limit === undefined) {
             // don't need to wrap since there are no modificiations
-            return { query, params };
+            return { params, query };
         }
 
         let statement = query;
@@ -72,7 +72,7 @@ class WrapperQuery {
                 statement = `${statement} LIMIT ${limit}`;
             }
         }
-        return { query: statement, params };
+        return { params, query: statement };
     }
 
     displayString() {
@@ -93,7 +93,7 @@ class WrapperQuery {
             ...rest
         } = checkStandardOptions(opt);
 
-        const query = Subquery.parse({ target, history, ...rest });
+        const query = Subquery.parse({ history, target, ...rest });
         const model = schema[target];
 
         // try to project the ordering to ensure they are valid properties
@@ -110,15 +110,15 @@ class WrapperQuery {
         }
 
         return new this({
-            target,
+            count,
+            history,
             limit,
-            skip,
-            projection,
             orderBy,
             orderByDirection,
-            count,
+            projection,
             query,
-            history,
+            skip,
+            target,
         });
     }
 }
@@ -134,7 +134,7 @@ const parse = query => WrapperQuery.parse(query);
  *
  */
 const parseRecord = (model, record, { activeIndexOnly = false, ...opt } = {}) => {
-    const query = { ...opt, target: model.name, filters: { AND: [] } };
+    const query = { ...opt, filters: { AND: [] }, target: model.name };
     const filters = query.filters.AND;
     const content = { ...record };
 
@@ -170,5 +170,5 @@ const parseRecord = (model, record, { activeIndexOnly = false, ...opt } = {}) =>
 
 
 module.exports = {
-    WrapperQuery, parse, parseRecord, constants,
+    WrapperQuery, constants, parse, parseRecord,
 };

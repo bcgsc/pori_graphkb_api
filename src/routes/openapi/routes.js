@@ -7,83 +7,81 @@ const { groupableParams } = require('../../repo/commands/select');
 
 
 const POST_TOKEN = {
-    summary: 'Generate an authentication token to be used for requests to the KB API server',
-    tags: ['General'],
     parameters: [
         { $ref: '#/components/parameters/Content-Type' },
         { $ref: '#/components/parameters/Accept' },
     ],
     requestBody: {
-        required: true,
         content: {
             'application/json': {
                 schema: {
                     anyOf: [
                         {
-                            type: 'object',
                             properties: {
-                                username: { type: 'string', description: 'The username' },
-                                password: { type: 'string', description: 'The password associated with this username' },
+                                password: { description: 'The password associated with this username', type: 'string' },
+                                username: { description: 'The username', type: 'string' },
                             },
+                            type: 'object',
                         },
                         {
-                            type: 'object',
                             properties: {
-                                keyCloakToken: { type: 'string', description: 'The token from keycloak' },
+                                keyCloakToken: { description: 'The token from keycloak', type: 'string' },
                             },
+                            type: 'object',
                         },
                     ],
                 },
             },
         },
+        required: true,
     },
     responses: {
         200: {
-            description: 'The user is valid and a token has been generated',
             content: {
                 'application/json': {
                     schema: {
-                        type: 'object',
                         properties: {
                             kbToken: {
-                                type: 'string',
-                                format: 'token',
                                 description: 'The token for KB API requests',
+                                format: 'token',
+                                type: 'string',
                             },
                             keyCloakToken: {
-                                type: 'string',
-                                format: 'token',
                                 description: 'The token from keycloak',
+                                format: 'token',
+                                type: 'string',
                             },
                         },
+                        type: 'object',
                     },
                 },
             },
+            description: 'The user is valid and a token has been generated',
         },
         401: {
             description: 'The credentials were incorrect or not found',
         },
     },
+    summary: 'Generate an authentication token to be used for requests to the KB API server',
+    tags: ['General'],
 };
 
 
 const POST_PARSE = {
-    summary: 'Parse variant string representation',
-    tags: ['General'],
     requestBody: {
-        required: true,
         content: {
             'application/json': {
                 schema: {
-                    type: 'object',
-                    required: ['content'],
                     properties: {
-                        content: { type: 'string', description: 'the variant string representation', example: 'KRAS:p.G12D' },
-                        requireFeatures: { type: 'boolean', description: 'flag to indicate features are or are not required in the variant string' },
+                        content: { description: 'the variant string representation', example: 'KRAS:p.G12D', type: 'string' },
+                        requireFeatures: { description: 'flag to indicate features are or are not required in the variant string', type: 'boolean' },
                     },
+                    required: ['content'],
+                    type: 'object',
                 },
             },
         },
+        required: true,
     },
     responses: {
         200: {
@@ -91,11 +89,11 @@ const POST_PARSE = {
         },
         400: { $ref: '#/components/responses/BadInput' },
     },
+    summary: 'Parse variant string representation',
+    tags: ['General'],
 };
 
 const GET_SCHEMA = {
-    summary: 'Returns a JSON representation of the current database schema',
-    tags: ['Metadata'],
     parameters: [
         { $ref: '#/components/parameters/Accept' },
     ],
@@ -105,12 +103,12 @@ const GET_SCHEMA = {
         },
 
     },
+    summary: 'Returns a JSON representation of the current database schema',
+    tags: ['Metadata'],
 };
 
 
 const GET_VERSION = {
-    summary: 'Returns the version information for the API and database',
-    tags: ['Metadata'],
     parameters: [
         { $ref: '#/components/parameters/Accept' },
     ],
@@ -119,44 +117,44 @@ const GET_VERSION = {
             content: {
                 'application/json': {
                     schema: {
-                        type: 'object',
                         properties: {
-                            api: { type: 'string', description: 'Version of the API', example: '0.6.3' },
-                            db: { type: 'string', description: 'Name of the database the API is connected to', example: 'kbapi_v0.6.3' },
-                            schema: { type: 'string', description: 'Version of the schema package used to build the database', example: '1.2.1' },
+                            api: { description: 'Version of the API', example: '0.6.3', type: 'string' },
+                            db: { description: 'Name of the database the API is connected to', example: 'kbapi_v0.6.3', type: 'string' },
+                            schema: { description: 'Version of the schema package used to build the database', example: '1.2.1', type: 'string' },
                         },
+                        type: 'object',
                     },
                 },
             },
         },
     },
+    summary: 'Returns the version information for the API and database',
+    tags: ['Metadata'],
 };
 
 
 const GET_STATS = {
-    summary: 'Returns counts for all non-abstract database classes',
-    tags: ['Metadata'],
     parameters: [
         { $ref: '#/components/parameters/Accept' },
         { $ref: '#/components/parameters/Authorization' },
         { $ref: '#/components/parameters/history' },
         {
+            description: 'Group counts by this property',
             in: 'query',
             name: 'groupBy',
             schema: {
-                type: 'string', default: '', enum: groupableParams, example: 'source',
+                default: '', enum: groupableParams, example: 'source', type: 'string',
             },
-            description: 'Group counts by this property',
         },
         {
+            description: 'List of db classes to create counts for',
             in: 'query',
             name: 'classList',
             schema: {
-                type: 'string',
-                pattern: `^(${Object.values(schema).filter(model => !model.isAbstract).map(model => model.name).join('|')})+$`,
                 example: 'Statement',
+                pattern: `^(${Object.values(schema).filter(model => !model.isAbstract).map(model => model.name).join('|')})+$`,
+                type: 'string',
             },
-            description: 'List of db classes to create counts for',
         },
     ],
     responses: {
@@ -164,67 +162,66 @@ const GET_STATS = {
             content: {
                 'application/json': {
                     schema: {
-                        type: 'object',
-                        properties: {
-                            result: {
-                                type: 'object',
-                                additionalProperties: {
-                                    type: 'integer',
-                                    description: 'The number of records in this grouping (usually just by class)',
-                                },
-                            },
-                        },
                         example: {
                             result: {
-                                UserGroup: 17,
-                                Permissions: 0,
-                                User: 8,
-                                Source: 11,
-                                EvidenceLevel: 9,
-                                ClinicalTrial: 0,
-                                Publication: 3347,
-                                Therapy: 69382,
-                                Feature: 97496,
-                                ProteinPosition: 0,
-                                CytobandPosition: 0,
-                                GenomicPosition: 0,
-                                ExonicPosition: 0,
-                                IntronicPosition: 0,
                                 CdsPosition: 0,
-                                PositionalVariant: 3234,
                                 CategoryVariant: 545,
-                                Statement: 7677,
+                                ClinicalTrial: 0,
                                 AnatomicalEntity: 25613,
+                                CytobandPosition: 0,
                                 Disease: 41569,
-                                Pathway: 0,
-                                Signature: 0,
-                                Vocabulary: 163,
+                                EvidenceLevel: 9,
+                                ExonicPosition: 0,
+                                Feature: 97496,
                                 CatalogueVariant: 0,
+                                GenomicPosition: 0,
                                 AliasOf: 142363,
+                                Permissions: 0,
                                 Cites: 0,
+                                Source: 11,
                                 DeprecatedBy: 15673,
+                                UserGroup: 17,
                                 ElementOf: 22,
+                                User: 8,
                                 Infers: 0,
+                                IntronicPosition: 0,
+                                Publication: 3347,
                                 OppositeOf: 15,
+                                Therapy: 69382,
+                                Pathway: 0,
+                                ProteinPosition: 0,
+                                PositionalVariant: 3234,
+                                Signature: 0,
+                                Statement: 7677,
                                 SubClassOf: 66691,
                                 TargetOf: 0,
+                                Vocabulary: 163,
                             },
                         },
+                        properties: {
+                            result: {
+                                additionalProperties: {
+                                    description: 'The number of records in this grouping (usually just by class)',
+                                    type: 'integer',
+                                },
+                                type: 'object',
+                            },
+                        },
+                        type: 'object',
                     },
                 },
             },
         },
-        401: { $ref: '#/components/responses/NotAuthorized' },
         400: { $ref: '#/components/responses/BadInput' },
+        401: { $ref: '#/components/responses/NotAuthorized' },
     },
+    summary: 'Returns counts for all non-abstract database classes',
+    tags: ['Metadata'],
 };
 
 
 const QUERY = {
-    summary: 'Query the database',
-    tags: ['General'],
     requestBody: {
-        required: true,
         content: {
             'application/json': {
                 schema: {
@@ -232,29 +229,30 @@ const QUERY = {
                 },
             },
         },
+        required: true,
     },
     responses: {
         200: {
             content: {
                 'application/json': {
-                    type: 'object',
-                    required: ['result'],
                     properties: {
                         result: {
-                            type: 'array',
                             items: { $ref: '#/components/schemas/V' },
+                            type: 'array',
                         },
                     },
+                    required: ['result'],
+                    type: 'object',
                 },
             },
         },
     },
+    summary: 'Query the database',
+    tags: ['General'],
 };
 
 
 const POST_SIGN_LICENSE = {
-    summary: 'Set the user sign off on the current license',
-    tags: ['General'],
     responses: {
         200: {
             content: {
@@ -264,13 +262,12 @@ const POST_SIGN_LICENSE = {
             },
         },
     },
+    summary: 'Set the user sign off on the current license',
+    tags: ['General'],
 };
 
 const GET_LICENSE = {
-    summary: 'Get the current license user agreement',
-    tags: ['General'],
     requestBody: {
-        required: true,
         content: {
             'application/json': {
                 schema: {
@@ -278,6 +275,7 @@ const GET_LICENSE = {
                 },
             },
         },
+        required: true,
     },
     responses: {
         200: {
@@ -288,11 +286,11 @@ const GET_LICENSE = {
             },
         },
     },
+    summary: 'Get the current license user agreement',
+    tags: ['General'],
 };
 
 const POST_LICENSE = {
-    summary: 'Get the current license user agreement',
-    tags: ['General'],
     responses: {
         200: {
             content: {
@@ -302,16 +300,18 @@ const POST_LICENSE = {
             },
         },
     },
+    summary: 'Get the current license user agreement',
+    tags: ['General'],
 };
 
 module.exports = {
-    POST_TOKEN,
-    POST_PARSE,
+    GET_LICENSE,
     GET_SCHEMA,
     GET_STATS,
     GET_VERSION,
-    QUERY,
-    POST_SIGN_LICENSE,
-    GET_LICENSE,
     POST_LICENSE,
+    POST_PARSE,
+    POST_SIGN_LICENSE,
+    POST_TOKEN,
+    QUERY,
 };

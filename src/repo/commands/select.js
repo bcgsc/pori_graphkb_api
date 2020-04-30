@@ -163,7 +163,7 @@ const select = async (db, query, opt = {}) => {
 
     logger.log('debug', `selected ${recordList.length} records`);
 
-    recordList = await trimRecords(recordList, { history: query.history, user, db });
+    recordList = await trimRecords(recordList, { db, history: query.history, user });
 
     if (exactlyN !== null) {
         if (recordList.length < exactlyN) {
@@ -195,8 +195,8 @@ const fetchDisplayName = async (db, model, content) => {
             links.push(content.reference2);
         }
         const query = parse({
-            target: links,
             returnProperties: ['displayName'],
+            target: links,
         });
         const [type, reference1, reference2] = (await select(
             db,
@@ -223,11 +223,11 @@ const fetchDisplayName = async (db, model, content) => {
 
 
 module.exports = {
-    getUserByName,
     QUERY_LIMIT,
     RELATED_NODE_DEPTH,
+    fetchDisplayName,
+    getUserByName,
+    groupableParams,
     select,
     selectCounts,
-    fetchDisplayName,
-    groupableParams,
 };

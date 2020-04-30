@@ -40,7 +40,7 @@ const wrapIfTypeError = (err) => {
                 // error messages exceed 500 lines and are unreadable
                 const trimmed = message.split('\n').filter(line => !/^\s*[<"].*\s*\.\.\.\s*$/.exec(line)).join('\n');
                 return new DatabaseRequestError({
-                    name, type, message: trimmed, sql,
+                    message: trimmed, name, sql, type,
                 });
             }
         }
@@ -85,5 +85,5 @@ const hasRecordAccess = (user, record) => {
 };
 
 module.exports = {
-    wrapIfTypeError, omitDBAttributes, hasRecordAccess,
+    hasRecordAccess, omitDBAttributes, wrapIfTypeError,
 };

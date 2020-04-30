@@ -12,7 +12,7 @@ const { generateToken } = require('../../src/routes/auth');
 
 const { createEmptyDb, tearDownDb } = require('./util');
 
-const request = async opt => requestPromise({ resolveWithFullResponse: true, json: true, ...opt });
+const request = async opt => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 
 const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
@@ -57,7 +57,7 @@ describeWithAuth('api crud routes', () => {
         if (app) {
             await app.close(); // shut down the http server
         }
-        await tearDownDb({ server: db.server, conf: db.conf }); // destroy the test db
+        await tearDownDb({ conf: db.conf, server: db.server }); // destroy the test db
         // close the db connections so that you can create more in the app.listen
         await db.pool.close();
         await db.server.close();
@@ -70,11 +70,11 @@ describeWithAuth('api crud routes', () => {
     describe('/parse', () => {
         test('parsed standard hgvs', async () => {
             const res = await request({
-                uri: `${app.url}/parse`,
                 body: {
                     content: 'KRAS:p.G12D',
                 },
                 method: 'POST',
+                uri: `${app.url}/parse`,
             });
             expect(res.statusCode).toBe(HTTP_STATUS.OK);
             expect(typeof res.body.result).toBe('object');
@@ -86,9 +86,9 @@ describeWithAuth('api crud routes', () => {
         test('fail on missing required body attribute content', async () => {
             try {
                 await request({
-                    uri: `${app.url}/parse`,
                     body: {},
                     method: 'POST',
+                    uri: `${app.url}/parse`,
                 });
             } catch ({ response }) {
                 expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
@@ -99,9 +99,9 @@ describeWithAuth('api crud routes', () => {
 
         test('allows missing feature when requireFeatures flag is false', async () => {
             const res = await request({
-                uri: `${app.url}/parse`,
                 body: { content: 'p.G12F', requireFeatures: false },
                 method: 'POST',
+                uri: `${app.url}/parse`,
             });
             expect(res.statusCode).toBe(HTTP_STATUS.OK);
             expect(typeof res.body.result).toBe('object');
@@ -112,9 +112,9 @@ describeWithAuth('api crud routes', () => {
         test('error on missing features when requireFeatures flag is default or true', async () => {
             try {
                 await request({
-                    uri: `${app.url}/parse`,
                     body: { content: 'p.G12F' },
                     method: 'POST',
+                    uri: `${app.url}/parse`,
                 });
             } catch ({ response }) {
                 expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
@@ -126,9 +126,9 @@ describeWithAuth('api crud routes', () => {
         test('error on unexpected attribute', async () => {
             try {
                 await request({
-                    uri: `${app.url}/parse`,
                     body: { content: 'KRAS:p.G12D', someOtherAttr: 'blargh' },
                     method: 'POST',
+                    uri: `${app.url}/parse`,
                 });
             } catch ({ response }) {
                 expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
@@ -148,98 +148,7 @@ describeWithAuth('api crud routes', () => {
                     version: '0.3',
                 },
                 result: {
-                    uids: [
-                        '30016509',
-                    ],
                     30016509: {
-                        uid: '30016509',
-                        pubdate: '2019 Feb 1',
-                        epubdate: '',
-                        source: 'Bioinformatics',
-                        authors: [
-                            {
-                                name: 'Reisle C',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Mungall KL',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Choo C',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Paulino D',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Bleile DW',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Muhammadzadeh A',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Mungall AJ',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Moore RA',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Shlafman I',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Coope R',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Pleasance S',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Ma Y',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                            {
-                                name: 'Jones SJM',
-                                authtype: 'Author',
-                                clusterid: '',
-                            },
-                        ],
-                        lastauthor: 'Jones SJM',
-                        title: 'MAVIS: merging, annotation, validation, and illustration of structural variants.',
-                        sorttitle: 'mavis merging annotation validation and illustration of structural variants',
-                        volume: '35',
-                        issue: '3',
-                        pages: '515-517',
-                        lang: [
-                            'eng',
-                        ],
-                        nlmuniqueid: '9808944',
-                        issn: '1367-4803',
-                        essn: '1367-4811',
-                        pubtype: [
-                            'Journal Article',
-                        ],
-                        recordstatus: 'PubMed - in process',
-                        pubstatus: '4',
                         articleids: [
                             {
                                 idtype: 'pubmed',
@@ -267,76 +176,167 @@ describeWithAuth('api crud routes', () => {
                                 value: '30016509',
                             },
                         ],
-                        history: [
-                            {
-                                pubstatus: 'received',
-                                date: '2018/02/02 00:00',
-                            },
-                            {
-                                pubstatus: 'accepted',
-                                date: '2018/07/12 00:00',
-                            },
-                            {
-                                pubstatus: 'pubmed',
-                                date: '2018/07/18 06:00',
-                            },
-                            {
-                                pubstatus: 'medline',
-                                date: '2018/07/18 06:00',
-                            },
-                            {
-                                pubstatus: 'entrez',
-                                date: '2018/07/18 06:00',
-                            },
-                        ],
-                        references: [],
                         attributes: [
                             'Has Abstract',
                         ],
-                        pmcrefcount: 1,
-                        fulljournalname: 'Bioinformatics (Oxford, England)',
-                        elocationid: 'doi: 10.1093/bioinformatics/bty621',
-                        doctype: 'citation',
-                        srccontriblist: [],
-                        booktitle: '',
-                        medium: '',
-                        edition: '',
-                        publisherlocation: '',
-                        publishername: '',
-                        srcdate: '',
-                        reportnumber: '',
+                        authors: [
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Reisle C',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Mungall KL',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Choo C',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Paulino D',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Bleile DW',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Muhammadzadeh A',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Mungall AJ',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Moore RA',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Shlafman I',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Coope R',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Pleasance S',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Ma Y',
+                            },
+                            {
+                                authtype: 'Author',
+                                clusterid: '',
+                                name: 'Jones SJM',
+                            },
+                        ],
                         availablefromurl: '',
-                        locationlabel: '',
+                        bookname: '',
+                        booktitle: '',
+                        chapter: '',
                         doccontriblist: [],
                         docdate: '',
-                        bookname: '',
-                        chapter: '',
-                        sortpubdate: '2019/02/01 00:00',
+                        doctype: 'citation',
+                        edition: '',
+                        elocationid: 'doi: 10.1093/bioinformatics/bty621',
+                        epubdate: '',
+                        essn: '1367-4811',
+                        fulljournalname: 'Bioinformatics (Oxford, England)',
+                        history: [
+                            {
+                                date: '2018/02/02 00:00',
+                                pubstatus: 'received',
+                            },
+                            {
+                                date: '2018/07/12 00:00',
+                                pubstatus: 'accepted',
+                            },
+                            {
+                                date: '2018/07/18 06:00',
+                                pubstatus: 'pubmed',
+                            },
+                            {
+                                date: '2018/07/18 06:00',
+                                pubstatus: 'medline',
+                            },
+                            {
+                                date: '2018/07/18 06:00',
+                                pubstatus: 'entrez',
+                            },
+                        ],
+                        issn: '1367-4803',
+                        issue: '3',
+                        lang: [
+                            'eng',
+                        ],
+                        lastauthor: 'Jones SJM',
+                        locationlabel: '',
+                        medium: '',
+                        nlmuniqueid: '9808944',
+                        pages: '515-517',
+                        pmcrefcount: 1,
+                        pubdate: '2019 Feb 1',
+                        publisherlocation: '',
+                        publishername: '',
+                        pubstatus: '4',
+                        pubtype: [
+                            'Journal Article',
+                        ],
+                        recordstatus: 'PubMed - in process',
+                        references: [],
+                        reportnumber: '',
                         sortfirstauthor: 'Reisle C',
+                        sortpubdate: '2019/02/01 00:00',
+                        sorttitle: 'mavis merging annotation validation and illustration of structural variants',
+                        source: 'Bioinformatics',
+                        srccontriblist: [],
+                        srcdate: '',
+                        title: 'MAVIS: merging, annotation, validation, and illustration of structural variants.',
+                        uid: '30016509',
                         vernaculartitle: '',
+                        volume: '35',
                     },
+                    uids: [
+                        '30016509',
+                    ],
                 },
             });
             const res = await request({
-                uri: `${app.url}/extensions/pubmed/30016509`,
-                method: 'GET',
                 headers: {
                     Authorization: mockToken,
                 },
+                method: 'GET',
+                uri: `${app.url}/extensions/pubmed/30016509`,
             });
             expect(res.statusCode).toBe(HTTP_STATUS.OK);
             expect(res.body).toEqual({
                 result: {
-                    sourceId: '30016509',
-                    name: 'mavis merging annotation validation and illustration of structural variants',
-                    journalName: 'Bioinformatics (Oxford, England)',
-                    year: 2019,
+                    authors: 'Reisle C, Mungall KL, Choo C, Paulino D, Bleile DW, Muhammadzadeh A, Mungall AJ, Moore RA, Shlafman I, Coope R, Pleasance S, Ma Y, Jones SJM',
                     displayName: 'pmid:30016509',
                     doi: '10.1093/bioinformatics/bty621',
-                    volume: '35',
                     issue: '3',
+                    journalName: 'Bioinformatics (Oxford, England)',
+                    name: 'mavis merging annotation validation and illustration of structural variants',
                     pages: '515-517',
-                    authors: 'Reisle C, Mungall KL, Choo C, Paulino D, Bleile DW, Muhammadzadeh A, Mungall AJ, Moore RA, Shlafman I, Coope R, Pleasance S, Ma Y, Jones SJM',
+                    sourceId: '30016509',
+                    volume: '35',
+                    year: 2019,
                 },
             });
         });
@@ -347,11 +347,11 @@ describeWithAuth('api crud routes', () => {
 
             try {
                 await request({
-                    uri: `${app.url}/extensions/pubmed/NM_30016509`,
-                    method: 'GET',
                     headers: {
                         Authorization: mockToken,
                     },
+                    method: 'GET',
+                    uri: `${app.url}/extensions/pubmed/NM_30016509`,
                 });
             } catch ({ response }) {
                 expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);

@@ -12,7 +12,8 @@
     ],
     "plugins": [
         "jest",
-        "jest-formatting"
+        "jest-formatting",
+        "sort-keys-fix"
     ],
     "rules": {
         "indent": [
@@ -28,6 +29,7 @@
                 "fn": "test"
             }
         ],
+        "jest/prefer-hooks-on-top": "error",
         "linebreak-style": [
             "error",
             "unix"
@@ -103,6 +105,8 @@
             "error",
             "always"
         ],
+        "sort-keys": "warn",
+        "sort-keys-fix/sort-keys-fix": "warn",
         "space-in-parens": [
             "error",
             "never"

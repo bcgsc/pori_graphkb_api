@@ -29,10 +29,10 @@ const createUser = async (db, opt) => {
         group => groupNames.includes(group.name),
     ), group => group['@rid']);
     const record = SCHEMA_DEFN.User.formatRecord({
-        name: userName,
         groups: groupIds,
+        name: userName,
         signedLicenseAt: opt.signedLicenseAt || null,
-    }, { dropExtra: false, addDefaults: true });
+    }, { addDefaults: true, dropExtra: false });
     await db.insert().into(SCHEMA_DEFN.User.name)
         .set(record)
         .one();
@@ -61,7 +61,7 @@ const createEdge = async (db, opt) => {
     content.createdBy = user['@rid'];
     const {
         out: from, in: to, '@class': className, ...record
-    } = model.formatRecord(content, { dropExtra: false, addDefaults: true });
+    } = model.formatRecord(content, { addDefaults: true, dropExtra: false });
 
     // already checked not null in the format method
     if (from.toString() === to.toString()) {
@@ -120,7 +120,7 @@ const create = async (db, opt) => {
     }
     const record = model.formatRecord(
         { ...content, createdBy: user['@rid'] },
-        { dropExtra: false, addDefaults: true },
+        { addDefaults: true, dropExtra: false },
     );
 
     if (model.name === 'Statement') {

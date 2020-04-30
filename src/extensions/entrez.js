@@ -10,52 +10,74 @@ const { requestWithRetry } = require('./util');
 const ajv = new Ajv();
 
 const publicationSpec = ajv.compile({
-    type: 'object',
-    required: ['uid', 'fulljournalname', 'sorttitle'],
     properties: {
-        uid: { type: 'string', pattern: '^\\d+$' },
-        title: { type: 'string' },
-        sorttitle: { type: 'string' }, // use the sort title since normalized
-        fulljournalname: { type: 'string' },
-        sortpubdate: { type: 'string' },
-        sortdate: { type: 'string' },
-        volume: { type: 'string' },
-        issue: { type: 'string' },
-        pages: { type: 'string' },
-        // create the authorList string
-        authors: {
-            type: 'array',
-            items: {
-                type: 'object',
-                required: ['name'],
-                properties: {
-                    name: { type: 'string' },
-                },
-            },
-        },
+
+
         // get the doi
         articleids: {
-            type: 'array',
             items: {
-                type: 'object',
-                required: ['idtype', 'value'],
                 properties: {
                     idtype: { type: 'string' },
                     value: { type: 'string' },
                 },
+                required: ['idtype', 'value'],
+                type: 'object',
             },
+            type: 'array',
         },
+
+
+        // create the authorList string
+        authors: {
+            items: {
+                properties: {
+                    name: { type: 'string' },
+                },
+                required: ['name'],
+                type: 'object',
+            },
+            type: 'array',
+        },
+
+
+        // use the sort title since normalized
+        fulljournalname: { type: 'string' },
+
+
+        issue: { type: 'string' },
+
+
+        pages: { type: 'string' },
+
+
+        sortdate: { type: 'string' },
+
+
+        sortpubdate: { type: 'string' },
+
+
+        sorttitle: { type: 'string' },
+
+
+        title: { type: 'string' },
+
+
+        uid: { pattern: '^\\d+$', type: 'string' },
+
+        volume: { type: 'string' },
     },
+    required: ['uid', 'fulljournalname', 'sorttitle'],
+    type: 'object',
 });
 
 const geneSpec = ajv.compile({
-    type: 'object',
-    required: ['uid', 'name'],
     properties: {
-        uid: { type: 'string', pattern: '^\\d+$' },
-        name: { type: 'string' },
         description: { type: 'string' },
+        name: { type: 'string' },
+        uid: { pattern: '^\\d+$', type: 'string' },
     },
+    required: ['uid', 'name'],
+    type: 'object',
 });
 
 /**
@@ -67,11 +89,11 @@ const parseGeneRecord = (record) => {
         throw new Error(`Failed to parse from the extension api (${geneSpec.errors[0].message})`);
     }
     return {
-        sourceId: record.uid,
-        name: record.name,
         biotype: 'gene',
         description: record.description,
         displayName: record.name,
+        name: record.name,
+        sourceId: record.uid,
     };
 };
 
@@ -84,9 +106,9 @@ const parsePubmedRecord = (record) => {
         throw new Error(`Failed to parse from the extension api (${publicationSpec.errors[0].message})`);
     }
     const parsed = {
-        sourceId: record.uid,
-        name: record.sorttitle,
         journalName: record.fulljournalname,
+        name: record.sorttitle,
+        sourceId: record.uid,
     };
 
     for (const key of ['issue', 'volume', 'pages']) {
@@ -130,16 +152,16 @@ const parsePubmedRecord = (record) => {
 
 const fetchRecord = async (db, id) => {
     const { result: { [id]: result } } = await requestWithRetry({
-        method: 'GET',
-        uri: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi',
-        qs: {
-            retmode: 'json',
-            rettype: 'docsum',
-            db,
-            id,
-        },
         headers: { Accept: 'application/json' },
         json: true,
+        method: 'GET',
+        qs: {
+            db,
+            id,
+            retmode: 'json',
+            rettype: 'docsum',
+        },
+        uri: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi',
     });
 
     if (db === 'pubmed') {

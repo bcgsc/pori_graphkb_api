@@ -26,7 +26,7 @@ const generateToken = async (db, username, key, exp = null) => {
     if (exp === null) {
         return jwt.sign({ user }, key, { expiresIn: TOKEN_TIMEOUT });
     }
-    return jwt.sign({ user, exp }, key);
+    return jwt.sign({ exp, user }, key);
 };
 
 
@@ -58,16 +58,16 @@ const fetchKeyCloakToken = async (username, password, {
 }) => {
     logger.log('debug', `[POST] ${GKB_KEYCLOAK_URI}`);
     const resp = JSON.parse(await request({
-        method: 'POST',
-        uri: GKB_KEYCLOAK_URI,
         body: form({
             client_id: GKB_KEYCLOAK_CLIENT_ID,
-            grant_type: 'password',
-            username,
-            password,
             client_secret: GKB_KEYCLOAK_CLIENT_SECRET,
+            grant_type: 'password',
+            password,
+            username,
         }),
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        method: 'POST',
+        uri: GKB_KEYCLOAK_URI,
     }));
     return resp.access_token;
 };
@@ -144,7 +144,7 @@ const addPostToken = (app) => {
                 return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);
             }
         } else {
-            kcTokenContent = { preferred_username: req.body.username, exp: null };
+            kcTokenContent = { exp: null, preferred_username: req.body.username };
         }
 
         // kb-level authentication

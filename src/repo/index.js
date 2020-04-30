@@ -19,13 +19,13 @@ const createDB = async (server, {
 }) => {
     await server.createDatabase({
         name: GKB_DB_NAME,
-        username: GKB_DBS_USER,
         password: GKB_DBS_PASS,
+        username: GKB_DBS_USER,
     });
     const db = await server.session({
         name: GKB_DB_NAME,
-        username: GKB_DBS_USER,
         password: GKB_DBS_PASS,
+        username: GKB_DBS_USER,
     });
 
     try {
@@ -36,8 +36,8 @@ const createDB = async (server, {
         // drop the new database if we fail to create the schema
         await server.dropDatabase({
             name: GKB_DB_NAME,
-            username: GKB_DBS_USER,
             password: GKB_DBS_PASS,
+            username: GKB_DBS_USER,
         });
         await server.close();
         throw err;
@@ -88,8 +88,8 @@ const connectDB = async ({
     });
     const exists = await server.existsDatabase({
         name: GKB_DB_NAME,
-        username: GKB_DBS_USER,
         password: GKB_DBS_PASS,
+        username: GKB_DBS_USER,
     });
     logger.log('info', `The database ${GKB_DB_NAME} ${exists
         ? 'exists'
@@ -99,9 +99,9 @@ const connectDB = async ({
         if (!exists) {
             // the db does not exist, create it
             await createDB(server, {
-                GKB_DB_NAME,
                 GKB_DBS_PASS,
                 GKB_DBS_USER,
+                GKB_DB_NAME,
                 GKB_USER_CREATE,
             });
         } else {
@@ -116,9 +116,9 @@ const connectDB = async ({
     try {
         pool = await server.sessions({
             name: GKB_DB_NAME,
-            username: GKB_DB_USER,
             password: GKB_DB_PASS,
             pool: { max: GKB_DB_POOL },
+            username: GKB_DB_USER,
         });
         session = await pool.acquire();
     } catch (err) {
@@ -130,10 +130,10 @@ const connectDB = async ({
         try {
             logger.log('info', `create the current user (${process.env.USER}) as admin`);
             await createUser(session, {
-                userName: process.env.USER,
-                groupNames: ['admin'],
                 existsOk: true,
+                groupNames: ['admin'],
                 signedLicenseAt: timeStampNow(),
+                userName: process.env.USER,
             });
         } catch (err) {
             if (!(err instanceof RecordExistsError)) {
@@ -165,7 +165,7 @@ const connectDB = async ({
     }
     session.close();
     // create the admin user
-    return { server, pool, schema };
+    return { pool, schema, server };
 };
 
 

@@ -42,20 +42,20 @@ const PARAM_PREFIX = 'param';
  * @property {string} AND
  */
 const OPERATORS = {
-    EQ: '=',
+    AND: 'AND',
     CONTAINS: 'CONTAINS',
     CONTAINSALL: 'CONTAINSALL',
-    CONTAINSTEXT: 'CONTAINSTEXT',
     CONTAINSANY: 'CONTAINSANY',
-    INSTANCEOF: 'INSTANCEOF',
-    IN: 'IN',
-    GTE: '>=',
+    CONTAINSTEXT: 'CONTAINSTEXT',
+    EQ: '=',
     GT: '>',
-    LTE: '<=',
-    LT: '<',
+    GTE: '>=',
+    IN: 'IN',
+    INSTANCEOF: 'INSTANCEOF',
     IS: 'IS',
+    LT: '<',
+    LTE: '<=',
     OR: 'OR',
-    AND: 'AND',
 };
 
 const DIRECTIONS = ['out', 'in', 'both'];

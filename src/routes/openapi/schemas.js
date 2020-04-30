@@ -23,15 +23,15 @@ const EDGE_MODEL_NAMES = schema.getModels().filter(m => m.isEdge && !m.isAbstrac
 
 const dependency = {
     $ref: `${PREFIX}/RecordLink`,
-    nullable: true,
     description: 'For an ontology term, a dependency is defined if the information defining the term was collected as a side-effect of creating another term.',
+    nullable: true,
 };
 
 const deprecated = {
-    type: 'boolean',
+    default: false,
     description: 'For an ontology term, indicates that according to the source, the current term is deprecated',
     nullable: false,
-    default: false,
+    type: 'boolean',
 };
 
 const source = {
@@ -40,16 +40,16 @@ const source = {
 };
 
 const SourceLink = {
-    description: 'A direct link to source record. Can be the record ID of the linked source record in the form of a string or the record itself',
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
         },
         {
-            type: 'object',
             $ref: `${PREFIX}/Source`,
+            type: 'object',
         },
     ],
+    description: 'A direct link to source record. Can be the record ID of the linked source record in the form of a string or the record itself',
 };
 
 const EdgeList = {
@@ -57,21 +57,20 @@ const EdgeList = {
 };
 
 const RecordLink = {
-    description: 'A direct link to another record. Can be the record ID of the linked record in the form of a string or the record itself',
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
         },
         {
-            type: 'object',
-            properties: { '@rid': { $ref: `${PREFIX}/RecordId` } },
             additionalProperties: true,
+            properties: { '@rid': { $ref: `${PREFIX}/RecordId` } },
+            type: 'object',
         },
     ],
+    description: 'A direct link to another record. Can be the record ID of the linked record in the form of a string or the record itself',
 };
 
 const UserLink = {
-    description: 'A direct link to user record. Can be the record ID of the linked user record in the form of a string or the record itself',
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -80,10 +79,10 @@ const UserLink = {
             $ref: `${PREFIX}/User`,
         },
     ],
+    description: 'A direct link to user record. Can be the record ID of the linked user record in the form of a string or the record itself',
 };
 
 const OntologyLink = {
-    description: 'A direct link to ontology term record. Can be the record ID of the linked ontology record in the form of a string or the record itself',
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -92,10 +91,10 @@ const OntologyLink = {
             $ref: `${PREFIX}/Ontology`,
         },
     ],
+    description: 'A direct link to ontology term record. Can be the record ID of the linked ontology record in the form of a string or the record itself',
 };
 
 const VocabularyLink = {
-    description: 'A direct link to vocabulary term record. Can be the record ID of the linked vocabulary record in the form of a string or the record itself',
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -104,10 +103,10 @@ const VocabularyLink = {
             $ref: `${PREFIX}/Vocabulary`,
         },
     ],
+    description: 'A direct link to vocabulary term record. Can be the record ID of the linked vocabulary record in the form of a string or the record itself',
 };
 
 const FeatureLink = {
-    description: 'A direct link to feature record. Can be the record ID of the linked feature record in the form of a string or the record itself',
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -116,32 +115,31 @@ const FeatureLink = {
             $ref: `${PREFIX}/Feature`,
         },
     ],
+    description: 'A direct link to feature record. Can be the record ID of the linked feature record in the form of a string or the record itself',
 };
 
 const RecordList = {
-    type: 'array',
     description: 'A list of record IDs',
     items: { $ref: `${PREFIX}/RecordLink` },
+    type: 'array',
 };
 
 const Error = {
-    type: 'object',
     properties: {
-        message: { type: 'string', description: 'The error message' },
-        name: { type: 'string', description: 'The name of the type of error' },
+        message: { description: 'The error message', type: 'string' },
+        name: { description: 'The name of the type of error', type: 'string' },
         stacktrace: {
-            type: 'array',
             description: 'Optionally, the error may include a stack trace to aid in debugging',
             items: { type: 'string' },
+            type: 'array',
         },
     },
+    type: 'object',
 };
 
 
 const SubQuery = {
     description: 'Query based on the conditions in the filters clause',
-    type: 'object',
-    required: ['target'],
     properties: {
         filters: {
             anyOf: [
@@ -151,98 +149,89 @@ const SubQuery = {
         },
         target: {
             oneOf: [
-                { type: 'string', enum: NODE_MODEL_NAMES },
-                { type: 'array', items: { $ref: `${PREFIX}/RecordId` }, minItems: 1 },
+                { enum: NODE_MODEL_NAMES, type: 'string' },
+                { items: { $ref: `${PREFIX}/RecordId` }, minItems: 1, type: 'array' },
                 { $ref: `${PREFIX}/SubQuery` },
                 { $ref: `${PREFIX}/FixedSubQuery` },
             ],
         },
     },
+    required: ['target'],
+    type: 'object',
 };
 
 
 const FixedSubQuery = {
-    description: 'Fixed subquery',
     anyOf: [
         { $ref: `${PREFIX}/KeywordQuery` },
         { $ref: `${PREFIX}/NeighborhoodQuery` },
         { $ref: `${PREFIX}/TreeQuery` },
         { $ref: `${PREFIX}/SimilarityQuery` },
     ],
+    description: 'Fixed subquery',
 };
 
 
 const KeywordQuery = {
     description: 'Search by keyword',
-    type: 'object',
-    required: ['queryType', 'target', 'keyword'],
     properties: {
-        target: { type: 'string', enum: NODE_MODEL_NAMES },
-        queryType: { type: 'string', enum: ['keyword'] },
         keyword: { type: 'string' },
+        queryType: { enum: ['keyword'], type: 'string' },
+        target: { enum: NODE_MODEL_NAMES, type: 'string' },
     },
+    required: ['queryType', 'target', 'keyword'],
+    type: 'object',
 };
 
 
 const SimilarityQuery = {
-    type: 'object',
     description: 'Expand some query or list of records based on following edges indicating equivalence or similarity',
-    required: ['queryType', 'target'],
     properties: {
-        queryType: {
-            type: 'string', enum: ['similarTo'], description: 'The query type',
-        },
-        treeEdges: {
-            type: 'array',
-            items: {
-                type: 'string',
-                enum: EDGE_MODEL_NAMES,
-            },
-            default: TREE_EDGES,
-            description: 'The tree edge classes to follow up and down',
-        },
         edges: {
-            type: 'array',
-            items: {
-                type: 'string',
-                enum: EDGE_MODEL_NAMES,
-            },
             default: SIMILARITY_EDGES,
             description: 'The edge classes to follow',
+            items: {
+                enum: EDGE_MODEL_NAMES,
+                type: 'string',
+            },
+            type: 'array',
+        },
+        queryType: {
+            description: 'The query type', enum: ['similarTo'], type: 'string',
         },
         target: {
             oneOf: [
-                { type: 'string', enum: NODE_MODEL_NAMES },
-                { type: 'array', items: { $ref: `${PREFIX}/RecordId` }, minItems: 1 },
+                { enum: NODE_MODEL_NAMES, type: 'string' },
+                { items: { $ref: `${PREFIX}/RecordId` }, minItems: 1, type: 'array' },
                 { $ref: `${PREFIX}/SubQuery` },
                 { $ref: `${PREFIX}/FixedSubQuery` },
             ],
         },
+        treeEdges: {
+            default: TREE_EDGES,
+            description: 'The tree edge classes to follow up and down',
+            items: {
+                enum: EDGE_MODEL_NAMES,
+                type: 'string',
+            },
+            type: 'array',
+        },
     },
+    required: ['queryType', 'target'],
+    type: 'object',
 };
 
 
 const TreeQuery = {
-    type: 'object',
     description: 'Query for a given vertex and then follow edges for a given direction as long as possible',
-    required: ['queryType', 'target'],
     properties: {
-        queryType: {
-            type: 'string', enum: ['ancestors', 'descendants'], description: 'The query type',
-        },
         edges: {
-            type: 'array',
-            items: {
-                type: 'string',
-                enum: EDGE_MODEL_NAMES,
-            },
             description: 'The edge classes to follow',
-        },
-        target: {
-            oneOf: [
-                { type: 'string', enum: NODE_MODEL_NAMES },
-                { type: 'array', items: { $ref: `${PREFIX}/RecordId` }, minItems: 1 },
-            ],
+            items: {
+                enum: EDGE_MODEL_NAMES,
+                type: 'string',
+            },
+            type: 'array',
         },
         filters: {
             anyOf: [
@@ -250,25 +239,37 @@ const TreeQuery = {
                 { $ref: `${PREFIX}/Comparison` },
             ],
         },
+        queryType: {
+            description: 'The query type', enum: ['ancestors', 'descendants'], type: 'string',
+        },
+        target: {
+            oneOf: [
+                { enum: NODE_MODEL_NAMES, type: 'string' },
+                { items: { $ref: `${PREFIX}/RecordId` }, minItems: 1, type: 'array' },
+            ],
+        },
     },
+    required: ['queryType', 'target'],
+    type: 'object',
 };
 
 
 const NeighborhoodQuery = {
-    type: 'object',
     description: 'Query for a vertex and then grab surrounding vertices up to a given depth',
-    required: ['queryType', 'target', 'filters'],
     properties: {
-        queryType: {
-            enum: ['neighborhood'],
+        depth: {
+            description: 'maximum depth to follow out from a matched node', type: 'integer',
+        },
+        direction: {
+            description: 'Direction of edges to follow', enum: Object.values(DIRECTIONS), type: 'string',
         },
         edges: {
             default: null,
-            type: 'array',
             items: {
-                type: 'string',
                 enum: EDGE_MODEL_NAMES,
+                type: 'string',
             },
+            type: 'array',
         },
         filters: {
             anyOf: [
@@ -276,14 +277,13 @@ const NeighborhoodQuery = {
                 { $ref: `${PREFIX}/Comparison` },
             ],
         },
-        target: { type: 'string', enum: NODE_MODEL_NAMES },
-        depth: {
-            type: 'integer', description: 'maximum depth to follow out from a matched node',
+        queryType: {
+            enum: ['neighborhood'],
         },
-        direction: {
-            type: 'string', enum: Object.values(DIRECTIONS), description: 'Direction of edges to follow',
-        },
+        target: { enum: NODE_MODEL_NAMES, type: 'string' },
     },
+    required: ['queryType', 'target', 'filters'],
+    type: 'object',
 };
 
 
@@ -293,12 +293,12 @@ const Query = {
         { $ref: `${PREFIX}/FixedSubQuery` },
     ],
     properties: {
+        count: { $ref: `${PREFIX}/count` },
         limit: { $ref: `${PREFIX}/limit` },
-        skip: { $ref: `${PREFIX}/skip` },
-        returnProperties: { $ref: `${PREFIX}/returnProperties` },
         orderBy: { $ref: `${PREFIX}/orderBy` },
         orderByDirection: { $ref: `${PREFIX}/orderByDirection` },
-        count: { $ref: `${PREFIX}/count` },
+        returnProperties: { $ref: `${PREFIX}/returnProperties` },
+        skip: { $ref: `${PREFIX}/skip` },
     },
 };
 
@@ -306,94 +306,94 @@ const Query = {
 const Clause = {
     oneOf: [
         {
-            type: 'object',
             properties: {
                 AND: {
-                    type: 'array',
-                    minItems: 1,
                     items: {
                         anyOf: [
                             { $ref: `${PREFIX}/Clause` },
                             { $ref: `${PREFIX}/Comparison` },
                         ],
                     },
+                    minItems: 1,
+                    type: 'array',
                 },
             },
+            type: 'object',
         },
         {
-            type: 'object',
             properties: {
                 OR: {
-                    type: 'array',
-                    minItems: 1,
                     items: {
                         anyOf: [
                             { $ref: `${PREFIX}/Clause` },
                             { $ref: `${PREFIX}/Comparison` },
                         ],
                     },
+                    minItems: 1,
+                    type: 'array',
                 },
             },
+            type: 'object',
         },
     ],
 };
 
 const Comparison = {
-    type: 'object',
-    minProperties: 1,
     additionalProperties: {
         oneOf: [
-            { type: 'array', items: { $ref: `${PREFIX}/RecordId` } },
+            { items: { $ref: `${PREFIX}/RecordId` }, type: 'array' },
             { type: 'string' },
             { type: 'number' },
             { type: 'boolean' },
             { $ref: `${PREFIX}/SubQuery` },
         ],
     },
+    minProperties: 1,
     properties: {
-        operator: { type: 'string', enum: Object.values(OPERATORS).filter(op => !['AND', 'OR'].includes(op)) },
-        negate: { type: 'boolean', description: 'Negation of this comparison', default: false },
+        negate: { default: false, description: 'Negation of this comparison', type: 'boolean' },
+        operator: { enum: Object.values(OPERATORS).filter(op => !['AND', 'OR'].includes(op)), type: 'string' },
     },
+    type: 'object',
 };
 
 
 module.exports = {
-    dependency,
-    deprecated,
+    Clause,
+    Comparison,
     EdgeList,
     Error,
     FeatureLink,
+    FixedSubQuery,
+    KeywordQuery,
+    NeighborhoodQuery,
     OntologyLink,
+    Query,
     RecordLink,
     RecordList,
-    source,
+    SimilarityQuery,
     SourceLink,
+    SubQuery,
+    TreeQuery,
     UserLink,
     VocabularyLink,
-    Query,
-    Clause,
-    Comparison,
-    TreeQuery,
-    FixedSubQuery,
-    SubQuery,
-    SimilarityQuery,
-    NeighborhoodQuery,
-    KeywordQuery,
-    skip: {
-        nullable: true, type: 'integer', min: 0, description: 'The number of records to skip. Used in combination with limit for paginating queries.',
-    },
-    history: { type: 'boolean', default: false },
-    returnProperties: { type: 'array', items: { type: 'string' }, description: 'array of property names to return (defaults to all)' },
+    count: { default: 'false', description: 'return a count of the resulting records instead of the records themselves', type: 'boolean' },
+    dependency,
+    deprecated,
+    history: { default: false, type: 'boolean' },
     limit: {
-        type: 'integer', min: 1, max: MAX_QUERY_LIMIT, description: 'maximum number of records to return',
+        description: 'maximum number of records to return', max: MAX_QUERY_LIMIT, min: 1, type: 'integer',
     },
     neighbors: {
-        type: 'integer',
-        min: 0,
-        max: MAX_JUMPS,
         description: 'For the final query result, fetch records up to this many links away (warning: may significantly increase query time)',
+        max: MAX_JUMPS,
+        min: 0,
+        type: 'integer',
     },
-    count: { type: 'boolean', default: 'false', description: 'return a count of the resulting records instead of the records themselves' },
-    orderBy: { type: 'string', description: 'CSV delimited list of property names (traversals) to sort the results by' },
-    orderByDirection: { type: 'string', enum: ['ASC', 'DESC'], description: 'When orderBy is given, this is used to determine the ordering direction' },
+    orderBy: { description: 'CSV delimited list of property names (traversals) to sort the results by', type: 'string' },
+    orderByDirection: { description: 'When orderBy is given, this is used to determine the ordering direction', enum: ['ASC', 'DESC'], type: 'string' },
+    returnProperties: { description: 'array of property names to return (defaults to all)', items: { type: 'string' }, type: 'array' },
+    skip: {
+        description: 'The number of records to skip. Used in combination with limit for paginating queries.', min: 0, nullable: true, type: 'integer',
+    },
+    source,
 };

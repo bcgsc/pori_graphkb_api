@@ -63,11 +63,11 @@ const checkClassPermissions = async (req, res, next) => {
     const operation = req.method;
 
     const mapping = {
-        GET: PERMISSIONS.READ,
-        UPDATE: PERMISSIONS.UPDATE,
         DELETE: PERMISSIONS.DELETE,
-        POST: PERMISSIONS.CREATE,
+        GET: PERMISSIONS.READ,
         PATCH: PERMISSIONS.UPDATE,
+        POST: PERMISSIONS.CREATE,
+        UPDATE: PERMISSIONS.UPDATE,
     };
     const operationPermission = mapping[operation];
 
@@ -80,5 +80,5 @@ const checkClassPermissions = async (req, res, next) => {
 };
 
 module.exports = {
-    checkToken, checkClassPermissions, checkUserAccessFor,
+    checkClassPermissions, checkToken, checkUserAccessFor,
 };

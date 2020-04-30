@@ -41,7 +41,7 @@ const addStatsRoute = (app) => {
             const classList = req.query.classList
                 ? parseClassListQueryParam(req.query.classList)
                 : defaultClassList;
-            const stats = await selectCounts(session, { groupBy, history, classList });
+            const stats = await selectCounts(session, { classList, groupBy, history });
             session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({ result: stats }));
         } catch (err) {
@@ -78,5 +78,5 @@ const addParserRoute = (app) => {
 
 
 module.exports = {
-    openapi, resource, addStatsRoute, addParserRoute, addErrorRoute, addQueryRoute,
+    addErrorRoute, addParserRoute, addQueryRoute, addStatsRoute, openapi, resource,
 };
