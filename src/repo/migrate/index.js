@@ -417,6 +417,16 @@ const migrate3xFrom7xto8x = async (db) => {
     await Property.create(email, dbClass);
 };
 
+const migrate3xFrom8xto9x = async (db) => {
+    const dbClass = await db.class.get(SCHEMA_DEFN.CuratedContent.name);
+
+    for (const propertyName of ['doi', 'content', 'citation', 'year']) {
+        logger.info(`adding the property ${SCHEMA_DEFN.CuratedContent.name}.${propertyName}`);
+        const { [propertyName]: prop } = SCHEMA_DEFN.CuratedContent.properties;
+        await Property.create(prop, dbClass);
+    }
+};
+
 
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
@@ -469,6 +479,7 @@ const migrate = async (db, opt = {}) => {
         ['3.5.0', '3.6.0', migrate3From5xto6x],
         ['3.6.0', '3.7.0', migrate3xFrom6xto7x],
         ['3.7.0', '3.8.0', migrate3xFrom7xto8x],
+        ['3.8.0', '3.9.0', migrate3xFrom8xto9x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
