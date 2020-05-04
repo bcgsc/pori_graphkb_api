@@ -6,7 +6,11 @@
 /**
  * @ignore
  */
-const { schema: { schema }, error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
+const {
+    schema: { schema },
+    error: { AttributeError },
+    sentenceTemplates: {chooseDefaultTemplate},
+} = require('@bcgsc/knowledgebase-schema');
 const { variant: { VariantNotation } } = require('@bcgsc/knowledgebase-parser');
 
 const { logger } = require('../logging');
@@ -216,7 +220,29 @@ const fetchDisplayName = async (db, model, content) => {
             return notation;
         }
     } if (model.name === 'Statement') {
-        return null;
+        const links = [...content.conditions, ...content.evidence, content.relevance];
+
+        const records = await select(
+            db,
+            parse({
+                returnProperties: ['displayName', '@class', '@rid', 'name'],
+                target: links,
+            }),
+        );
+        const recordsById = {};
+        for (const record of records) {
+            recordsById[record['@rid']] = record;
+        }
+        const templateContent = {
+            ...content,
+            conditions: content.conditions.map(rid => recordsById[rid]),
+            subject: recordsById[content.subject],
+            evidence: content.evidence.map(rid => recordsById[rid]),
+            relevance: recordsById[content.relevance],
+        };
+
+        return chooseDefaultTemplate(templateContent);
+
     }
     return content.name;
 };

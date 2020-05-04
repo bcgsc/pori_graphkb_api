@@ -260,9 +260,9 @@ describeWithAuth('query builder', () => {
 
         test('Statement', async () => {
             const name = await fetchDisplayName(
-                session, schema.Statement, db.records.resToDrug,
+                session, schema.Statement, db.records.sensToDrug,
             );
-            expect(name).toBeNull();
+            expect(name).toContain('is associated with {relevance} to {subject}');
         });
     });
 

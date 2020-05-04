@@ -463,7 +463,9 @@ describeWithAuth('CRUD operations', () => {
     describe('statements', () => {
         let disease,
             publication,
-            relevance;
+            relevance,
+            therapy,
+            variant;
 
         beforeEach(async () => {
             const source = await create(
@@ -471,14 +473,22 @@ describeWithAuth('CRUD operations', () => {
                 { content: { name: 'some source' }, model: schema.Source, user: db.admin },
             );
             // set up the dependent records
-            ([disease, publication, relevance] = await Promise.all([
+            let feature;
+            ([disease, publication, relevance, therapy, feature] = await Promise.all([
                 { content: { sourceId: 'disease:1234' }, model: schema.Disease },
                 { content: { sourceId: 'publication:1234' }, model: schema.Publication },
-                { content: { sourceId: 'relevance:1234' }, model: schema.Vocabulary },
+                { content: { sourceId: 'sensitivity', name: 'sensitivity' }, model: schema.Vocabulary },
+                { content: { sourceId: 'therapy:1234' }, model: schema.Therapy },
+                { content: { sourceId: 'feature:1234', biotype: 'gene' }, model: schema.Feature },
             ].map(async opt => create(
                 session,
                 { ...opt, content: { ...opt.content, source }, user: db.admin },
             ))));
+            variant = await create(session, {
+                model: schema.CategoryVariant,
+                content: {reference1: feature, type: relevance},
+                user: db.admin
+            });
         });
 
         test('enforces psuedo-unique contraint by select', async () => {
@@ -517,6 +527,24 @@ describeWithAuth('CRUD operations', () => {
                 return;
             }
             throw new Error('Did not throw the expected error');
+        });
+
+        test('creates non-default displayNameTemplate', async () => {
+            // create the statement
+            const result = await create(
+                session,
+                {
+                    content: {
+                        conditions: [disease, variant, therapy],
+                        evidence: [publication],
+                        relevance,
+                        subject: therapy,
+                    },
+                    model: schema.Statement,
+                    user: db.admin,
+                },
+            );
+            expect(result.displayNameTemplate).toEqual('{conditions:variant} is associated with {relevance} to {subject} in {conditions:disease} ({evidence})')
         });
     });
 });

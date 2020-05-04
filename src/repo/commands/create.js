@@ -132,9 +132,12 @@ const create = async (db, opt) => {
     }
 
     try {
-        if (!record.displayName && model.properties.displayName) {
+        if (!content.displayName && model.properties.displayName) {
             // displayName exists but has not been filled
             record.displayName = await fetchDisplayName(db, model, record);
+        } else if (!content.displayNameTemplate && model.properties.displayNameTemplate) {
+            // displayName exists but has not been filled
+            record.displayNameTemplate = await fetchDisplayName(db, model, record);
         }
         const result = await db.insert().into(model.name).set(omitDBAttributes(record)).one();
 
