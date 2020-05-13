@@ -16,7 +16,7 @@ describe('propsToProjection', () => {
             'conditions.reference2.@class',
             'conditions.reference2.@rid',
         ], true);
-        expect(projection).toEqual('conditions:{ @rid, @class, reference1:{ @rid, @class }, reference2:{ @rid, @class } }');
+        expect(projection).toEqual('conditions:{ @class, @rid, reference1:{ @class, @rid }, reference2:{ @class, @rid } }');
     });
 });
 

@@ -180,9 +180,9 @@ const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
     const convertToString = (obj) => {
         const keyList = [];
 
-        for (const [key, value] of Object.entries(obj)) {
-            if (Object.keys(value).length) {
-                keyList.push(`${key}:{ ${convertToString(value)} }`);
+        for (const key of Object.keys(obj).sort()) {
+            if (Object.keys(obj[key]).length) {
+                keyList.push(`${key}:{ ${convertToString(obj[key])} }`);
             } else {
                 keyList.push(key);
             }
