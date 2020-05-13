@@ -313,7 +313,13 @@ const singleKeywordSearch = ({
 }) => {
     const model = schema[target];
 
-    if (model.inherits.includes('Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
+    if (model.name === 'EvidenceLevel') {
+        return `SELECT *
+        FROM ${targetQuery || model.name}
+        WHERE name ${operator} :${param}
+            OR sourceId ${operator} :${param}
+            OR source.name ${operator} :${param}`;
+    } if (model.inherits.includes('Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
         return `SELECT *
         FROM ${targetQuery || model.name}
         WHERE name ${operator} :${param}
