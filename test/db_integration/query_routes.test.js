@@ -366,6 +366,41 @@ describeWithAuth('api read-only routes', () => {
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body.result).toHaveProperty('length', 1);
         });
+
+        test('deeply nested return properties', async () => {
+            const response = await request({
+                body: {
+                    returnProperties: [
+                        'conditions.@rid',
+                        'conditions.@class',
+                        'conditions.reference1.@class',
+                        'conditions.reference1.@rid',
+                        'conditions.reference2.@class',
+                        'conditions.reference2.@rid',
+                    ],
+                    target: 'Statement',
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            });
+            expect(response.statusCode).toBe(HTTP_STATUS.OK);
+            expect(response.body.result).toHaveProperty('length', 3);
+
+            for (const statement of response.body.result) {
+                expect(statement).toHaveProperty('conditions');
+
+                for (const condition of statement.conditions) {
+                    expect(condition).toHaveProperty('@rid');
+                    expect(condition).toHaveProperty('@class');
+
+                    if (condition.reference1) {
+                        expect(condition.reference1).toHaveProperty('@rid');
+                        expect(condition.reference1).toHaveProperty('@class');
+                    }
+                }
+            }
+        });
     });
 
     describe('/:model/:rid', () => {

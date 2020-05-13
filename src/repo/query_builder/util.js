@@ -1,4 +1,5 @@
 const { RecordID: RID } = require('orientjs');
+const { merge } = require('lodash');
 const {
     error: { AttributeError },
     util: { castInteger },
@@ -166,7 +167,7 @@ const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
                 throw new AttributeError(`Cannot return nested property (${prop}), the property (${propModel.name}) does not have a linked class`);
             }
             const innerProjection = parsePropertyList(propModel.linkedClass, [nestedProps]);
-            projections[directProp] = { ...projections[directProp], ...innerProjection };
+            merge(projections[directProp], innerProjection);
         }
     }
     return projections;
@@ -179,9 +180,9 @@ const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
     const convertToString = (obj) => {
         const keyList = [];
 
-        for (const [key, value] of Object.entries(obj)) {
-            if (Object.keys(value).length) {
-                keyList.push(`${key}:{ ${convertToString(value)} }`);
+        for (const key of Object.keys(obj).sort()) {
+            if (Object.keys(obj[key]).length) {
+                keyList.push(`${key}:{ ${convertToString(obj[key])} }`);
             } else {
                 keyList.push(key);
             }
