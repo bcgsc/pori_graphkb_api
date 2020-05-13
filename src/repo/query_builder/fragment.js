@@ -430,11 +430,11 @@ class Subquery {
             if (!filters) {
                 return FixedSubquery.parse({
                     ...rest, history, queryType, target,
-                });
+                }, this.parse.bind(this)); // has to be passed to avoid circular dependency
             }
             return FixedSubquery.parse({
                 ...rest, filters, history, queryType, target,
-            });
+            }, this.parse.bind(this)); // has to be passed to avoid circular dependency
         }
         return new this({
             filters, history, target,

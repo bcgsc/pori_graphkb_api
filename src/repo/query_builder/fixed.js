@@ -6,7 +6,14 @@
  * @constant
  * @ignore
  */
-const { util: { castToRID }, error: { AttributeError }, schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const {
+    util: { castToRID, looksLikeRID },
+    error: { AttributeError }, schema: { schema },
+} = require('@bcgsc/knowledgebase-schema');
+const {
+    variant: { parse: parseVariant },
+    error: { ParsingError },
+} = require('@bcgsc/knowledgebase-parser');
 const { quoteWrap } = require('./../util');
 
 const {
@@ -88,6 +95,9 @@ RETURN DISTINCT $pathElements)`;
 };
 
 
+const recordsAsTarget = (...target) => `[${target.map(p => castToRID(p).toString()).join(', ')}]`;
+
+
 const similarTo = ({
     target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = TREE_EDGES, matchType, ...rest
 } = {}) => {
@@ -108,7 +118,7 @@ const similarTo = ({
         throw new AttributeError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
     }
     if (Array.isArray(target)) {
-        initialQuery = `[${target.map(p => castToRID(p).toString()).join(', ')}]`;
+        initialQuery = recordsAsTarget(...target);
     } else {
         const { query: initialStatement, params: initialParams } = target.toString(paramIndex, prefix);
 
@@ -182,6 +192,114 @@ const ancestors = (opt) => {
 const descendants = (opt) => {
     opt.direction = 'out';
     return treeQuery(opt);
+};
+
+const buildLooseSearch = (cls, name) => ({
+    queryType: 'similarTo',
+    target: {
+        filters: {
+            OR: [
+                { name },
+                { sourceId: name },
+            ],
+        },
+        target: cls,
+    },
+});
+
+
+const buildHgvsQuery = (hgvsInput) => {
+    const parsed = parseVariant(hgvsInput);
+    const payload = {
+        filters: {
+            AND: [
+                {
+                    reference1: buildLooseSearch('Feature', parsed.reference1),
+                },
+                {
+                    type: buildLooseSearch('Vocabulary', parsed.type),
+                },
+            ],
+        },
+        target: 'PositionalVariant',
+    };
+
+    if (parsed.reference2) {
+        payload.filters.AND.push(buildLooseSearch(parsed.reference2));
+    } else {
+        payload.filters.AND.push({ reference2: null });
+    }
+
+    // sequence property filters
+    for (const name of ['refSeq', 'untemplatedSeq', 'untemplatedSeqSize']) {
+        if (parsed[name] !== undefined) {
+            const filters = {
+                OR: [
+                    { [name]: parsed[name] },
+                    { [name]: null },
+                ],
+            };
+
+            if (name !== 'untemplatedSeqSize') {
+                filters.OR.push({ [name]: 'x'.repeat(parsed[name].length) });
+            }
+            payload.filters.AND.push(filters);
+        }
+    }
+
+    // position property filters
+    for (const breakProp of ['break1', 'break2']) {
+        const start = `${breakProp}Start`,
+            end = `${breakProp}End`;
+
+        if (!parsed[start]) {
+            continue;
+        }
+        payload.filters.AND.push({
+            [`${start}.@class`]: parsed[start].toJSON()['@class'],
+        });
+
+        if (parsed[start].pos !== undefined) { // ignore cytoband positions for now
+            if (parsed[end]) {
+                payload.filters.AND.push({
+                    OR: [
+                        {
+                            AND: [ // range vs single
+                                { [`${start}.pos`]: parsed[start].pos, operator: OPERATORS.LTE },
+                                { [`${start}.pos`]: parsed[end].pos, operator: OPERATORS.GTE },
+                                { [`${end}.pos`]: null },
+                            ],
+                        },
+                        {
+                            AND: [ // range vs range
+                                { [`${end}.pos`]: parsed[start].pos, operator: OPERATORS.LTE },
+                                { [`${start}.pos`]: parsed[end].pos, operator: OPERATORS.GTE },
+                            ],
+                        },
+                    ],
+                });
+            } else {
+                payload.filters.AND.push({
+                    OR: [
+                        {
+                            AND: [ // single vs single
+                                { [`${start}.pos`]: parsed[start].pos },
+                                { [`${end}.pos`]: null },
+                            ],
+                        },
+                        {
+                            AND: [ // single vs range
+                                { [`${end}.pos`]: parsed[start].pos, operator: OPERATORS.LTE },
+                                { [`${start}.pos`]: parsed[start].pos, operator: OPERATORS.GTE },
+                            ],
+                        },
+                    ],
+                });
+            }
+        }
+    }
+
+    return payload;
 };
 
 
@@ -267,7 +385,13 @@ const singleKeywordSearch = ({
 
 
 const keywordSearch = ({
-    target, keyword, paramIndex, prefix = '', operator = OPERATORS.CONTAINSTEXT, ...opt
+    target,
+    keyword,
+    paramIndex,
+    prefix = '',
+    operator = OPERATORS.CONTAINSTEXT,
+    subQueryParser,
+    ...opt
 }) => {
     const model = schema[target];
 
@@ -297,11 +421,30 @@ const keywordSearch = ({
 
     const params = {};
 
+    if (keywords.length === 1) {
+        const [word] = keywords;
+
+        if (looksLikeRID(word)) {
+            return { params: {}, query: `SELECT FROM ${recordsAsTarget(word)}` };
+        } if (target.endsWith('Variant')) {
+            try {
+                return subQueryParser(
+                    buildHgvsQuery(word),
+                ).toString(
+                    paramIndex, prefix,
+                );
+            } catch (err) {
+                if (!(err instanceof ParsingError)) {
+                    throw err;
+                }
+            }
+        }
+    }
+
     let query;
 
     keywords.forEach((word, wordIndex) => {
         const param = `${prefix}param${wordIndex}`;
-        params[param] = word;
         query = singleKeywordSearch({
             ...opt,
             operator: keyword.length >= MIN_WORD_SIZE
@@ -309,11 +452,13 @@ const keywordSearch = ({
                 : OPERATORS.EQ,
             param,
             prefix: `${prefix}w${wordIndex}`,
+            subQueryParser,
             target: model.name,
             targetQuery: query
                 ? `(${query})`
                 : null,
         });
+        params[param] = word;
     });
 
     return { params, query: `SELECT DISTINCT * FROM (${query})` };
@@ -331,11 +476,13 @@ class FixedSubquery {
     expectedCount() { return null; }  // eslint-disable-line
 
     toString(paramIndex = 0, prefix = '') {
-        const query = this.queryBuilder({ ...this.opt, paramIndex, prefix: prefix || this.opt.prefix });
+        const query = this.queryBuilder({
+            ...this.opt, paramIndex, prefix: prefix || this.opt.prefix,
+        });
         return query;
     }
 
-    static parse({ queryType, ...opt }) {
+    static parse({ queryType, ...opt }, subQueryParser) {
         if (queryType === 'ancestors') {
             return new this(queryType, ancestors, opt);
         } if (queryType === 'descendants') {
@@ -345,7 +492,7 @@ class FixedSubquery {
         } if (queryType === 'similarTo') {
             return new this(queryType, similarTo, opt);
         } if (queryType === 'keyword') {
-            return new this(queryType, keywordSearch, opt);
+            return new this(queryType, keywordSearch, { ...opt, subQueryParser });
         }
         throw new AttributeError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
     }
