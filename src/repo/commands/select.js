@@ -9,7 +9,7 @@
 const {
     schema: { schema },
     error: { AttributeError },
-    sentenceTemplates: {chooseDefaultTemplate},
+    sentenceTemplates: { chooseDefaultTemplate },
 } = require('@bcgsc/knowledgebase-schema');
 const { variant: { VariantNotation } } = require('@bcgsc/knowledgebase-parser');
 
@@ -230,19 +230,19 @@ const fetchDisplayName = async (db, model, content) => {
             }),
         );
         const recordsById = {};
+
         for (const record of records) {
             recordsById[record['@rid']] = record;
         }
         const templateContent = {
             ...content,
             conditions: content.conditions.map(rid => recordsById[rid]),
-            subject: recordsById[content.subject],
             evidence: content.evidence.map(rid => recordsById[rid]),
             relevance: recordsById[content.relevance],
+            subject: recordsById[content.subject],
         };
 
         return chooseDefaultTemplate(templateContent);
-
     }
     return content.name;
 };
