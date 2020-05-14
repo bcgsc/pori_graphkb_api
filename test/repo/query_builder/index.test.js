@@ -222,6 +222,7 @@ describe('WrapperQuery.parse', () => {
     describe('top level treeQuery', () => {
         test('target ridList', () => {
             const parsed = parse({
+                disambiguate: false,
                 history: true,
                 queryType: 'ancestors',
                 target: ['#3:2', '#4:5'],
@@ -234,6 +235,7 @@ describe('WrapperQuery.parse', () => {
 
         test('target ridList without history', () => {
             const parsed = parse({
+                disambiguate: false,
                 history: false,
                 queryType: 'descendants',
                 target: ['#3:2', '#4:5'],
@@ -248,6 +250,7 @@ describe('WrapperQuery.parse', () => {
 
         test('custom edges', () => {
             const parsed = parse({
+                disambiguate: false,
                 edges: ['AliasOf', 'DeprecatedBy'],
                 history: false,
                 queryType: 'descendants',

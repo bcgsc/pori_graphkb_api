@@ -225,6 +225,12 @@ const SimilarityQuery = {
 const TreeQuery = {
     description: 'Query for a given vertex and then follow edges for a given direction as long as possible',
     properties: {
+        disambiguate: {
+            description: `when true the term will be expanded by similarity edges (${
+                SIMILARITY_EDGES.join(',')
+            }) before it the tree is created`,
+            type: 'boolean',
+        },
         edges: {
             description: 'The edge classes to follow',
             items: {
@@ -261,7 +267,9 @@ const NeighborhoodQuery = {
             description: 'maximum depth to follow out from a matched node', type: 'integer',
         },
         direction: {
-            description: 'Direction of edges to follow', enum: Object.values(DIRECTIONS), type: 'string',
+            description: 'Direction of edges to follow',
+            enum: Object.values(DIRECTIONS),
+            type: 'string',
         },
         edges: {
             default: null,
