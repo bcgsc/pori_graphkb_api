@@ -22,6 +22,8 @@ const {
 const { castRangeInt } = require('./util');
 
 
+const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map(e => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
+
 /**
  * @param {Object} opt options
  * @param {Clause} opt.filters the conditions of the match
@@ -32,7 +34,7 @@ const { castRangeInt } = require('./util');
  */
 const treeQuery = (opt) => {
     const {
-        filters, target: rawTarget, paramIndex = 0, direction, history = false,
+        filters, target: rawTarget, paramIndex = 0, direction, history = false, disambiguate = true,
     } = opt;
     const edges = opt.edges || ['SubclassOf'];
     const depth = castRangeInt(opt.depth || MAX_TRAVEL_DEPTH, 1, MAX_TRAVEL_DEPTH);
@@ -52,6 +54,10 @@ const treeQuery = (opt) => {
 
     if (!['out', 'in'].includes(direction)) {
         throw new AttributeError(`direction (${direction}) must be in or out`);
+    }
+
+    if (disambiguate) {
+        target = `(${disambiguationClause(target, SIMILARITY_EDGES)})`;
     }
 
     const edgeList = Array.from(edges, quoteWrap).join(', ');
@@ -128,21 +134,20 @@ const similarTo = ({
 
     const treeEdgeStrings = treeEdges.map(e => `'${e}'`).join(', ');
 
-    const disambiguationClause = cond => `TRAVERSE both(${edges.map(e => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
     // disambiguate
 
     let innerQuery;
 
     if (treeEdges.length) {
         innerQuery = `SELECT expand($${prefix}Result)
-            LET $${prefix}Initial = (${disambiguationClause(initialQuery)}),
+            LET $${prefix}Initial = (${disambiguationClause(initialQuery, edges)}),
             $${prefix}Ancestors = (TRAVERSE in(${treeEdgeStrings}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
             $${prefix}Descendants = (TRAVERSE out(${treeEdgeStrings}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
             $${prefix}Union = (SELECT expand(UNIONALL($${prefix}Ancestors, $${prefix}Descendants))),
-            $${prefix}Result = (${disambiguationClause(`(SELECT expand($${prefix}Union))`)})`;
+            $${prefix}Result = (${disambiguationClause(`(SELECT expand($${prefix}Union))`, edges)})`;
     } else {
         innerQuery = `SELECT expand($${prefix}Result)
-            LET $${prefix}Result = (${disambiguationClause(initialQuery)})`;
+            LET $${prefix}Result = (${disambiguationClause(initialQuery, edges)})`;
     }
 
     // filter duplicates and re-expand
