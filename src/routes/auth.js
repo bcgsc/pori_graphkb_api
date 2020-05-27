@@ -152,7 +152,7 @@ const addPostToken = (app) => {
             session;
 
         try {
-            session = await app.pool.acquire();
+            session = await app.dbPool.acquire();
         } catch (err) {
             return next(err);
         }

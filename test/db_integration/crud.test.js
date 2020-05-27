@@ -34,13 +34,13 @@ describeWithAuth('CRUD operations', () => {
 
     beforeAll(async () => {
         db = await createEmptyDb();
-        session = await db.pool.acquire();
+        session = await db.dbPool.acquire();
     });
 
     afterAll(async () => {
         await session.close();
         await tearDownDb(db);
-        await db.pool.close();
+        await db.dbPool.close();
         await db.server.close();
     });
 
@@ -477,17 +477,17 @@ describeWithAuth('CRUD operations', () => {
             ([disease, publication, relevance, therapy, feature] = await Promise.all([
                 { content: { sourceId: 'disease:1234' }, model: schema.Disease },
                 { content: { sourceId: 'publication:1234' }, model: schema.Publication },
-                { content: { sourceId: 'sensitivity', name: 'sensitivity' }, model: schema.Vocabulary },
+                { content: { name: 'sensitivity', sourceId: 'sensitivity' }, model: schema.Vocabulary },
                 { content: { sourceId: 'therapy:1234' }, model: schema.Therapy },
-                { content: { sourceId: 'feature:1234', biotype: 'gene' }, model: schema.Feature },
+                { content: { biotype: 'gene', sourceId: 'feature:1234' }, model: schema.Feature },
             ].map(async opt => create(
                 session,
                 { ...opt, content: { ...opt.content, source }, user: db.admin },
             ))));
             variant = await create(session, {
+                content: { reference1: feature, type: relevance },
                 model: schema.CategoryVariant,
-                content: {reference1: feature, type: relevance},
-                user: db.admin
+                user: db.admin,
             });
         });
 
@@ -544,7 +544,7 @@ describeWithAuth('CRUD operations', () => {
                     user: db.admin,
                 },
             );
-            expect(result.displayNameTemplate).toEqual('{conditions:variant} is associated with {relevance} to {subject} in {conditions:disease} ({evidence})')
+            expect(result.displayNameTemplate).toEqual('{conditions:variant} is associated with {relevance} to {subject} in {conditions:disease} ({evidence})');
         });
     });
 });

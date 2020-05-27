@@ -69,7 +69,7 @@ describeWithAuth('api crud routes', () => {
         db = await createEmptyDb();
         app = new AppServer({ ...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true });
         await app.listen();
-        session = await app.pool.acquire();
+        session = await app.dbPool.acquire();
         mockToken = await generateToken(
             session,
             db.admin.name,
@@ -86,7 +86,7 @@ describeWithAuth('api crud routes', () => {
         }
         await tearDownDb({ conf: db.conf, server: db.server }); // destroy the test db
         // close the db connections so that you can create more in the app.listen
-        await db.pool.close();
+        await db.dbPool.close();
         await db.server.close();
     });
 
@@ -281,7 +281,6 @@ describeWithAuth('api crud routes', () => {
                 adminGroup = res.body.result.find(g => g.name === 'admin');
 
                 if (!readOnly || !adminGroup) {
-                    console.log(res.body.result.map(r => r.name), readOnly);
                     throw new Error('failed to find the readonly and admin user groups');
                 }
                 user = (await request({

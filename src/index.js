@@ -11,20 +11,24 @@ const cors = require('cors');
 const HTTP_STATUS = require('http-status-codes');
 const { getPortPromise } = require('portfinder');
 
+const { schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
+
 const { logger } = require('./repo/logging');
 const {
     checkToken,
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
 const { connectDB } = require('./repo');
 const { getLoadVersion } = require('./repo/migrate/version');
-const { addExtensionRoutes } = require('./extensions');
-const { generateSwaggerSpec, registerSpecEndpoints } = require('./routes/openapi');
-const { addResourceRoutes } = require('./routes/resource');
+const extensionsRouter = require('./extensions');
 const { addPostToken } = require('./routes/auth');
-const { addEulaRoutes } = require('./routes/eula');
-const {
-    addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute,
-} = require('./routes');
+const errorHandler = require('./middleware/error');
+const parseRouter = require('./routes/parse');
+const statsRouter = require('./routes/stats');
+const resourceRouter = require('./routes/resource');
+const queryRouter = require('./routes/query');
+const eulaRouter = require('./routes/eula');
+const specRouter = require('./routes/openapi');
+const { generateSwaggerSpec } = require('./routes/openapi/spec');
 const config = require('./config');
 
 const BOOLEAN_FLAGS = [
@@ -70,6 +74,53 @@ const createConfig = (overrides = {}) => {
 };
 
 
+const replaceParams = (string) => {
+    let curr = string,
+        last = '',
+        paramCount = 1;
+
+    while (last !== curr) {
+        last = curr.slice();
+        // this is the pattern that express uses when you define your path param without a custom regex
+        curr = curr.replace('(?:([^\\/]+?))', `:param${paramCount}`);
+        paramCount += 1;
+    }
+    return curr;
+};
+
+/**
+   * @param {express.Router} initialRouter the top level router
+   * @returns {Array.<Object>} route definitions
+   *
+   * @example
+   * > fetchRoutes(router)
+   * [
+   *      {path: '/some/express/route', methods: {get: true}}
+   * ]
+   */
+const fetchRoutes = (initialRouter) => {
+    const _fetchRoutes = (router, prefix = '') => {
+        const routes = [];
+        router.stack.forEach(({
+            route, handle, name, ...rest
+        }) => {
+            if (route) { // routes registered directly on the app
+                const path = replaceParams(`${prefix}${route.path}`).replace(/\\/g, '');
+                routes.push({ methods: route.methods, path });
+            } else if (name === 'router') { // router middleware
+                const newPrefix = rest.regexp.source
+                    .replace('\\/?(?=\\/|$)', '') // this is the pattern express puts at the end of a route path
+                    .slice(1)
+                    .replace('\\', ''); // remove escaping to make paths more readable
+                routes.push(..._fetchRoutes(handle, prefix + newPrefix));
+            }
+        });
+        return routes;
+    };
+    return _fetchRoutes(initialRouter);
+};
+
+
 class AppServer {
     /**
      * @property {express} app the express app instance
@@ -78,7 +129,6 @@ class AppServer {
      * @property {express.Router} router the main router
      * @property {string} prefix the prefix to use for all routes
      * @property {Object} conf the configuration object
-     * @property {?Object.<string,ClassModel>} schema the mapping of class names to models for the db
      */
     constructor(conf = createConfig()) {
         this.app = express();
@@ -99,7 +149,6 @@ class AppServer {
         }));
 
         this.db = null;
-        this.schema = null;
         this.server = null;
         this.conf = conf;
 
@@ -131,9 +180,8 @@ class AppServer {
         } = this.conf;
 
         logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
-        const { pool, schema } = await connectDB(this.conf);
-        this.pool = pool;
-        this.schema = schema;
+        const { dbPool } = await connectDB(this.conf);
+        this.dbPool = dbPool;
     }
 
     /**
@@ -141,7 +189,7 @@ class AppServer {
      */
     async listen() {
         // connect to the database
-        if (!this.pool) {
+        if (!this.dbPool) {
             await this.connectToDb();
         }
         const {
@@ -153,11 +201,16 @@ class AppServer {
 
 
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(this.schema, { host: this.host, port: this.port });
-        registerSpecEndpoints(this.router, this.spec);
+        this.router.use((req, res, next) => {
+            req.spec = generateSwaggerSpec(SCHEMA_DEFN, { host: this.host, port: this.port });
+            req.dbPool = this.dbPool;
+            req.reconnectDb = async () => this.connectToDb();
+            next();
+        });
+        this.router.use('/', specRouter);
 
         this.router.get('/schema', async (req, res) => {
-            res.status(HTTP_STATUS.OK).json({ schema: jc.decycle(this.schema) });
+            res.status(HTTP_STATUS.OK).json({ schema: jc.decycle(SCHEMA_DEFN) });
         });
         this.router.get('/version', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({
@@ -166,7 +219,7 @@ class AppServer {
                 schema: getLoadVersion().version,
             });
         });
-        addParserRoute(this); // doesn't require any data access so no auth required
+        this.router.use('/parse', parseRouter);
 
         // read the key file if it wasn't already set
         if (!this.conf.GKB_KEY) {
@@ -182,22 +235,15 @@ class AppServer {
         addPostToken(this);
 
         this.router.use(checkToken(this.conf.GKB_KEY));
+        // must be before the query/data routes to ensure unsigned users cannot access data
+        this.router.use('/', eulaRouter);
+        this.router.use('/query', queryRouter);
+        this.router.use('/stats', statsRouter);
 
-        addEulaRoutes(this);
-
-        addQueryRoute(this);
-        addStatsRoute(this);
-
-        // simple routes
-        for (const model of Object.values(this.schema)) {
-            if (model.name !== 'LicenseAgreement') {
-                addResourceRoutes(this, model);
-            }
-        }
-        addExtensionRoutes(this);
-
-        // catch any other errors
-        addErrorRoute(this);
+        // add the resource routes
+        this.router.use('/', resourceRouter);
+        this.router.use('/extensions', extensionsRouter);
+        this.router.use(errorHandler);
         logger.log('info', 'Adding 404 capture');
         // last catch any errors for undefined routes. all actual routes should be defined above
         this.app.use((req, res) => res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -207,6 +253,14 @@ class AppServer {
             name: 'UrlNotFound',
             url: req.url,
         }));
+
+        // log the registered routes
+        const routes = fetchRoutes(this.router)
+            .sort((r1, r2) => r1.path.localeCompare(r2.path));
+
+        for (const { methods, path } of routes) {
+            logger.info(`Registered route: (${Object.keys(methods).sort().join('|')}) ${path}`);
+        }
 
         if (!this.port) {
             logger.log('info', 'finding an available port');
@@ -220,9 +274,9 @@ class AppServer {
         logger.info('cleaning up');
 
         try {
-            if (this.pool) {
+            if (this.dbPool) {
                 logger.error('closing the database pool');
-                await this.pool.close();
+                await this.dbPool.close();
             }
         } catch (err) {
             logger.error(err);

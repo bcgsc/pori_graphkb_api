@@ -24,12 +24,12 @@ const createEmptyDb = async () => {
         GKB_PORT: null,
         GKB_USER_CREATE: true,
     });
-    const { server, pool } = await connectDB(conf);
-    const session = await pool.acquire();
+    const { server, dbPool } = await connectDB(conf);
+    const session = await dbPool.acquire();
     const user = await getUserByName(session, process.env.USER || 'admin');
     session.close();
     return {
-        admin: user, conf, pool, server,
+        admin: user, conf, dbPool, server,
     };
 };
 
@@ -39,9 +39,9 @@ const createEmptyDb = async () => {
  */
 const createSeededDb = async () => {
     const db = await createEmptyDb();
-    const { pool, admin } = db;
+    const { dbPool, admin } = db;
     // create a source
-    const session = await pool.acquire();
+    const session = await dbPool.acquire();
     const source = await create(
         session,
         { content: { name: 'default source' }, model: schema.Source, user: admin },
