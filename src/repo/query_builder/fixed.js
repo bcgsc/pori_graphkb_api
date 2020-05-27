@@ -428,7 +428,7 @@ const keywordSearch = ({
     if (wordList.length < 1) {
         throw new AttributeError('missing keywords');
     }
-    const keywords = Array.from(new Set(wordList)).filter(k => k);
+    const keywords = Array.from(new Set(wordList)).filter(k => k).sort();
 
     const params = {};
 
@@ -455,7 +455,7 @@ const keywordSearch = ({
     let query;
 
     keywords.forEach((word, wordIndex) => {
-        const param = `${prefix}param${wordIndex}`;
+        const param = `${prefix}param${paramIndex}w${wordIndex}`;
         query = singleKeywordSearch({
             ...opt,
             operator: keyword.length >= MIN_WORD_SIZE

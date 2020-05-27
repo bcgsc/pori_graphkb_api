@@ -40,6 +40,32 @@ describe('WrapperQuery.parseRecord', () => {
 
 
 describe('WrapperQuery.parse', () => {
+    test('multiple keyword search params', () => {
+        const parsed = parse({
+            filters: {
+                AND: [
+                    {
+                        conditions: { keyword: 'EGFR', queryType: 'keyword', target: 'Variant' },
+                        operator: 'CONTAINSANY',
+                    },
+                    {
+                        conditions: { keyword: 'glio', queryType: 'keyword', target: 'Disease' },
+                        operator: 'CONTAINSANY',
+                    },
+                ],
+            },
+            limit: 100,
+            neighbors: 2,
+            skip: 0,
+            target: 'Statement',
+        });
+        const { params } = parsed.toString();
+        expect(params).toEqual({
+            param0w0: 'egfr',
+            param1w0: 'glio',
+        });
+    });
+
     test('parses a simple single Comparison', () => {
         const parsed = parse({
             filters: { name: 'thing' },
