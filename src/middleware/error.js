@@ -15,7 +15,7 @@ const { logger } = require('../repo/logging');
 /**
  * Main error handling for responding to the request
  *
- * @param {AppServer} app the main application server
+ * @param {GraphKBRequest} req
  */
 const errorHandler = async (err, req, res, next) => {
     const { reconnectDb } = req;

@@ -4,13 +4,23 @@ const HTTP_STATUS = require('http-status-codes');
 const router = express.Router({ mergeParams: true });
 
 
-// serve the spec as plain json
+/**
+ * serve the spec as plain json
+ *
+ * @param {GraphKBRequest} req
+ * @property {Object} req.spec the JSON openapi spec object
+ */
 router.get('/spec.json', (req, res) => {
     const { spec } = req;
     res.status(HTTP_STATUS.OK).json(spec);
 });
 
-// serve with re-doc
+/**
+ * serve the spec with re-doc
+ *
+ * @param {GraphKBRequest} req
+ * @property {Object} req.spec the JSON openapi spec object
+ */
 router.get('/spec', (req, res) => {
     const content = `<!DOCTYPE html>
         <html>

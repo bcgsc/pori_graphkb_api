@@ -40,7 +40,9 @@ const modelRouteParam = (method) => {
     return `:model(${models.map(m => m.slice(1)).sort().join('|')})`;
 };
 
-
+/**
+ * @param {GraphKBRequest} req
+ */
 router.use(`/${modelRouteParam()}`, (req, res, next) => {
     const { params: { model: routeName } } = req;
     req.model = schemaDefn.getFromRoute(`/${routeName}`);
@@ -64,8 +66,8 @@ const activeRidQuery = (model, rid, opt = {}) => {
 /**
  * POST route to create new records
  *
- * @param {AppServer} app the GraphKB app server
- * @param {ClassModel} model the model the routes are created for
+ * @param {GraphKBRequest} req
+ * @param {ClassModel} req.model the resolved model for this route
  */
 router.post(`/${modelRouteParam('POST')}`, async (req, res, next) => {
     const { dbPool, model } = req;
@@ -104,8 +106,8 @@ router.post(`/${modelRouteParam('POST')}`, async (req, res, next) => {
 /**
  * Route to update a record given its RID
  *
- * @param {AppServer} app the GraphKB app server
- * @param {ClassModel} model the model the routes are created for
+ * @param {GraphKBRequest} req
+ * @param {ClassModel} req.model the resolved model for this route
  */
 router.patch(`/${modelRouteParam('PATCH')}/:rid`, async (req, res, next) => {
     const { model, dbPool } = req;
@@ -149,8 +151,8 @@ router.patch(`/${modelRouteParam('PATCH')}/:rid`, async (req, res, next) => {
 /**
  * Get a record by RID
  *
- * @param {AppServer} app the GraphKB app server
- * @param {ClassModel} model the model the routes are created for
+ * @param {GraphKBRequest} req
+ * @param {ClassModel} req.model the resolved model for this route
  */
 router.get(`/${modelRouteParam('GET')}/:rid`, async (req, res, next) => {
     const { dbPool, model } = req;
@@ -195,8 +197,8 @@ router.get(`/${modelRouteParam('GET')}/:rid`, async (req, res, next) => {
 /**
  * Route to delete/remove a resource
  *
- * @param {AppServer} app the GraphKB app server
- * @param {ClassModel} model the model the routes are created for
+ * @param {GraphKBRequest} req
+ * @param {ClassModel} req.model the resolved model for this route
  */
 router.delete(`/${modelRouteParam('DELETE')}/:rid`, async (req, res, next) => {
     const { dbPool, model } = req;

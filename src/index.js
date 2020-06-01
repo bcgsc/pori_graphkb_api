@@ -20,7 +20,7 @@ const {
 const { connectDB } = require('./repo');
 const { getLoadVersion } = require('./repo/migrate/version');
 const extensionsRouter = require('./extensions');
-const { addPostToken } = require('./routes/auth');
+const { router: tokenRouter } = require('./routes/auth');
 const errorHandler = require('./middleware/error');
 const parseRouter = require('./routes/parse');
 const statsRouter = require('./routes/stats');
@@ -121,6 +121,21 @@ const fetchRoutes = (initialRouter) => {
 };
 
 
+/**
+ * @typedef {express.Request} GraphKBRequest
+ * request object with additional properties attached by middleware
+ *
+ * @property {orientjs.ConnectionPool} dbPool the orientdb database connection pool
+ * @property {User} user the user record for the user making the request
+ * @property {Object} conf the config options for this server
+ * @property {bool} conf.GKB_DISABLE_AUTH disable auth flag
+ * @property {bool} conf.GKB_KEYCLOAK_KEY content of the key file used for decoding keycloak tokens
+ * @property {bool} conf.GKB_KEYCLOAK_ROLE role to expect the keycloak user to have
+ * @property {bool} conf.GKB_KEY content of the key file used for generating tokens
+ * @property {function} reconnectDb async function to be called on db connection errors
+ */
+
+
 class AppServer {
     /**
      * @property {express} app the express app instance
@@ -204,6 +219,7 @@ class AppServer {
         this.router.use((req, res, next) => {
             req.spec = generateSwaggerSpec(SCHEMA_DEFN, { host: this.host, port: this.port });
             req.dbPool = this.dbPool;
+            req.conf = this.conf;
             req.reconnectDb = async () => this.connectToDb();
             next();
         });
@@ -232,7 +248,7 @@ class AppServer {
             this.conf.GKB_KEYCLOAK_KEY = fs.readFileSync(GKB_KEYCLOAK_KEY_FILE);
         }
         // add the addPostToken
-        addPostToken(this);
+        this.router.use('/token', tokenRouter);
 
         this.router.use(checkToken(this.conf.GKB_KEY));
         // must be before the query/data routes to ensure unsigned users cannot access data
