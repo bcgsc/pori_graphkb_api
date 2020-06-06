@@ -25,7 +25,7 @@ describe('migrate', () => {
     beforeEach(() => {
         createRecordMock = jest.fn();
         const queryMock = jest.fn().mockReturnValue({
-            all: jest.fn().mockResolvedValue([]),
+            all: jest.fn().mockResolvedValue([{ conditions: [], count: null }]),
             one: jest.fn(),
         });
         db = {

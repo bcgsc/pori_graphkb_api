@@ -428,6 +428,60 @@ const migrate3xFrom8xto9x = async (db) => {
 };
 
 
+const migrate3xFrom9xto10x = async (db) => {
+    const trialsClass = await db.class.get(SCHEMA_DEFN.ClinicalTrial.name);
+
+    logger.info(`adding the property ${SCHEMA_DEFN.ClinicalTrial.name}.recruitmentStatus`);
+    const { recruitmentStatus } = SCHEMA_DEFN.ClinicalTrial.properties;
+    await Property.create(recruitmentStatus, trialsClass);
+
+    // add the updatedAt and updatedBy fields to V
+    const vertexClass = await db.class.get(SCHEMA_DEFN.V.name);
+    const { updatedBy, updatedAt } = SCHEMA_DEFN.V.properties;
+    logger.info('create the V.updatedBy property');
+    await Property.create(updatedBy, vertexClass);
+    logger.info('create the V.updatedAt property');
+    await Property.create(updatedAt, vertexClass);
+    logger.info('set reasonable defaults for updatedAt');
+    logger.info('update records with 3 or more changes');
+    let [{ count }] = await db.command(`UPDATE V SET updatedBy = createdBy,
+        updatedAt = createdAt,
+        createdBy = history.history.history.createdBy,
+        createdAt = history.history.history.createdAt
+        WHERE updatedBy IS NULL
+            AND updatedAt IS NULL
+            AND history IS NOT NULL
+            AND history.history IS NOT NULL
+            AND history.history.history IS NOT NULL`).all();
+    logger.info(`updated ${count} records`);
+    logger.info('update records with 2 changes');
+    [{ count }] = await db.command(`UPDATE V SET updatedBy = createdBy,
+        updatedAt = createdAt,
+        createdBy = history.history.createdBy,
+        createdAt = history.history.createdAt
+        WHERE updatedBy IS NULL
+            AND updatedAt IS NULL
+            AND history IS NOT NULL
+            AND history.history IS NOT NULL`).all();
+    logger.info(`updated ${count} records`);
+    logger.info('update records with 1 change');
+    [{ count }] = await db.command(`UPDATE V SET updatedBy = createdBy,
+        updatedAt = createdAt,
+        createdBy = history.createdBy,
+        createdAt = history.createdAt
+        WHERE updatedBy IS NULL
+            AND updatedAt IS NULL
+            AND history IS NOT NULL`).all();
+    logger.info(`updated ${count} records`);
+    logger.info('update records with no changes');
+    [{ count }] = await db.command(`UPDATE V SET updatedBy = createdBy,
+        updatedAt = createdAt
+        WHERE updatedBy IS NULL
+            AND updatedAt IS NULL`).all();
+    logger.info(`updated ${count} records`);
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -480,6 +534,7 @@ const migrate = async (db, opt = {}) => {
         ['3.6.0', '3.7.0', migrate3xFrom6xto7x],
         ['3.7.0', '3.8.0', migrate3xFrom7xto8x],
         ['3.8.0', '3.9.0', migrate3xFrom8xto9x],
+        ['3.9.0', '3.10.0', migrate3xFrom9xto10x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {

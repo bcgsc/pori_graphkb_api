@@ -221,7 +221,7 @@ class AppServer {
 
         try {
             if (this.pool) {
-                logger.error('closing the database pool');
+                logger.info('closing the database pool');
                 await this.pool.close();
             }
         } catch (err) {
@@ -230,7 +230,7 @@ class AppServer {
 
         try {
             if (this.server) {
-                logger.error('closing the database server connection');
+                logger.info('closing the database server connection');
                 await this.server.close();
             }
         } catch (err) {
