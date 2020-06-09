@@ -479,6 +479,11 @@ const migrate3xFrom9xto10x = async (db) => {
         WHERE updatedBy IS NULL
             AND updatedAt IS NULL`).all();
     logger.info(`updated ${count} records`);
+
+    logger.info('create the index on V.updatedAt');
+    await db.index.create(
+        SCHEMA_DEFN.V.indices.find(item => item.name === 'V.updatedAt'),
+    );
 };
 
 
