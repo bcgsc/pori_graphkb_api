@@ -31,7 +31,7 @@ describeWithAuth('api read-only routes', () => {
 
     beforeAll(async () => {
         db = await createSeededDb();
-        const session = await db.pool.acquire();
+        const session = await db.dbPool.acquire();
         app = new AppServer({ ...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true });
 
         await app.listen();
@@ -51,7 +51,7 @@ describeWithAuth('api read-only routes', () => {
         }
         await tearDownDb({ conf: db.conf, server: db.server }); // destroy the test db
         // close the db connections so that you can create more in the app.listen
-        await db.pool.close();
+        await db.dbPool.close();
         await db.server.close();
     });
 
