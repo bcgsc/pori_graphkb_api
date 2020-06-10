@@ -472,7 +472,7 @@ const keywordSearch = ({
         params[param] = word;
     });
 
-    return { params, query: `SELECT DISTINCT * FROM (${query})` };
+    return { params, query: `SELECT DISTINCT * FROM (${query}) WHERE deletedAt IS NULL` };
 };
 
 
