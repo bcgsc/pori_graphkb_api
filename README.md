@@ -32,8 +32,8 @@ All KB API routes are documented with openapi specification. The specification i
 ### Authentication
 
 Authentication in the KB uses tokens. KB API tokens can be generated using the token route defined in the API specification.
-The first layer of authentication happens when KB uses [CATS](https://www.bcgsc.ca/wiki/display/lims/CATS+Documentation) to authenticate users against the LDAP. A request is sent
-to CATS with the users credentials and a token is returned if the user exists and has access to KB.
+The first layer of authentication happens when KB uses [keycloak](https://www.keycloak.org/) to authenticate users against the LDAP. A request is sent
+to keycloak with the users credentials and a token is returned if the user exists and has access to KB.
 
 The next step happens when KB looks up the username in the KB database. Each user in KB belongs to one or more UserGroups. Each of these UserGroups contains table-level permission schemas.
 

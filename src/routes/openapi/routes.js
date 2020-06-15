@@ -14,6 +14,21 @@ const POST_TOKEN = {
     requestBody: {
         content: {
             'application/json': {
+                examples: {
+                    'keycloak token': {
+                        description: 'use a keycloak token to generate a graphkb token',
+                        value: {
+                            keyCloakToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+                        },
+                    },
+                    'username and password': {
+                        description: 'log in to the GraphKB API directly',
+                        value: {
+                            password: 'secret',
+                            username: 'jdoe',
+                        },
+                    },
+                },
                 schema: {
                     anyOf: [
                         {
@@ -63,7 +78,7 @@ const POST_TOKEN = {
         },
     },
     summary: 'Generate an authentication token to be used for requests to the KB API server',
-    tags: ['General'],
+    tags: ['General', 'Permissions'],
 };
 
 
@@ -71,6 +86,11 @@ const POST_PARSE = {
     requestBody: {
         content: {
             'application/json': {
+                examples: {
+                    fusion: { value: { content: '(EWSR1,FLI1):fusion(e.1,e.2)' } },
+                    'no feature': { value: { content: 'p.G12D' } },
+                    'small mutation': { value: { content: 'KRAS:p.G12D' } },
+                },
                 schema: {
                     properties: {
                         content: { description: 'the variant string representation', example: 'KRAS:p.G12D', type: 'string' },
@@ -164,37 +184,37 @@ const GET_STATS = {
                     schema: {
                         example: {
                             result: {
-                                CdsPosition: 0,
-                                CategoryVariant: 545,
-                                ClinicalTrial: 0,
+                                AliasOf: 142363,
                                 AnatomicalEntity: 25613,
+                                CatalogueVariant: 0,
+                                CategoryVariant: 545,
+                                CdsPosition: 0,
+                                Cites: 0,
+                                ClinicalTrial: 0,
                                 CytobandPosition: 0,
+                                DeprecatedBy: 15673,
                                 Disease: 41569,
+                                ElementOf: 22,
                                 EvidenceLevel: 9,
                                 ExonicPosition: 0,
                                 Feature: 97496,
-                                CatalogueVariant: 0,
                                 GenomicPosition: 0,
-                                AliasOf: 142363,
-                                Permissions: 0,
-                                Cites: 0,
-                                Source: 11,
-                                DeprecatedBy: 15673,
-                                UserGroup: 17,
-                                ElementOf: 22,
-                                User: 8,
                                 Infers: 0,
                                 IntronicPosition: 0,
-                                Publication: 3347,
                                 OppositeOf: 15,
-                                Therapy: 69382,
                                 Pathway: 0,
-                                ProteinPosition: 0,
+                                Permissions: 0,
                                 PositionalVariant: 3234,
+                                ProteinPosition: 0,
+                                Publication: 3347,
                                 Signature: 0,
+                                Source: 11,
                                 Statement: 7677,
                                 SubClassOf: 66691,
                                 TargetOf: 0,
+                                Therapy: 69382,
+                                User: 8,
+                                UserGroup: 17,
                                 Vocabulary: 163,
                             },
                         },
@@ -224,6 +244,74 @@ const QUERY = {
     requestBody: {
         content: {
             'application/json': {
+                examples: {
+                    'equivalent terms tree': {
+                        description: 'Get terms to be matched based on some input term name',
+                        value: {
+
+                            queryType: 'similarTo',
+                            returnProperties: ['sourceId', 'sourceIdVersion', 'deprecated', 'name', '@rid'],
+                            target: {
+                                filters: { name: 'pancreatic cancer' },
+                                queryType: 'ancestors',
+                                target: 'Disease',
+                            },
+                            treeEdges: [],
+
+                        },
+                    },
+                    'keyword search': {
+                        description: 'Get statements by keyword search. This will looks for substrings matching the keyword and return the related statements',
+                        value: {
+                            keyword: 'kras',
+                            queryType: 'keyword',
+                            target: 'Statement',
+                        },
+                    },
+                    'match variants by gene': {
+                        value: {
+                            filters: {
+                                OR: [
+                                    {
+                                        operator: 'IN',
+                                        reference1: ['#13:4', '13:5'],
+                                    },
+                                    {
+                                        operator: 'IN',
+                                        reference2: ['#13:4', '13:5'],
+                                    },
+                                ],
+                            },
+                            target: 'Variant',
+                        },
+                    },
+                    'records by ID': {
+                        description: 'Get a list of records by their records IDs',
+                        value: {
+                            target: ['#13:1', '#13:2'],
+                        },
+                    },
+                    'therapeutic statements': {
+                        description: 'Get therapeutically relevant statements',
+                        value: {
+                            filters: {
+                                relevance: {
+                                    queryType: 'similarTo',
+                                    target: {
+                                        filters: {
+                                            name: 'therapeutic efficacy',
+                                        },
+                                        queryType: 'ancestors',
+                                        target: 'Vocabulary',
+                                    },
+                                    treeEdges: [],
+                                },
+                            },
+                            target: 'Statement',
+                        },
+                    },
+
+                },
                 schema: {
                     $ref: '#/components/schemas/Query',
                 },
@@ -263,7 +351,7 @@ const POST_SIGN_LICENSE = {
         },
     },
     summary: 'Set the user sign off on the current license',
-    tags: ['General'],
+    tags: ['Permissions'],
 };
 
 const GET_LICENSE = {
@@ -287,7 +375,7 @@ const GET_LICENSE = {
         },
     },
     summary: 'Get the current license user agreement',
-    tags: ['General'],
+    tags: ['Permissions'],
 };
 
 const POST_LICENSE = {
@@ -301,7 +389,7 @@ const POST_LICENSE = {
         },
     },
     summary: 'Get the current license user agreement',
-    tags: ['General'],
+    tags: ['Permissions'],
 };
 
 module.exports = {
