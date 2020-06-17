@@ -12,7 +12,7 @@
   "license": "ISC",
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
-    "@bcgsc/knowledgebase-parser": "^0.7.2",
+    "@bcgsc/knowledgebase-parser": "^0.7.3",
     "@bcgsc/knowledgebase-schema": "^3.11.1",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
