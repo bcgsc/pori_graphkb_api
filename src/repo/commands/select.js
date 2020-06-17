@@ -199,22 +199,26 @@ const fetchDisplayName = async (db, model, content) => {
             links.push(content.reference2);
         }
         const query = parse({
-            returnProperties: ['displayName'],
+            returnProperties: ['displayName', 'shortName'],
             target: links,
         });
-        const [type, reference1, reference2] = (await select(
+        const [type, reference1, reference2] = await select(
             db,
             query,
-        )).map(rec => rec.displayName);
+        );
 
         if (model.name === 'CategoryVariant') {
             if (reference2) {
-                return `${reference1} and ${reference2} ${type}`;
+                return `${reference1.displayName} and ${reference2.displayName} ${type.displayName}`;
             }
-            return `${reference1} ${type}`;
+            return `${reference1.displayName} ${type.displayName}`;
         } if (model.name === 'PositionalVariant') {
             const obj = {
-                ...content, multiFeature: Boolean(reference2), reference1, reference2, type,
+                ...content,
+                multiFeature: Boolean(reference2 && reference2.displayName),
+                reference1: reference1.displayName,
+                reference2: reference2 && reference2.displayName,
+                type: content.hgvsType || type.shortName || type.displayName,
             };
             const notation = VariantNotation.toString(obj);
             return notation;
