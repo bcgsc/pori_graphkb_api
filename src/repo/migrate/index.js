@@ -487,6 +487,21 @@ const migrate3xFrom9xto10x = async (db) => {
 };
 
 
+const migrate3xFrom10xto11x = async (db) => {
+    for (const [className, propertyName] of [
+        ['Signature', 'aetiology'],
+        ['Vocabulary', 'shortName'],
+        ['PositionalVariant', 'hgvsType'],
+        ['Therapy', 'combinationType'],
+    ]) {
+        const dbClass = await db.class.get(className);
+        logger.info(`adding the property ${className}.${propertyName}`);
+        const prop = SCHEMA_DEFN[className].properties[propertyName];
+        await Property.create(prop, dbClass);
+    }
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -540,6 +555,7 @@ const migrate = async (db, opt = {}) => {
         ['3.7.0', '3.8.0', migrate3xFrom7xto8x],
         ['3.8.0', '3.9.0', migrate3xFrom8xto9x],
         ['3.9.0', '3.10.0', migrate3xFrom9xto10x],
+        ['3.10.0', '3.11.0', migrate3xFrom10xto11x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
