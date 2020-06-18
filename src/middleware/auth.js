@@ -57,6 +57,10 @@ const checkUserAccessFor = (user, modelName, operationPermission) => {
 /**
  * Check that the user has permissions for the intended operation on a given route
  * Note that to do this, model and user need to already be assigned to the request
+ *
+ * @param {GraphKBRequest} req
+ * @param {ClassModel} req.model the resolved model for this request
+ *
  */
 const checkClassPermissions = async (req, res, next) => {
     const { model, user } = req;

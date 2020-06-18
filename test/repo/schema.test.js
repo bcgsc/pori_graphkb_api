@@ -1,8 +1,8 @@
 const { types } = require('orientjs');
 
+const { schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
 const {
     splitSchemaClassLevels,
-    SCHEMA_DEFN,
 } = require('../../src/repo/schema');
 const {
     ClassModel,
@@ -49,6 +49,7 @@ describe('SCHEMA', () => {
                     createdBy: '#44:1',
                     reference2: '#33:1',
                     type: '#33:2',
+                    updatedBy: '#44:1',
                 }, { addDefaults: true });
             }).toThrow('missing required attribute');
         });
@@ -60,6 +61,7 @@ describe('SCHEMA', () => {
                     createdBy: '#44:1',
                     reference1: '#33:1',
                     type: '#33:2',
+                    updatedBy: '#44:1',
                 }, { addDefaults: true });
                 console.error(formatted);
             }).toThrow('missing required attribute');
@@ -72,6 +74,7 @@ describe('SCHEMA', () => {
                     createdBy: '#44:1',
                     reference1: '#33:1',
                     type: '#33:2',
+                    updatedBy: '#44:1',
                 }, { addDefaults: true });
                 console.error(formatted);
             }).toThrow('positions must include the @class attribute');
@@ -85,6 +88,7 @@ describe('SCHEMA', () => {
                     createdBy: '#44:1',
                     reference1: '#33:1',
                     type: '#33:2',
+                    updatedBy: '#44:1',
                 }, { addDefaults: true });
                 console.error(formatted);
             }).toThrow('both start and end');
@@ -98,6 +102,7 @@ describe('SCHEMA', () => {
                 createdBy: '#44:1',
                 reference1: '#33:1',
                 type: '#33:2',
+                updatedBy: '#44:1',
             }, { addDefaults: true });
             expect(formatted).toHaveProperty('break1Repr', 'p.A1');
             expect(formatted).toHaveProperty('break2Repr', 'e.(1_3)');
@@ -110,6 +115,7 @@ describe('SCHEMA', () => {
                 createdBy: '#44:1',
                 reference1: '#33:1',
                 type: '#33:2',
+                updatedBy: '#44:1',
             }, { addDefaults: true });
             expect(formatted).toHaveProperty('break1Repr', 'p.A1');
         });

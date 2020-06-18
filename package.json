@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc/knowledgebase-api",
   "main": "server.js",
-  "version": "3.6.2",
+  "version": "3.7.0",
   "repository": {
     "type": "git",
     "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
@@ -12,8 +12,8 @@
   "license": "ISC",
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
-    "@bcgsc/knowledgebase-parser": "^0.7.2",
-    "@bcgsc/knowledgebase-schema": "^3.9.0",
+    "@bcgsc/knowledgebase-parser": "^0.7.3",
+    "@bcgsc/knowledgebase-schema": "^3.11.1",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
@@ -71,7 +71,7 @@
     "test": "NODE_ENV=test jest --config config/jest/config.js --detectOpenHandles --forceExit",
     "test:unit": "NODE_ENV=test jest --config config/jest/unit.config.js",
     "test:integration": "NODE_ENV=test jest --config config/jest/config.js --testRegex test/db_integration/",
-    "lint": "eslint -c .eslintrc.jon src test",
+    "lint": "eslint -c .eslintrc.json src test",
     "build:docs": "jsdocref --input src --output doc; cp README.md doc",
     "start:docs": "docsify serve doc",
     "version": "echo $npm_package_version",

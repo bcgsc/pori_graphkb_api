@@ -1,4 +1,4 @@
-# GraphKB API
+# Getting Started
 
 Knowlegebase is a curated database of variants in cancer and their therapeutic, biological, diagnostic, and prognostic implications according to literature.
 The main use of Knowlegebase is to act as the link between the known and published variant information and the expermientally collected data.
@@ -6,11 +6,7 @@ It is used in generation of reports as well as building target sequences for the
 
 ## Authentication
 
-Authentication is managed via tokens. See the authenication related routes for more information.
-
-```text
-POST /api/token
-```
+Authentication is managed via tokens. See the [authenication related routes](#tag/General/paths/~1token/post) for more information.
 
 ## Routing Patterns
 

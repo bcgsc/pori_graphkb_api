@@ -243,13 +243,11 @@ const loadSchema = async (db) => {
     db.schema = SCHEMA_DEFN;
     // set the default record group
     logger.log('info', 'schema loading complete');
-    return SCHEMA_DEFN;
 };
 
 
 module.exports = {
     DEFAULT_LICENSE_CONTENT,
-    SCHEMA_DEFN,
     createSchema,
     generateDefaultGroups,
     loadSchema,

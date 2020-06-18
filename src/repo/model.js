@@ -98,7 +98,11 @@ class ClassModel extends kbSchema.ClassModel {
                         return;
                     }
                 }
-                logger.info(`creating index ${index.name}`);
+                if (!index.engine && index.type === 'FULLTEXT') {
+                    // TODO: https://www.bcgsc.ca/jira/browse/SYS-58339 pending db update to 3.1
+                    // index.engine = 'LUCENE';
+                }
+                logger.info(`creating index ${index.name} type ${index.type}`);
                 await db.index.create(index);
             };
             await Promise.all(

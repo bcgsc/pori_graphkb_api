@@ -68,8 +68,13 @@ const updateNodeTx = async (db, opt) => {
     content.deletedAt = timeStampNow();
     content.deletedBy = userRID;
 
-    changes.createdBy = userRID;
-    changes.createdAt = timeStampNow();
+    if (model.inherits.includes('V')) {
+        changes.updatedBy = userRID;
+        changes.updatedAt = timeStampNow();
+    } else {
+        changes.createdBy = userRID;
+        changes.createdAt = timeStampNow();
+    }
 
     let commit;
 

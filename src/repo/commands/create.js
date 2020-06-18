@@ -118,8 +118,13 @@ const create = async (db, opt) => {
             throw wrapIfTypeError(err);
         }
     }
+    const newRecordContent = { ...content, createdBy: user['@rid'] };
+
+    if (model.inherits.includes('V')) {
+        newRecordContent.updatedBy = user['@rid'];
+    }
     const record = model.formatRecord(
-        { ...content, createdBy: user['@rid'] },
+        newRecordContent,
         { addDefaults: true, dropExtra: false },
     );
 
