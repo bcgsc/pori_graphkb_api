@@ -23,13 +23,13 @@ const MAX_QUERY_LIMIT = 1000;
  * @type {string}
  * @default
 */
-const ABOUT_FILE = path.join(__dirname, '../../../doc/about.md');
+const ABOUT_FILE = path.join(__dirname, './docs/intro.md');
 /**
  * @constant
  * @type {string}
  * @default
 */
-const QUERY_ABOUT = path.join(__dirname, '../../../doc/search.md');
+const QUERY_ABOUT = path.join(__dirname, './docs/query.md');
 
 module.exports = {
     ABOUT_FILE, DEFAULT_QUERY_LIMIT, MAX_JUMPS, MAX_QUERY_LIMIT, QUERY_ABOUT,

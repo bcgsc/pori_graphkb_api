@@ -71,7 +71,7 @@
     "test": "NODE_ENV=test jest --config config/jest/config.js --detectOpenHandles --forceExit",
     "test:unit": "NODE_ENV=test jest --config config/jest/unit.config.js",
     "test:integration": "NODE_ENV=test jest --config config/jest/config.js --testRegex test/db_integration/",
-    "lint": "eslint -c .eslintrc.jon src test",
+    "lint": "eslint -c .eslintrc.json src test",
     "build:docs": "jsdocref --input src --output doc; cp README.md doc",
     "start:docs": "docsify serve doc",
     "version": "echo $npm_package_version",
