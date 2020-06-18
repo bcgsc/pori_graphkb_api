@@ -142,12 +142,7 @@ router.route('/').post(async (req, res, next) => {
         try {
             kcTokenContent = validateKeyCloakToken(keyCloakToken, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE);
         } catch (err) {
-            if (err instanceof PermissionError) {
-                logger.log('debug', err);
-                return res.status(HTTP_STATUS.FORBIDDEN).json(err);
-            }
-            logger.log('debug', err);
-            return res.status(HTTP_STATUS.UNAUTHORIZED).json(err);
+            return next(err);
         }
     } else {
         kcTokenContent = { exp: null, preferred_username: req.body.username };
@@ -179,4 +174,6 @@ router.route('/').post(async (req, res, next) => {
 });
 
 
-module.exports = { generateToken, router };
+module.exports = {
+    fetchKeyCloakToken, generateToken, router, validateKeyCloakToken,
+};
