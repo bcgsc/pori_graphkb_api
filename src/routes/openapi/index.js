@@ -38,7 +38,7 @@ router.get('/spec', (req, res) => {
             </style>
           </head>
           <body>
-            <redoc require-props-first="true" sort-props-alphabetically="true" spec-url="${req.baseUrl}/spec.json"></redoc>
+            <redoc id="redoc-container" require-props-first="true" sort-props-alphabetically="true" spec-url="${req.baseUrl}/spec.json"></redoc>
             <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
           </body>
         </html>`;

@@ -440,7 +440,7 @@ const generateSwaggerSpec = (schema, metadata) => {
     docs.tags.sort(tagsSorter);
 
     const vertexTags = Object.values(schema)
-        .filter(model => !model.isEdge && model.name !== 'Statement')
+        .filter(model => !model.isEdge)
         .map(model => model.name);
 
     const edgeTags = Object.values(schema)
@@ -450,7 +450,7 @@ const generateSwaggerSpec = (schema, metadata) => {
     docs['x-tagGroups'] = [
         {
             name: 'Frequently Used',
-            tags: ['Metadata', 'General', 'Statement'],
+            tags: ['Metadata', 'General', 'Permissions'],
         },
         {
             name: 'Vertex Class Routes',
