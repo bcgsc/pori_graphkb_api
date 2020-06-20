@@ -10,10 +10,11 @@ const jc = require('json-cycle');
 const cors = require('cors');
 const HTTP_STATUS = require('http-status-codes');
 const { getPortPromise } = require('portfinder');
+const morgan = require('morgan');
 
 const { schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
 
-const { logger } = require('./repo/logging');
+const { logger, morganFormatter } = require('./repo/logging');
 const {
     checkToken,
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
@@ -37,11 +38,6 @@ const BOOLEAN_FLAGS = [
     'GKB_DISABLE_AUTH',
     'GKB_DB_MIGRATE',
 ];
-
-const logRequests = (req, res, next) => {
-    logger.log('info', `[${req.method}] ${req.url}`);
-    return next();
-};
 
 
 const createConfig = (overrides = {}) => {
@@ -147,7 +143,7 @@ class AppServer {
      */
     constructor(conf = createConfig()) {
         this.app = express();
-        this.app.use(logRequests);
+        this.app.use(morgan(morganFormatter, { stream: logger.stream }));
         // set up middleware parser to deal with jsons
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(bodyParser.json());
