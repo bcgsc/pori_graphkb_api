@@ -7,6 +7,7 @@
 const winston = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
+const split = require('split');
 
 const transports = [
     new winston.transports.Console({
@@ -36,18 +37,64 @@ const logger = winston.createLogger({
     transports,
 });
 // for morgan http://tostring.it/2014/06/23/advanced-logging-with-nodejs/
-logger.stream = {
-    write(message) {
-        logger.info(message);
-    },
-};
+logger.stream = split().on('data', (message) => {
+    logger.info(message);
+});
+
 
 const morganFormatter = (tokens, req, res) => [
-    '[', tokens.method(req, res), ']',
+    `[${tokens.method(req, res)}]`,
     tokens.url(req, res),
     tokens.status(req, res),
     tokens.res(req, res, 'content-length'), '-',
     tokens['response-time'](req, res), 'ms',
 ].join(' ');
 
-module.exports = { logger, morganFormatter };
+
+const replaceParams = (string) => {
+    let curr = string,
+        last = '',
+        paramCount = 1;
+
+    while (last !== curr) {
+        last = curr.slice();
+        // this is the pattern that express uses when you define your path param without a custom regex
+        curr = curr.replace('(?:([^\\/]+?))', `:param${paramCount}`);
+        paramCount += 1;
+    }
+    return curr;
+};
+
+/**
+ * @param {express.Router} initialRouter the top level router
+ * @returns {Array.<Object>} route definitions
+ *
+ * @example
+ * > fetchRoutes(router)
+ * [
+ *      {path: '/some/express/route', methods: {get: true}}
+ * ]
+ */
+const fetchRoutes = (initialRouter) => {
+    const _fetchRoutes = (router, prefix = '') => {
+        const routes = [];
+        router.stack.forEach(({
+            route, handle, name, ...rest
+        }) => {
+            if (route) { // routes registered directly on the app
+                const routePath = replaceParams(`${prefix}${route.path}`).replace(/\\/g, '');
+                routes.push({ methods: route.methods, path: routePath });
+            } else if (name === 'router') { // router middleware
+                const newPrefix = rest.regexp.source
+                    .replace('\\/?(?=\\/|$)', '') // this is the pattern express puts at the end of a route path
+                    .slice(1)
+                    .replace('\\', ''); // remove escaping to make paths more readable
+                routes.push(..._fetchRoutes(handle, prefix + newPrefix));
+            }
+        });
+        return routes;
+    };
+    return _fetchRoutes(initialRouter);
+};
+
+module.exports = { fetchRoutes, logger, morganFormatter };

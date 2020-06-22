@@ -32,6 +32,7 @@
     "request-promise": "^4.2.1",
     "semver": "^5.6.0",
     "sleep-promise": "^8.0.1",
+    "split": "^1.0.1",
     "swagger-ui-express": "^3.0.10",
     "uuid": "^3.0.1",
     "winston": "^3.0.0",

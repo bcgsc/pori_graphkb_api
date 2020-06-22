@@ -14,7 +14,7 @@ const morgan = require('morgan');
 
 const { schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
 
-const { logger, morganFormatter } = require('./repo/logging');
+const { logger, morganFormatter, fetchRoutes } = require('./repo/logging');
 const {
     checkToken,
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
@@ -23,6 +23,7 @@ const { getLoadVersion } = require('./repo/migrate/version');
 const extensionsRouter = require('./extensions');
 const { router: tokenRouter } = require('./routes/auth');
 const errorHandler = require('./middleware/error');
+const { countActiveRequests } = require('./middleware/logging');
 const parseRouter = require('./routes/parse');
 const statsRouter = require('./routes/stats');
 const resourceRouter = require('./routes/resource');
@@ -70,53 +71,6 @@ const createConfig = (overrides = {}) => {
 };
 
 
-const replaceParams = (string) => {
-    let curr = string,
-        last = '',
-        paramCount = 1;
-
-    while (last !== curr) {
-        last = curr.slice();
-        // this is the pattern that express uses when you define your path param without a custom regex
-        curr = curr.replace('(?:([^\\/]+?))', `:param${paramCount}`);
-        paramCount += 1;
-    }
-    return curr;
-};
-
-/**
-   * @param {express.Router} initialRouter the top level router
-   * @returns {Array.<Object>} route definitions
-   *
-   * @example
-   * > fetchRoutes(router)
-   * [
-   *      {path: '/some/express/route', methods: {get: true}}
-   * ]
-   */
-const fetchRoutes = (initialRouter) => {
-    const _fetchRoutes = (router, prefix = '') => {
-        const routes = [];
-        router.stack.forEach(({
-            route, handle, name, ...rest
-        }) => {
-            if (route) { // routes registered directly on the app
-                const path = replaceParams(`${prefix}${route.path}`).replace(/\\/g, '');
-                routes.push({ methods: route.methods, path });
-            } else if (name === 'router') { // router middleware
-                const newPrefix = rest.regexp.source
-                    .replace('\\/?(?=\\/|$)', '') // this is the pattern express puts at the end of a route path
-                    .slice(1)
-                    .replace('\\', ''); // remove escaping to make paths more readable
-                routes.push(..._fetchRoutes(handle, prefix + newPrefix));
-            }
-        });
-        return routes;
-    };
-    return _fetchRoutes(initialRouter);
-};
-
-
 /**
  * @typedef {express.Request} GraphKBRequest
  * request object with additional properties attached by middleware
@@ -143,6 +97,7 @@ class AppServer {
      */
     constructor(conf = createConfig()) {
         this.app = express();
+        this.app.use(countActiveRequests);
         this.app.use(morgan(morganFormatter, { stream: logger.stream }));
         // set up middleware parser to deal with jsons
         this.app.use(bodyParser.urlencoded({ extended: true }));
@@ -217,7 +172,7 @@ class AppServer {
             req.dbPool = this.dbPool;
             req.conf = this.conf;
             req.reconnectDb = async () => this.connectToDb();
-            next();
+            return next();
         });
         this.router.use('/', specRouter);
 

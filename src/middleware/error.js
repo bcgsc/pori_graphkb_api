@@ -43,6 +43,7 @@ const errorHandler = async (err, req, res, next) => {
         logger.error(err.stack);
     }
     if (res.headersSent) {
+        logger.warn('headers already sent, calling next');
         return next(err);
     }
     const errorContent = err.toJSON
