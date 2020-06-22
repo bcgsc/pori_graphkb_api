@@ -23,7 +23,6 @@ const { getLoadVersion } = require('./repo/migrate/version');
 const extensionsRouter = require('./extensions');
 const { router: tokenRouter } = require('./routes/auth');
 const errorHandler = require('./middleware/error');
-const { countActiveRequests } = require('./middleware/logging');
 const parseRouter = require('./routes/parse');
 const statsRouter = require('./routes/stats');
 const resourceRouter = require('./routes/resource');
@@ -97,7 +96,6 @@ class AppServer {
      */
     constructor(conf = createConfig()) {
         this.app = express();
-        this.app.use(countActiveRequests);
         this.app.use(morgan(morganFormatter, { stream: logger.stream }));
         // set up middleware parser to deal with jsons
         this.app.use(bodyParser.urlencoded({ extended: true }));
