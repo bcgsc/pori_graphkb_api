@@ -42,14 +42,19 @@ logger.stream = split().on('data', (message) => {
 });
 
 
-const morganFormatter = (tokens, req, res) => [
-    `[${tokens.method(req, res)}]`,
-    tokens.url(req, res),
-    tokens.status(req, res),
-    tokens.res(req, res, 'content-length'), '-',
-    tokens['response-time'](req, res), 'ms',
-].join(' ');
-
+const morganFormatter = (tokens, req, res) => {
+    const userName = (req.user && req.user.name)
+        || (req.body && req.body.username)
+        || 'anonymous';
+    return [
+        `[${tokens.method(req, res)}]`,
+        userName,
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens.res(req, res, 'content-length'), '-',
+        tokens['response-time'](req, res), 'ms',
+    ].join(' ');
+};
 
 const replaceParams = (string) => {
     let curr = string,
