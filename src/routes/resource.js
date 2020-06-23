@@ -11,47 +11,17 @@ const {
 
 const {
     NoRecordFoundError,
-} = require('./../repo/error');
-const { logger } = require('./../repo/logging');
+} = require('../repo/error');
+const { logger } = require('../repo/logging');
 const {
     select, create, update, remove,
-} = require('./../repo/commands');
-const { checkClassPermissions } = require('./../middleware/auth');
-const { parse } = require('./../repo/query_builder');
+} = require('../repo/commands');
+const { checkClassPermissions } = require('../middleware/auth');
+const { parse } = require('../repo/query_builder');
 const { OPERATORS } = require('../repo/query_builder/constants');
 
 
 const router = express.Router({ mergeParams: true });
-
-const modelRouteParam = (method) => {
-    const models = [];
-
-    for (const model of Object.values(schemaDefn.schema)) {
-        if (model.name === 'LicenseAgreement') {
-            continue;
-        }
-        if (method === 'PATCH' && model.isEdge) {
-            continue;
-        }
-        if (model.routes[method] || !method) {
-            models.push(model.routeName);
-        }
-    }
-    return `:model(${models.map(m => m.slice(1)).sort().join('|')})`;
-};
-
-/**
- * @param {GraphKBRequest} req
- */
-router.use(`/${modelRouteParam()}`, (req, res, next) => {
-    const { params: { model: routeName } } = req;
-    req.model = schemaDefn.getFromRoute(`/${routeName}`);
-    return next();
-});
-
-
-router.use(`/${modelRouteParam()}`, checkClassPermissions);
-
 
 const activeRidQuery = (model, rid, opt = {}) => {
     const query = parse({
@@ -69,7 +39,7 @@ const activeRidQuery = (model, rid, opt = {}) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-router.post(`/${modelRouteParam('POST')}`, async (req, res, next) => {
+const postHandler = async (req, res, next) => {
     const { dbPool, model } = req;
 
     if (!_.isEmpty(req.query)) {
@@ -100,7 +70,7 @@ router.post(`/${modelRouteParam('POST')}`, async (req, res, next) => {
         }
         return next(err);
     }
-});
+};
 
 
 /**
@@ -109,7 +79,7 @@ router.post(`/${modelRouteParam('POST')}`, async (req, res, next) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-router.patch(`/${modelRouteParam('PATCH')}/:rid`, async (req, res, next) => {
+const patchHandler = async (req, res, next) => {
     const { model, dbPool } = req;
 
     if (!looksLikeRID(req.params.rid, false)) {
@@ -145,7 +115,7 @@ router.patch(`/${modelRouteParam('PATCH')}/:rid`, async (req, res, next) => {
         session.close();
         return next(err);
     }
-});
+};
 
 
 /**
@@ -154,7 +124,7 @@ router.patch(`/${modelRouteParam('PATCH')}/:rid`, async (req, res, next) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-router.get(`/${modelRouteParam('GET')}/:rid`, async (req, res, next) => {
+const getHandler = async (req, res, next) => {
     const { dbPool, model } = req;
     const { neighbors = 0, ...extra } = req.query;
 
@@ -191,7 +161,7 @@ router.get(`/${modelRouteParam('GET')}/:rid`, async (req, res, next) => {
         session.close();
         return next(err);
     }
-});
+};
 
 
 /**
@@ -200,7 +170,7 @@ router.get(`/${modelRouteParam('GET')}/:rid`, async (req, res, next) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-router.delete(`/${modelRouteParam('DELETE')}/:rid`, async (req, res, next) => {
+const deleteHandler = async (req, res, next) => {
     const { dbPool, model } = req;
     let { rid } = req.params;
 
@@ -239,7 +209,36 @@ router.delete(`/${modelRouteParam('DELETE')}/:rid`, async (req, res, next) => {
         logger.log('debug', err);
         return next(err);
     }
-});
+};
+
+
+for (const model of Object.values(schemaDefn.schema)) {
+    if (model.embedded || model.name === 'LicenseAgreement') {
+        continue;
+    }
+    const { routeName } = model;
+    router.use(routeName, (req, res, next) => {
+        req.model = model;
+        return next();
+    });
+    router.use(routeName, checkClassPermissions);
+
+    const route = router.route(`${routeName}/:rid`);
+
+    if (!model.isEdge && model.routes.PATCH) {
+        // can't patch edges, otherwise defined on route model
+        route.patch(patchHandler);
+    }
+    if (model.routes.GET) {
+        route.get(getHandler);
+    }
+    if (model.routes.POST) {
+        router.post(routeName, postHandler);
+    }
+    if (model.routes.DELETE) {
+        route.delete(deleteHandler);
+    }
+}
 
 
 module.exports = router;
