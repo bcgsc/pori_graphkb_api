@@ -364,7 +364,7 @@ class Subquery {
         } else if (target.isSubquery) {
             const { query: subQuery, params: subParams } = target.toString(paramIndex, prefix);
             paramIndex += Object.keys(subParams).length;
-            targetString = subQuery;
+            targetString = `(${subQuery})`;
             Object.assign(params, subParams);
         }
         let statement = `SELECT * FROM ${targetString}`;
@@ -386,10 +386,14 @@ class Subquery {
         return { params, query: statement };
     }
 
-    static parse(opt) {
-        const {
-            target: rawTarget, history = false, filters: rawFilters = null, queryType, ...rest
-        } = opt;
+    static parse({
+        target: rawTarget,
+        history = false,
+        filters: rawFilters = null,
+        queryType,
+        model: inputModel,
+        ...rest
+    }) {
         let target = rawTarget,
             filters = null;
 
@@ -398,21 +402,14 @@ class Subquery {
                 throw new AttributeError('target cannot be an empty array');
             }
             target = rawTarget.map(castToRID);
-        } else if (queryType) {
+        } else if (typeof target !== 'string') {
             // fixed query. pre-parse the target and filters
             if (typeof rawTarget !== 'string') {
                 target = this.parse(rawTarget);
             }
-        } else if (Object.keys(rest).length) {
-            throw new AttributeError(`Unrecognized query arguments: ${Object.keys(rest).join(',')}`);
         }
-        const model = schema[target.isSubquery
-            ? null
-            : target
-        ];
-
-        if (!model && (!target || !target.isSubquery) && !Array.isArray(target)) {
-            throw new AttributeError(`Invalid target class (${target})`);
+        if (Object.keys(rest).length && !queryType) {
+            throw new AttributeError(`Unrecognized query arguments: ${Object.keys(rest).join(',')}`);
         }
 
         if (rawFilters) {
@@ -423,9 +420,46 @@ class Subquery {
             } else if (!filters.AND && !filters.OR) {
                 filters = { AND: [{ ...filters }] };
             }
-
-            filters = Clause.parse(model || schema.V, filters);
         }
+
+        const model = schema[target.isSubquery
+            ? null
+            : target
+        ];
+
+        if (!model && (!target || !target.isSubquery) && !Array.isArray(target)) {
+            throw new AttributeError(`Invalid target class (${target})`);
+        }
+
+        if (model && model.isEdge && queryType !== 'edge' && filters && typeof target === 'string') {
+            // stop the user from making very inefficient queries
+            if (filters.AND.some(cond => cond.out)) {
+                target = this.parse({
+                    direction: 'out',
+                    queryType: 'edge',
+                    target: model.name,
+                    vertexFilter: filters.AND.find(cond => cond.out).out,
+                });
+            } else if (filters.AND.some(cond => cond.in)) {
+                target = this.parse({
+                    direction: 'in',
+                    queryType: 'edge',
+                    target: model.name,
+                    vertexFilter: filters.AND.find(cond => cond.in).in,
+                });
+            }
+        }
+
+        let defaultModel = schema[inputModel] || schema.V;
+
+        if (target && target.queryType === 'edge') {
+            defaultModel = schema.E;
+        }
+        if (filters) {
+            filters = Clause.parse(model || defaultModel, filters);
+        }
+
+
         if (queryType) {
             if (!filters) {
                 return FixedSubquery.parse({

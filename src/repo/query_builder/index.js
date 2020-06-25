@@ -90,11 +90,14 @@ class WrapperQuery {
             orderByDirection,
             returnProperties,
             count,
+            model: inputModel,
             ...rest
         } = checkStandardOptions(opt);
 
-        const query = Subquery.parse({ history, target, ...rest });
-        const model = schema[target];
+        const query = Subquery.parse({
+            history, model: inputModel, target, ...rest,
+        });
+        const model = schema[inputModel] || schema[target];
 
         // try to project the ordering to ensure they are valid properties
         if (orderBy) {
@@ -135,6 +138,12 @@ const parse = query => WrapperQuery.parse(query);
  */
 const parseRecord = (model, record, { activeIndexOnly = false, ...opt } = {}) => {
     const query = { ...opt, filters: { AND: [] }, target: model.name };
+
+    if (record['@rid']) {
+        query.target = [record['@rid']];
+        query.model = model.name;
+    }
+
     const filters = query.filters.AND;
     const content = { ...record };
 

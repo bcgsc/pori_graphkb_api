@@ -32,8 +32,9 @@ const specRouter = require('./routes/openapi');
 const { generateSwaggerSpec } = require('./routes/openapi/spec');
 const config = require('./config');
 
-// https://medium.com/@onufrienkos/keep-alive-connection-on-inter-service-http-requests-3f2de73ffa1
+// https://github.com/nodejs/node-v0.x-archive/issues/9075
 http.globalAgent.keepAlive = true;
+http.globalAgent.options.keepAlive = true;
 
 
 const BOOLEAN_FLAGS = [
