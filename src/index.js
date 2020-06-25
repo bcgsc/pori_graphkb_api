@@ -32,6 +32,10 @@ const specRouter = require('./routes/openapi');
 const { generateSwaggerSpec } = require('./routes/openapi/spec');
 const config = require('./config');
 
+// https://medium.com/@onufrienkos/keep-alive-connection-on-inter-service-http-requests-3f2de73ffa1
+http.globalAgent.keepAlive = true;
+
+
 const BOOLEAN_FLAGS = [
     'GKB_USER_CREATE',
     'GKB_DB_CREATE',
