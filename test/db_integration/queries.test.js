@@ -37,13 +37,13 @@ describeWithAuth('query builder', () => {
 
     beforeAll(async () => {
         db = await createSeededDb();
-        session = await db.dbPool.acquire();
+        session = await db.pool.acquire();
     });
 
     afterAll(async () => {
         await session.close();
         await tearDownDb(db);
-        await db.dbPool.close();
+        await db.pool.close();
         await db.server.close();
     });
 
