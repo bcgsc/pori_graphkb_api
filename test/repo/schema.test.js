@@ -1,8 +1,8 @@
 const { types } = require('orientjs');
 
-const { schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
 const {
     splitSchemaClassLevels,
+    SCHEMA_DEFN,
 } = require('../../src/repo/schema');
 const {
     ClassModel,
