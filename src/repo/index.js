@@ -110,17 +110,17 @@ const connectDB = async ({
     }
 
     logger.log('info', `connecting to the database (${GKB_DB_NAME}) as ${GKB_DB_USER}`);
-    let dbPool,
+    let pool,
         session;
 
     try {
-        dbPool = await server.sessions({
-            dbPool: { max: GKB_DB_POOL },
+        pool = await server.sessions({
             name: GKB_DB_NAME,
             password: GKB_DB_PASS,
+            pool: { max: GKB_DB_POOL },
             username: GKB_DB_USER,
         });
-        session = await dbPool.acquire();
+        session = await pool.acquire();
     } catch (err) {
         server.close();
         throw err;
@@ -147,16 +147,17 @@ const connectDB = async ({
         await migrate(session, { checkOnly: !GKB_DB_MIGRATE });
         // close and re-open the session (so that the db class models are updated)
         await session.close();
-        session = await dbPool.acquire();
+        session = await pool.acquire();
     } catch (err) {
         logger.error(err);
         server.close();
         throw err;
     }
 
+    let schema;
 
     try {
-        await loadSchema(session);
+        schema = await loadSchema(session);
     } catch (err) {
         logger.error(err);
         session.close();
@@ -164,7 +165,7 @@ const connectDB = async ({
     }
     session.close();
     // create the admin user
-    return { dbPool, server };
+    return { pool, schema, server };
 };
 
 
