@@ -7,6 +7,7 @@
 const winston = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
+const split = require('split');
 
 const transports = [
     new winston.transports.Console({
@@ -35,5 +36,24 @@ const logger = winston.createLogger({
     levels: winston.config.npm.levels,
     transports,
 });
+// for morgan http://tostring.it/2014/06/23/advanced-logging-with-nodejs/
+logger.stream = split().on('data', (message) => {
+    logger.info(message);
+});
 
-module.exports = { logger };
+
+const morganFormatter = (tokens, req, res) => {
+    const userName = (req.user && req.user.name)
+        || (req.body && req.body.username)
+        || 'anonymous';
+    return [
+        `[${tokens.method(req, res)}]`,
+        userName,
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens.res(req, res, 'content-length'), '-',
+        tokens['response-time'](req, res), 'ms',
+    ].join(' ');
+};
+
+module.exports = { logger, morganFormatter };

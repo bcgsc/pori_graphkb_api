@@ -394,6 +394,50 @@ const singleKeywordSearch = ({
     WHERE name ${operator} :${param}`;
 };
 
+const edgeQuery = ({
+    target,
+    vertexFilter,
+    subQueryParser,
+    direction = 'both',
+    paramIndex = 0,
+    prefix = '',
+}) => {
+    // if either filter.in or filter.out is given use those
+    if (!vertexFilter) {
+        throw new AttributeError('edge query must be filtered by a vertex');
+    }
+    if (!['out', 'in', 'both'].includes(direction)) {
+        throw new AttributeError(`direction (${direction}) must be one of: in, out, both`);
+    }
+    if (!schema[target] || !schema[target].isEdge) {
+        throw new AttributeError(`target (${target}) must be an edge class`);
+    }
+
+    try {
+        const rid = castToRID(vertexFilter);
+        return {
+            params: {},
+            query: `SELECT expand(${direction}E('${target}')) FROM [${rid}]`,
+        };
+    } catch (err) {}
+
+    if (Array.isArray(vertexFilter)) {
+        try {
+            const rid = vertexFilter.map(castToRID);
+            return {
+                params: {},
+                query: `SELECT expand(${direction}E('${target}')) FROM [${rid.join(', ')}]`,
+            };
+        } catch (err) {}
+    }
+    // subquery
+    const subquery = subQueryParser(vertexFilter).toString(paramIndex, prefix);
+    return {
+        params: subquery.params,
+        query: `SELECT expand(${direction}E('${target}')) FROM (${subquery.query})`,
+    };
+};
+
 
 const keywordSearch = ({
     target,
@@ -504,6 +548,8 @@ class FixedSubquery {
             return new this(queryType, similarTo, opt);
         } if (queryType === 'keyword') {
             return new this(queryType, keywordSearch, { ...opt, subQueryParser });
+        } if (queryType === 'edge') {
+            return new this(queryType, edgeQuery, { ...opt, subQueryParser });
         }
         throw new AttributeError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
     }

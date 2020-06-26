@@ -66,6 +66,34 @@ describe('WrapperQuery.parse', () => {
         });
     });
 
+    test('parse edge query', () => {
+        const parsed = parse({
+            filters: {
+                AND: [
+                    {
+                        in: '#124:42320',
+                    },
+                    {
+                        out: '#124:35332',
+                    },
+                    {
+                        source: '#38:1',
+                    },
+                ],
+            },
+            neighbors: 1,
+            target: {
+                direction: 'out',
+                queryType: 'edge',
+                target: 'ElementOf',
+                vertexFilter: '#124:35332',
+            },
+        });
+        const { query, params } = parsed.toString();
+        expect(query).toEqual('SELECT *, *:{*, @rid, @class, !history} FROM (SELECT * FROM (SELECT * FROM (SELECT expand(outE(\'ElementOf\')) FROM [#124:35332]) WHERE in = :param0 AND out = :param1 AND source = :param2) WHERE deletedAt IS NULL) LIMIT 1000');
+        expect(params).toEqual({ param0: '#124:42320', param1: '#124:35332', param2: '#38:1' });
+    });
+
     test('parses a simple single Comparison', () => {
         const parsed = parse({
             filters: { name: 'thing' },
