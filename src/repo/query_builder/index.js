@@ -1,13 +1,17 @@
 
 
-const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { schema: schemaDefn } = require('@bcgsc/knowledgebase-schema');
 
 const {
-    propsToProjection, checkStandardOptions, nestedProjection, displayQuery, getQueryableProps,
+    checkStandardOptions, displayQuery, getQueryableProps,
 } = require('./util');
+const {
+    propsToProjection, nonSpecificProjection, nestedProjection,
+} = require('./projection');
 const { Subquery } = require('./fragment');
 const constants = require('./constants');
 
+const { schema } = schemaDefn;
 const { MAX_LIMIT } = constants;
 
 /**
@@ -108,8 +112,14 @@ class WrapperQuery {
 
         if (returnProperties) {
             projection = propsToProjection(model || schema.V, returnProperties, true);
+        } else if (neighbors && neighbors < 2) {
+            projection = nestedProjection(neighbors);
         } else if (neighbors) {
-            projection = nestedProjection(neighbors, !history);
+            projection = nonSpecificProjection((model || schema.V), {
+                depth: neighbors,
+                edges: schemaDefn.getEdgeModels().filter(e => !e.isAbstract).map(e => e.name),
+                history,
+            });
         }
 
         return new this({
