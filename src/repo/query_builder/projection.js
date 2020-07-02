@@ -30,7 +30,12 @@ const nestedProjection = (initialDepth, excludeHistory = true) => {
     return recursiveNestedProjection(initialDepth);
 };
 
-
+/**
+ * calculate the SQL (orientdb) projection from an edge record
+ * @param {ClassModel} model the schema model
+ * @param {string} direction the edge direction
+ * @param {*} opt pass-through optins to hand off to projectionFromProperties
+ */
 const projectEdge = (model, direction, opt) => {
     const target = direction === 'out'
         ? 'in'
@@ -56,6 +61,15 @@ const projectEdge = (model, direction, opt) => {
 };
 
 
+/**
+ * calculate the SQL (orientdb) projection from an list of properties record
+ * @param {boolean} isEdge is the starting record an edge?
+ * @param {string} edges list of edge classes to expand on
+ * @param {Number} depth distance to expand related records
+ * @param {boolean} history flag if true to include deleted records
+ * @param {Array.<string>} exclude list of properties to exclude in expanded records
+ * @param {Array.<string>} terminal list of properties that should not have their edges/links expanded
+ */
 const projectionFromProperties = (queryProperties, {
     isEdge = false,
     depth = 1,
@@ -138,7 +152,11 @@ const projectionFromProperties = (queryProperties, {
     return properties;
 };
 
-
+/**
+ * For a given model expand the current record for a specific depth
+ * @param {ClassModel} model
+ * @param {*} opt options to pass-through to projectionFromProperties
+ */
 const nonSpecificProjection = (model, opt) => {
     const props = projectionFromProperties(
         Object.values(model.queryProperties),
