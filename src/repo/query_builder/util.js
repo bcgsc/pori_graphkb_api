@@ -1,5 +1,4 @@
 const { RecordID: RID } = require('orientjs');
-const { merge } = require('lodash');
 const {
     error: { AttributeError },
     util: { castInteger },
@@ -62,31 +61,6 @@ const getQueryableProps = (model, includeEmbedded = false) => {
 
 
 /**
- * Given some depth level, calculates the nested projection required
- * to expand all associated links and edges
- */
-const nestedProjection = (initialDepth, excludeHistory = true) => {
-    const recursiveNestedProjection = (depth) => {
-        let current = '*';
-
-        if (depth !== initialDepth) {
-            current = `${current}, @rid, @class`;
-
-            if (excludeHistory) {
-                current = `${current}, !history`;
-            }
-        }
-        if (depth <= 0) {
-            return current;
-        }
-        const inner = recursiveNestedProjection(depth - 1);
-        return `${current}, *:{${inner}}`;
-    };
-    return recursiveNestedProjection(initialDepth);
-};
-
-
-/**
  * @param {object} opt the query options
  * @param {Number} opt.skip the number of records to skip (for paginating)
  * @param {Array.<string>} opt.orderBy the properties used to determine the sort order of the results
@@ -138,60 +112,6 @@ const checkStandardOptions = (opt) => {
     return { ...opt, ...options };
 };
 
-/**
- * Convert a list of property names to a nested object representing the projection of
- * these properties. Validates the property list against the input model
- *
- * @param {ClassModel} model the model to validate the property list against
- * @param {Array.<string>} properties the list of properties to be parsed/validated
- * @param {boolean} allowDirectEmbedded flag to indicate if an error should be throw for embedded props without a subprop selection
- */
-const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
-    const projections = {};
-    const propModels = getQueryableProps(model, allowDirectEmbedded);
-
-    for (const prop of properties) {
-        const [directProp] = prop.trim().split('.');
-        const propModel = propModels[directProp];
-        projections[directProp] = projections[directProp] || {};
-
-        if (!propModel) {
-            throw new AttributeError(`property ${directProp} does not exist or cannot be accessed on the model ${model.name}`);
-        }
-
-        const nestedProps = prop.trim().slice(directProp.length + 1);
-
-
-        if (nestedProps) {
-            if (!propModel.linkedClass) {
-                throw new AttributeError(`Cannot return nested property (${prop}), the property (${propModel.name}) does not have a linked class`);
-            }
-            const innerProjection = parsePropertyList(propModel.linkedClass, [nestedProps]);
-            merge(projections[directProp], innerProjection);
-        }
-    }
-    return projections;
-};
-
-
-const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
-    const projection = parsePropertyList(model, properties, allowDirectEmbedded);
-
-    const convertToString = (obj) => {
-        const keyList = [];
-
-        for (const key of Object.keys(obj).sort()) {
-            if (Object.keys(obj[key]).length) {
-                keyList.push(`${key}:{ ${convertToString(obj[key])} }`);
-            } else {
-                keyList.push(key);
-            }
-        }
-        return keyList.join(', ');
-    };
-    return convertToString(projection);
-};
-
 
 const displayQuery = ({ query: statement, params = {} }) => {
     let result = statement;
@@ -216,7 +136,4 @@ module.exports = {
     checkStandardOptions,
     displayQuery,
     getQueryableProps,
-    nestedProjection,
-    parsePropertyList,
-    propsToProjection,
 };
