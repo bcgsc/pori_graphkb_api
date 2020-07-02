@@ -2,6 +2,8 @@ const stripSQL = string => string
     .replace(/\s+\./g, '.')
     .replace(/\(\s+/g, '(')
     .replace(/\s+\)/g, ')')
+    .replace(/\{\n\s+/g, '{')
+    .replace(/\n\s+\}/g, '}')
     .replace(/\s+/g, ' ')
     .trim();
 

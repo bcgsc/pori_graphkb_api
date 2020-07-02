@@ -422,10 +422,14 @@ class Subquery {
             }
         }
 
-        const model = schema[target.isSubquery
+        let model = schema[target.isSubquery
             ? null
             : target
         ];
+
+        if (target.isSubquery && target.target && schema[target.target]) {
+            model = schema[target.target];
+        }
 
         if (!model && (!target || !target.isSubquery) && !Array.isArray(target)) {
             throw new AttributeError(`Invalid target class (${target})`);

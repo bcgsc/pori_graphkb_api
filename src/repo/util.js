@@ -159,7 +159,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
 
             if (attr === '@type' || attr === '@version' || attr.startsWith('_$')) {
                 delete curr[attr];
-            } else if (attr === 'history' && history) {
+            } else if (attr === 'history' && history && value) {
                 curr[attr] = castToRID(value);
             } else if (value instanceof RID) {
                 if (value.cluster < 0) { // abstract, remove
@@ -172,30 +172,34 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
                     queue.push(value);
                 }
             } else if (attr.startsWith('out_') || attr.startsWith('in_')) {
+                if (value.length === 0) {
+                    delete curr[attr];
+                } else {
                 // check here for updated edges that have not been removed
                 // https://github.com/orientechnologies/orientjs/issues/32
-                const arr = [];
+                    const arr = [];
 
-                for (const edge of value) {
-                    const edgeCheck = edge;
+                    for (const edge of value) {
+                        const edgeCheck = edge;
 
-                    if (!edge.out || !edge.in) {
-                        arr.push(edge);
-                        continue;
-                    }
-                    if (edgeCheck.out
+                        if (!edge.out || !edge.in) {
+                            arr.push(edge);
+                            continue;
+                        }
+                        if (edgeCheck.out
                         && edgeCheck.in
                         && castToRID(edgeCheck.out).toString() !== currRID.toString()
                         && castToRID(edgeCheck.in).toString() !== currRID.toString()
-                    ) {
-                        continue;
-                    } else if (!accessOk(edge)) {
-                        continue;
+                        ) {
+                            continue;
+                        } else if (!accessOk(edge)) {
+                            continue;
+                        }
+                        queue.push(edge);
+                        arr.push(edge);
                     }
-                    queue.push(edge);
-                    arr.push(edge);
+                    curr[attr] = arr;
                 }
-                curr[attr] = arr;
             }
         }
     }
