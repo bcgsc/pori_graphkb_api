@@ -1,4 +1,9 @@
-const { error: { AttributeError }, constants: { PERMISSIONS }, util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
+const {
+    error: { AttributeError },
+    constants: { PERMISSIONS },
+    util: { castToRID },
+    schema,
+} = require('@bcgsc/knowledgebase-schema');
 const { RecordID: RID } = require('orientjs');
 
 
@@ -153,6 +158,10 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
         }
         visited.add(curr);
         const keys = Array.from(Object.keys(curr));
+        const model = curr['@class'] && schema.schema[curr['@class']];
+        const queryProperties = model
+            ? model.queryProperties
+            : null;
 
         for (const attr of keys) {
             const value = curr[attr];
@@ -172,7 +181,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
                     queue.push(value);
                 }
             } else if (attr.startsWith('out_') || attr.startsWith('in_')) {
-                if (value.length === 0) {
+                if (!value || value.length === 0) {
                     delete curr[attr];
                 } else {
                 // check here for updated edges that have not been removed
@@ -200,6 +209,8 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
                     }
                     curr[attr] = arr;
                 }
+            } else if (value === null && queryProperties && !queryProperties[attr]) {
+                delete curr[attr];
             }
         }
     }
