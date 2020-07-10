@@ -513,6 +513,7 @@ const migrate3xFrom11xto12x = async (db) => {
     }
     // any records with a non-null dependency should have this flag set
     await db.command('UPDATE Ontology SET alias = TRUE WHERE dependency IS NOT NULL').all();
+    await db.command('UPDATE Ontology SET alias = FALSE WHERE alias IS NULL').all();
 };
 
 
