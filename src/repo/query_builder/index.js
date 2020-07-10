@@ -33,7 +33,7 @@ class WrapperQuery {
     }
 
     expectedCount() {
-        if (this.query.expectedCount() && !this.skip) {
+        if (!this.count && this.query.expectedCount() && !this.skip) {
             let count = this.query.expectedCount();
 
             if (this.limit !== null) {
