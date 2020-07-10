@@ -502,6 +502,20 @@ const migrate3xFrom10xto11x = async (db) => {
 };
 
 
+const migrate3xFrom11xto12x = async (db) => {
+    for (const [className, propertyName] of [
+        ['Ontology', 'alias'],
+    ]) {
+        const dbClass = await db.class.get(className);
+        logger.info(`adding the property ${className}.${propertyName}`);
+        const prop = SCHEMA_DEFN[className].properties[propertyName];
+        await Property.create(prop, dbClass);
+    }
+    // any records with a non-null dependency should have this flag set
+    await db.command('UPDATE Ontology SET alias = TRUE WHERE dependency IS NOT NULL').all();
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -556,6 +570,7 @@ const migrate = async (db, opt = {}) => {
         ['3.8.0', '3.9.0', migrate3xFrom8xto9x],
         ['3.9.0', '3.10.0', migrate3xFrom9xto10x],
         ['3.10.0', '3.11.0', migrate3xFrom10xto11x],
+        ['3.11.0', '3.12.0', migrate3xFrom11xto12x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
