@@ -33,7 +33,7 @@ jest.mock('../../src/extensions/util', () => {
 
 const util = require('../../src/extensions/util');
 
-describeWithAuth('api crud routes', () => {
+describeWithAuth('service routes', () => {
     let db,
         app,
         mockToken;

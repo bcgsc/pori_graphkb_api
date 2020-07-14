@@ -281,7 +281,7 @@ describeWithAuth('api crud routes', () => {
                 adminGroup = res.body.result.find(g => g.name === 'admin');
 
                 if (!readOnly || !adminGroup) {
-                    console.log(res.body.result.map(r => r.name), readOnly);
+                    console.error(res.body.result.map(r => r.name), readOnly);
                     throw new Error('failed to find the readonly and admin user groups');
                 }
                 user = (await request({
