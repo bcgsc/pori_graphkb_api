@@ -3,8 +3,10 @@
  */
 const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
+const { util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
 
 const { AppServer } = require('../../src');
+const { createUser } = require('../../src/repo/commands/create');
 const { generateToken } = require('../../src/routes/auth');
 
 const { createEmptyDb, tearDownDb, clearDB } = require('./util');
@@ -23,13 +25,13 @@ if (!process.env.GKB_DBS_PASS) {
     console.warn('Cannot run tests without database password (GKB_DBS_PASS)');
 }
 
-const variantSetup = async ({ mockToken, app }) => {
+const variantSetup = async ({ adminUserToken, app }) => {
     const res = await request({
         body: {
             name: 'bcgsc',
             version: '2018',
         },
-        headers: { Authorization: mockToken },
+        headers: { Authorization: adminUserToken },
         method: 'POST',
         uri: `${app.url}/sources`,
     });
@@ -40,7 +42,7 @@ const variantSetup = async ({ mockToken, app }) => {
             source,
             sourceId: 'variantType',
         },
-        headers: { Authorization: mockToken },
+        headers: { Authorization: adminUserToken },
         method: 'POST',
         uri: `${app.url}/vocabulary`,
     })).body.result['@rid'];
@@ -51,7 +53,7 @@ const variantSetup = async ({ mockToken, app }) => {
             source,
             sourceId: 'variantReference',
         },
-        headers: { Authorization: mockToken },
+        headers: { Authorization: adminUserToken },
         method: 'POST',
         uri: `${app.url}/features`,
     })).body.result['@rid'];
@@ -62,7 +64,7 @@ const variantSetup = async ({ mockToken, app }) => {
 describeWithAuth('api crud routes', () => {
     let db,
         app,
-        mockToken,
+        adminUserToken,
         session;
 
     beforeAll(async () => {
@@ -70,7 +72,7 @@ describeWithAuth('api crud routes', () => {
         app = new AppServer({ ...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true });
         await app.listen();
         session = await app.pool.acquire();
-        mockToken = await generateToken(
+        adminUserToken = await generateToken(
             session,
             db.admin.name,
             app.conf.GKB_KEY,
@@ -102,7 +104,7 @@ describeWithAuth('api crud routes', () => {
                         name: 'blargh monkeys',
                     },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'POST',
                     uri: `${app.url}/users`,
@@ -119,7 +121,7 @@ describeWithAuth('api crud routes', () => {
                             name: 'blargh monkeys',
                         },
                         headers: {
-                            Authorization: mockToken,
+                            Authorization: adminUserToken,
                         },
                         method: 'POST',
                         qs: { history: true },
@@ -139,7 +141,7 @@ describeWithAuth('api crud routes', () => {
                         body: {
                         },
                         headers: {
-                            Authorization: mockToken,
+                            Authorization: adminUserToken,
                         },
                         method: 'POST',
                         uri: `${app.url}/users`,
@@ -175,7 +177,7 @@ describeWithAuth('api crud routes', () => {
                             name: db.admin.name,
                         },
                         headers: {
-                            Authorization: mockToken,
+                            Authorization: adminUserToken,
                         },
                         method: 'POST',
                         uri: `${app.url}/users`,
@@ -194,7 +196,7 @@ describeWithAuth('api crud routes', () => {
                         permissions: { V: 15 },
                     },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'POST',
                     uri: `${app.url}/usergroups`,
@@ -212,7 +214,7 @@ describeWithAuth('api crud routes', () => {
             source;
 
         beforeEach(async () => {
-            ({ type, reference1, source } = await variantSetup({ app, mockToken }));
+            ({ type, reference1, source } = await variantSetup({ adminUserToken, app }));
         });
 
         test('create record with link property', async () => {
@@ -222,7 +224,7 @@ describeWithAuth('api crud routes', () => {
                     sourceId: 'cancer',
                 },
                 headers: {
-                    Authorization: mockToken,
+                    Authorization: adminUserToken,
                 },
                 method: 'POST',
                 uri: `${app.url}/diseases`,
@@ -249,7 +251,7 @@ describeWithAuth('api crud routes', () => {
                     untemplatedSeq: 'R',
                     untemplatedSeqSize: 1,
                 },
-                headers: { Authorization: mockToken },
+                headers: { Authorization: adminUserToken },
                 method: 'POST',
                 uri: `${app.url}/positionalvariants`,
             });
@@ -272,7 +274,7 @@ describeWithAuth('api crud routes', () => {
                 const res = await request({
                     body: { target: 'UserGroup' },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'POST',
                     uri: `${app.url}/query`,
@@ -289,7 +291,7 @@ describeWithAuth('api crud routes', () => {
                         groups: [readOnly['@rid']],
                         name: 'alice',
                     },
-                    headers: { Authorization: mockToken },
+                    headers: { Authorization: adminUserToken },
                     method: 'POST',
                     uri: `${app.url}/users`,
                 })
@@ -300,14 +302,14 @@ describeWithAuth('api crud routes', () => {
                         permissions: { V: 15 },
                     },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'POST',
                     uri: `${app.url}/usergroups`,
                 });
                 group = result;
 
-                const { type, reference1 } = await variantSetup({ app, mockToken });
+                const { type, reference1 } = await variantSetup({ adminUserToken, app });
                 variant = (await request({
                     body: {
                         break1Repr: 'p.G12',
@@ -323,7 +325,7 @@ describeWithAuth('api crud routes', () => {
                         untemplatedSeq: 'R',
                         untemplatedSeqSize: 1,
                     },
-                    headers: { Authorization: mockToken },
+                    headers: { Authorization: adminUserToken },
                     method: 'POST',
                     uri: `${app.url}/positionalvariants`,
                 })).body.result;
@@ -335,7 +337,7 @@ describeWithAuth('api crud routes', () => {
                 const { body: { result } } = await request({
                     body: { break1Start: { '@class': 'ProteinPosition', pos: 12, refAA: 'H' } },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'PATCH',
                     uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
@@ -349,7 +351,7 @@ describeWithAuth('api crud routes', () => {
                 const { body: { result } } = await request({
                     body: { break1Start: { '@class': 'ProteinPosition', pos: 12, refAA: 'H' }, displayName: 'blargh' },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'PATCH',
                     uri: `${app.url}/positionalvariants/${variant['@rid'].slice(1)}`,
@@ -362,7 +364,7 @@ describeWithAuth('api crud routes', () => {
                 const { body: { result } } = await request({
                     body: { groups: [adminGroup['@rid']] },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'PATCH',
                     uri: `${app.url}/users/${user['@rid'].slice(1)}`,
@@ -377,7 +379,7 @@ describeWithAuth('api crud routes', () => {
                 const { body: { result } } = await request({
                     body: { name: 'bob' },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'PATCH',
                     uri: `${app.url}/users/${user['@rid'].slice(1)}`,
@@ -394,7 +396,7 @@ describeWithAuth('api crud routes', () => {
                         permissions: { E: 15, V: 15 },
                     },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'PATCH',
                     uri: `${app.url}/usergroups/${group['@rid'].toString().slice(1)}`,
@@ -411,7 +413,7 @@ describeWithAuth('api crud routes', () => {
                         body: {
                             sourceId: 'cancer',
                         },
-                        headers: { Authorization: mockToken },
+                        headers: { Authorization: adminUserToken },
                         method: 'PATCH',
                         uri: `${app.url}/diseases/456:0`,
                     });
@@ -427,7 +429,7 @@ describeWithAuth('api crud routes', () => {
                     body: {
                         name: 'dummy',
                     },
-                    headers: { Authorization: mockToken },
+                    headers: { Authorization: adminUserToken },
                     method: 'POST',
                     uri: `${app.url}/users`,
                 });
@@ -439,7 +441,7 @@ describeWithAuth('api crud routes', () => {
                         body: {
                             name: db.admin.name,
                         },
-                        headers: { Authorization: mockToken },
+                        headers: { Authorization: adminUserToken },
                         method: 'PATCH',
                         uri: `${app.url}/users/${encodeURIComponent(original)}`,
                     });
@@ -459,7 +461,7 @@ describeWithAuth('api crud routes', () => {
                 const res = await request({
                     body: { target: 'UserGroup' },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'POST',
                     uri: `${app.url}/query`,
@@ -482,7 +484,7 @@ describeWithAuth('api crud routes', () => {
                         name: 'alice',
                     },
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'POST',
                     uri: `${app.url}/users`,
@@ -492,7 +494,7 @@ describeWithAuth('api crud routes', () => {
             test('delete the current user', async () => {
                 const { body: { result } } = await request({
                     headers: {
-                        Authorization: mockToken,
+                        Authorization: adminUserToken,
                     },
                     method: 'DELETE',
                     uri: `${app.url}/users/${user['@rid'].slice(1)}`,
@@ -504,7 +506,7 @@ describeWithAuth('api crud routes', () => {
             test('error on delete non-existant record', async () => {
                 try {
                     await request({
-                        headers: { Authorization: mockToken },
+                        headers: { Authorization: adminUserToken },
                         method: 'DELETE',
                         uri: `${app.url}/diseases/456:0`,
                     });
@@ -519,7 +521,7 @@ describeWithAuth('api crud routes', () => {
             test('error on malformed rid', async () => {
                 try {
                     await request({
-                        headers: { Authorization: mockToken },
+                        headers: { Authorization: adminUserToken },
                         method: 'DELETE',
                         uri: `${app.url}/diseases/k`,
                     });
@@ -534,7 +536,7 @@ describeWithAuth('api crud routes', () => {
             test('error query params given', async () => {
                 try {
                     await request({
-                        headers: { Authorization: mockToken },
+                        headers: { Authorization: adminUserToken },
                         method: 'DELETE',
                         qs: { history: true },
                         uri: `${app.url}/diseases/456:0`,
@@ -545,6 +547,172 @@ describeWithAuth('api crud routes', () => {
                     return;
                 }
                 throw new Error('Did not throw expected error');
+            });
+        });
+    });
+
+    describe('/license', () => {
+        let managerUser,
+            managerUserToken,
+            unsignedUser,
+            unsignedUserToken;
+
+        beforeEach(async () => {
+            [managerUser, unsignedUser] = await Promise.all([
+                createUser(session, {
+                    existsOk: true,
+                    groupNames: ['manager'],
+                    signedLicenseAt: timeStampNow(),
+                    userName: 'manager',
+                }),
+                createUser(session, {
+                    existsOk: true,
+                    groupNames: ['manager'],
+                    userName: 'unsigneduser',
+                }),
+            ]);
+            [managerUserToken, unsignedUserToken] = await Promise.all([
+                generateToken(
+                    session,
+                    managerUser.name,
+                    app.conf.GKB_KEY,
+                    REALLY_LONG_TIME,
+                ),
+                generateToken(
+                    session,
+                    unsignedUser.name,
+                    app.conf.GKB_KEY,
+                    REALLY_LONG_TIME,
+                ),
+            ]);
+        });
+
+        describe('GET', () => {
+            test('signed user can see the license', async () => {
+                const res = await request({
+                    headers: {
+                        Authorization: managerUserToken,
+                    },
+                    method: 'GET',
+                    uri: `${app.url}/license`,
+                });
+                expect(res.statusCode).toBe(HTTP_STATUS.OK);
+                expect(res.body).toHaveProperty('content');
+                expect(res.body).toHaveProperty('enactedAt');
+            });
+
+            test('unsigned user can see the license', async () => {
+                const res = await request({
+                    headers: {
+                        Authorization: unsignedUserToken,
+                    },
+                    method: 'GET',
+                    uri: `${app.url}/license`,
+                });
+                expect(res.statusCode).toBe(HTTP_STATUS.OK);
+                expect(res.body).toHaveProperty('content');
+                expect(res.body).toHaveProperty('enactedAt');
+            });
+        });
+
+
+        describe('POST', () => {
+            test('create a new license', async () => {
+                const res = await request({
+                    headers: {
+                        Authorization: adminUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/license`,
+                });
+                expect(res.statusCode).toBe(HTTP_STATUS.CREATED);
+                expect(res.body).toHaveProperty('content');
+                expect(res.body).toHaveProperty('enactedAt');
+            });
+
+            test('error on non-admin user', async () => {
+                try {
+                    await request({
+                        headers: {
+                            Authorization: managerUserToken,
+                        },
+                        method: 'POST',
+                        uri: `${app.url}/license`,
+                    });
+                } catch (err) {
+                    const res = err.response;
+                    expect(res.statusCode).toBe(HTTP_STATUS.FORBIDDEN);
+                    return;
+                }
+                throw new Error('Did not throw expected error');
+            });
+        });
+
+        describe('POST /sign', () => {
+            test('new sign ok', async () => {
+                const before = timeStampNow();
+                const res = await request({
+                    headers: {
+                        Authorization: unsignedUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/license/sign`,
+                });
+                expect(res.statusCode).toBe(HTTP_STATUS.OK);
+                expect(res.body).toHaveProperty('signedLicenseAt');
+                expect(res.body.signedLicenseAt).toBeGreaterThan(before);
+            });
+
+            test('updates the timestamp when the user re-signs', async () => {
+                const before = timeStampNow();
+                const res = await request({
+                    headers: {
+                        Authorization: managerUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/license/sign`,
+                });
+                expect(res.statusCode).toBe(HTTP_STATUS.OK);
+                expect(res.body).toHaveProperty('signedLicenseAt');
+                expect(res.body.signedLicenseAt).toBeGreaterThan(before);
+            });
+        });
+
+        describe('middleware check access to data routes', () => {
+            test('denies when the user has not signed', async () => {
+                try {
+                    await request({
+                        body: {
+                            limit: 1,
+                            target: 'Vocabulary',
+                        },
+                        headers: {
+                            Authorization: unsignedUserToken,
+                        },
+                        method: 'POST',
+                        uri: `${app.url}/query`,
+                    });
+                } catch (err) {
+                    const res = err.response;
+                    expect(res.statusCode).toBe(HTTP_STATUS.FORBIDDEN);
+                    return;
+                }
+                throw new Error('Did not throw expected error');
+            });
+
+            test('allows when the user has signed', async () => {
+                const res = await request({
+                    body: {
+                        limit: 1,
+                        target: 'Vocabulary',
+                    },
+                    headers: {
+                        Authorization: managerUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/query`,
+                });
+                expect(res.statusCode).toBe(HTTP_STATUS.OK);
             });
         });
     });

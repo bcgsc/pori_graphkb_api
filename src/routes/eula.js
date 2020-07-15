@@ -1,8 +1,13 @@
+const HTTP_STATUS = require('http-status-codes');
+const {
+    util: { timeStampNow },
+    schema: { schema: SCHEMA_DEFN },
+    constants: { PERMISSIONS },
+} = require('@bcgsc/knowledgebase-schema');
 
-const { util: { timeStampNow }, schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
 const { logger } = require('./../repo/logging');
-
 const { RecordNotFoundError, PermissionError } = require('./../repo/error');
+const { checkUserAccessFor } = require('../middleware/auth');
 
 
 const getCurrentLicense = async db => db.query(
@@ -27,30 +32,6 @@ const addEulaRoutes = (app) => {
 
             try {
                 const result = await getCurrentLicense(session);
-                return res.json(result);
-            } catch (err) {
-                session.close();
-                logger.log('debug', err);
-                return next(err);
-            }
-        });
-
-    app.router.post('/license',
-        async (req, res, next) => {
-            const { body: content } = req;
-            let session;
-
-            try {
-                session = await app.pool.acquire();
-            } catch (err) {
-                return next(err);
-            }
-
-            try {
-                const result = await session.insert().into(SCHEMA_DEFN.LicenseAgreement.name).set({
-                    content,
-                    enactedAt: timeStampNow(),
-                }).one();
                 session.close();
                 return res.json(result);
             } catch (err) {
@@ -80,6 +61,36 @@ const addEulaRoutes = (app) => {
                 const result = await session.record.update({ ...record, signedLicenseAt: timeStampNow() });
                 session.close();
                 return res.json(result);
+            } catch (err) {
+                session.close();
+                logger.log('debug', err);
+                return next(err);
+            }
+        });
+
+    app.router.post('/license',
+        async (req, res, next) => {
+            const { body: content, user } = req;
+
+            // check for the required access
+            if (!checkUserAccessFor(user, SCHEMA_DEFN.LicenseAgreement.name, PERMISSIONS.CREATE)) {
+                return next(new PermissionError('Insufficient permissions to upload a license agreement'));
+            }
+            let session;
+
+            try {
+                session = await app.pool.acquire();
+            } catch (err) {
+                return next(err);
+            }
+
+            try {
+                const result = await session.insert().into(SCHEMA_DEFN.LicenseAgreement.name).set({
+                    content,
+                    enactedAt: timeStampNow(),
+                }).one();
+                session.close();
+                return res.status(HTTP_STATUS.CREATED).json(result);
             } catch (err) {
                 session.close();
                 logger.log('debug', err);
