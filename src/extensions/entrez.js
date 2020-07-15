@@ -8,11 +8,12 @@ const { error: { AttributeError: ValidationError } } = require('@bcgsc/knowledge
 const { requestWithRetry } = require('./util');
 
 const ajv = new Ajv();
+const PUBMED_LINK_URL = 'https://pubmed.ncbi.nlm.nih.gov';
+const GENE_LINK_URL = 'https://www.ncbi.nlm.nih.gov/gene';
+
 
 const publicationSpec = ajv.compile({
     properties: {
-
-
         // get the doi
         articleids: {
             items: {
@@ -25,8 +26,6 @@ const publicationSpec = ajv.compile({
             },
             type: 'array',
         },
-
-
         // create the authorList string
         authors: {
             items: {
@@ -38,32 +37,15 @@ const publicationSpec = ajv.compile({
             },
             type: 'array',
         },
-
-
         // use the sort title since normalized
         fulljournalname: { type: 'string' },
-
-
         issue: { type: 'string' },
-
-
         pages: { type: 'string' },
-
-
         sortdate: { type: 'string' },
-
-
         sortpubdate: { type: 'string' },
-
-
         sorttitle: { type: 'string' },
-
-
         title: { type: 'string' },
-
-
         uid: { pattern: '^\\d+$', type: 'string' },
-
         volume: { type: 'string' },
     },
     required: ['uid', 'fulljournalname', 'sorttitle'],
@@ -94,6 +76,7 @@ const parseGeneRecord = (record) => {
         displayName: record.name,
         name: record.name,
         sourceId: record.uid,
+        url: `${GENE_LINK_URL}/${record.uid}`,
     };
 };
 
@@ -109,6 +92,7 @@ const parsePubmedRecord = (record) => {
         journalName: record.fulljournalname,
         name: record.sorttitle,
         sourceId: record.uid,
+        url: `${PUBMED_LINK_URL}/${record.uid}`,
     };
 
     for (const key of ['issue', 'volume', 'pages']) {
