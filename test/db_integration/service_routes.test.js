@@ -335,6 +335,7 @@ describeWithAuth('service routes', () => {
                     name: 'mavis merging annotation validation and illustration of structural variants',
                     pages: '515-517',
                     sourceId: '30016509',
+                    url: 'https://pubmed.ncbi.nlm.nih.gov/30016509',
                     volume: '35',
                     year: 2019,
                 },
