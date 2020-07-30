@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc/knowledgebase-api",
   "main": "server.js",
-  "version": "3.9.2",
+  "version": "3.9.3",
   "repository": {
     "type": "git",
     "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
@@ -12,7 +12,7 @@
   "license": "ISC",
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
-    "@bcgsc/knowledgebase-parser": "^0.8.0",
+    "@bcgsc/knowledgebase-parser": "^0.8.1",
     "@bcgsc/knowledgebase-schema": "^3.12.0",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
