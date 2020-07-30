@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc/knowledgebase-api",
   "main": "server.js",
-  "version": "3.9.0",
+  "version": "3.9.2",
   "repository": {
     "type": "git",
     "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
@@ -12,7 +12,7 @@
   "license": "ISC",
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
-    "@bcgsc/knowledgebase-parser": "^0.7.3",
+    "@bcgsc/knowledgebase-parser": "^0.8.0",
     "@bcgsc/knowledgebase-schema": "^3.12.0",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
@@ -23,7 +23,7 @@
     "http-status-codes": "^1.3.0",
     "json-cycle": "^1.2.0",
     "jsonwebtoken": "^8.2.0",
-    "lodash": "^4.17.14",
+    "lodash": "^4.17.19",
     "morgan": "^1.10.0",
     "orientjs": "^3.0.7",
     "portfinder": "^1.0.20",
@@ -44,7 +44,7 @@
     "commitizen": "^4.0.4",
     "cz-conventional-changelog": "^3.1.0",
     "docdash": "^1.0.0",
-    "docsify": "^4.10.2",
+    "docsify": "^4.11.4",
     "docsify-cli": "^4.4.0",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.0.0",
