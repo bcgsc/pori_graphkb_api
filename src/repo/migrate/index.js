@@ -517,6 +517,12 @@ const migrate3xFrom11xto12x = async (db) => {
 };
 
 
+const migrate3xFrom12xto13x = async (db) => {
+    logger.info('Create the new NonCdsPostion class');
+    await ClassModel.create(SCHEMA_DEFN.NonCdsPosition, db);
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -572,6 +578,7 @@ const migrate = async (db, opt = {}) => {
         ['3.9.0', '3.10.0', migrate3xFrom9xto10x],
         ['3.10.0', '3.11.0', migrate3xFrom10xto11x],
         ['3.11.0', '3.12.0', migrate3xFrom11xto12x],
+        ['3.12.0', '3.13.0', migrate3xFrom12xto13x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
