@@ -10,7 +10,6 @@ module.exports = {
         GKB_DB_PORT: 2424,
         GKB_DB_USER: 'admin',
         GKB_DISABLE_AUTH: false,
-        GKB_HOST: process.env.HOSTNAME,
         GKB_KEYCLOAK_CLIENT_ID: 'GraphKB',
         GKB_KEYCLOAK_KEY_FILE: 'config/keys/keycloak-dev.key',
         GKB_KEYCLOAK_ROLE: 'GraphKB',
