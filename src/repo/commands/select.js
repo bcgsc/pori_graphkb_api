@@ -10,6 +10,7 @@ const {
     schema: { schema },
     error: { AttributeError },
     sentenceTemplates: { chooseDefaultTemplate },
+    util: { castToRID },
 } = require('@bcgsc/knowledgebase-schema');
 const { variant: { VariantNotation } } = require('@bcgsc/knowledgebase-parser');
 
@@ -234,18 +235,18 @@ const fetchDisplayName = async (db, model, content) => {
             }),
         );
         const recordsById = {};
+        const recId = x => castToRID(x).toString();
 
         for (const record of records) {
             recordsById[record['@rid']] = record;
         }
         const templateContent = {
             ...content,
-            conditions: content.conditions.map(rid => recordsById[rid]),
-            evidence: content.evidence.map(rid => recordsById[rid]),
-            relevance: recordsById[content.relevance],
-            subject: recordsById[content.subject],
+            conditions: content.conditions.map(rid => recordsById[recId(rid)]),
+            evidence: content.evidence.map(rid => recordsById[recId(rid)]),
+            relevance: recordsById[recId(content.relevance)],
+            subject: recordsById[recId(content.subject)],
         };
-
         return chooseDefaultTemplate(templateContent);
     }
     return content.name;
