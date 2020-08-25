@@ -1,4 +1,4 @@
-const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema }, util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
 
 const {
     create,
@@ -464,6 +464,7 @@ describeWithAuth('CRUD operations', () => {
         let disease,
             publication,
             relevance,
+            trial,
             therapy,
             variant;
 
@@ -474,16 +475,21 @@ describeWithAuth('CRUD operations', () => {
             );
             // set up the dependent records
             let feature;
-            ([disease, publication, relevance, therapy, feature] = await Promise.all([
+            const parts = await Promise.all([
                 { content: { sourceId: 'disease:1234' }, model: schema.Disease },
                 { content: { sourceId: 'publication:1234' }, model: schema.Publication },
+                { content: { sourceId: 'trial:1234' }, model: schema.ClinicalTrial },
                 { content: { name: 'sensitivity', sourceId: 'sensitivity' }, model: schema.Vocabulary },
                 { content: { sourceId: 'therapy:1234' }, model: schema.Therapy },
                 { content: { biotype: 'gene', sourceId: 'feature:1234' }, model: schema.Feature },
             ].map(async opt => create(
                 session,
                 { ...opt, content: { ...opt.content, source }, user: db.admin },
-            ))));
+            )));
+            [disease, trial, publication, relevance, therapy, feature] = parts
+                .map(castToRID)
+                .map(x => x.toString());
+
             variant = await create(session, {
                 content: { reference1: feature, type: relevance },
                 model: schema.CategoryVariant,
@@ -545,6 +551,124 @@ describeWithAuth('CRUD operations', () => {
                 },
             );
             expect(result.displayNameTemplate).toEqual('{conditions:variant} is associated with {relevance} to {subject} in {conditions:disease} ({evidence})');
+        });
+
+        describe('UPDATE', () => {
+            let originalStatement,
+                query;
+
+            beforeEach(async () => {
+                originalStatement = await create(
+                    session,
+                    {
+                        content: {
+                            conditions: [disease, variant, therapy],
+                            evidence: [publication],
+                            relevance,
+                            subject: therapy,
+                        },
+                        model: schema.Statement,
+                        user: db.admin,
+                    },
+                );
+                query = parseRecord(
+                    schema.Statement,
+                    originalStatement,
+                    {
+                        history: true,
+                        neighbors: 3,
+                    },
+                );
+            });
+
+            test('updates the displayNameTemplate when excluded from changes', async () => {
+                const result = await update(
+                    session,
+                    {
+                        changes: {
+                            conditions: [variant, therapy],
+                        },
+                        model: schema.Statement,
+                        query,
+                        user: db.admin,
+                    },
+                );
+                expect(result.displayNameTemplate).toEqual('{conditions:variant} is associated with {relevance} to {subject} ({evidence})');
+            });
+
+            test('uses the displayNameTemplate when included in changes', async () => {
+                const result = await update(
+                    session,
+                    {
+                        changes: {
+                            conditions: [variant, therapy],
+                            displayNameTemplate: originalStatement.displayNameTemplate,
+                        },
+                        model: schema.Statement,
+                        query,
+                        user: db.admin,
+                    },
+                );
+                expect(result.displayNameTemplate).toEqual(originalStatement.displayNameTemplate);
+            });
+
+            test('adds the subject to conditions when updated and conditions not given', async () => {
+                const result = await update(
+                    session,
+                    {
+                        changes: {
+                            subject: trial,
+                        },
+                        model: schema.Statement,
+                        query,
+                        user: db.admin,
+                    },
+                );
+                expect(result).toHaveProperty('subject');
+                expect(result.subject.toString()).toEqual(trial);
+                expect(result).toHaveProperty('conditions');
+                expect(result.conditions.map(x => x.toString())).toContain(trial);
+            });
+
+            test('adds the subject to conditions when updated and conditions given without', async () => {
+                const result = await update(
+                    session,
+                    {
+                        changes: {
+                            conditions: [disease],
+                            subject: trial,
+                        },
+                        model: schema.Statement,
+                        query,
+                        user: db.admin,
+                    },
+                );
+                expect(result).toHaveProperty('subject');
+                expect(result.subject.toString()).toEqual(trial);
+                expect(result).toHaveProperty('conditions');
+                expect(result.conditions.map(x => x.toString())).toContain(trial);
+                expect(result.conditions.map(x => x.toString())).toContain(disease);
+            });
+
+            test('does not allow excluding the subject from conditions', async () => {
+                // create the statement
+                const result = await update(
+                    session,
+                    {
+                        changes: {
+                            conditions: [variant],
+                        },
+                        model: schema.Statement,
+                        query,
+                        user: db.admin,
+                    },
+                );
+                expect(result).toHaveProperty('subject');
+                expect(result.subject.toString()).toEqual(therapy);
+                expect(result).toHaveProperty('conditions');
+                expect(result.conditions.map(x => x.toString())).toContain(therapy);
+                expect(result.conditions.map(x => x.toString())).toContain(castToRID(variant).toString());
+            });
         });
     });
 });
