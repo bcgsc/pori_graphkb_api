@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc/knowledgebase-api",
   "main": "server.js",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "repository": {
     "type": "git",
     "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
@@ -41,7 +41,7 @@
     "@bcgsc/jsdocref": "^1.0.2",
     "chai": "^3.5.0",
     "chai-http": "^4.3.0",
-    "commitizen": "^4.0.4",
+    "commitizen": "^4.2.1",
     "cz-conventional-changelog": "^3.1.0",
     "docdash": "^1.0.0",
     "docsify": "^4.11.4",

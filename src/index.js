@@ -43,7 +43,7 @@ const BOOLEAN_FLAGS = [
 
 const createConfig = (overrides = {}) => {
     const ENV = {
-        GKB_HOST: process.env.HOSTNAME,
+        GKB_HOST: process.env.HOSTNAME || '0.0.0.0',
         ...config.common,
         ...config[process.env.NODE_ENV] || {},
     };

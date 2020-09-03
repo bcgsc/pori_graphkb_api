@@ -11,6 +11,7 @@ const {
     util: { castToRID, timeStampNow },
     error: { AttributeError },
     constants: { PERMISSIONS },
+    schema: schemaDefn,
 } = require('@bcgsc/knowledgebase-schema');
 
 const { logger } = require('./../logging');
@@ -37,8 +38,79 @@ const { checkUserAccessFor } = require('../../middleware/auth');
  * @param {Object} opt.original the original edge record to be updated
  * @param {Object} opt.user the user performing the record update
  */
+const updateStatementTx = async (db, opt) => {
+    const { original, changes } = opt;
+    const userRID = castToRID(opt.user);
+    const { Statement: model } = schemaDefn.schema;
+
+    const content = model.formatRecord(omitDBAttributes(original), {
+        addDefaults: false,
+        dropExtra: true,
+    });
+
+    if (changes.subject) {
+        if (changes.conditions) {
+            if (!changes.conditions.includes(changes.subject)) {
+                changes.conditions.push(castToRID(changes.subject));
+            }
+        } else {
+            changes.conditions = [...original.conditions, castToRID(changes.subject)];
+        }
+    } else if (changes.conditions) {
+        // conditions must contain the subject
+        if (!changes.conditions.includes(original.subject)) {
+            changes.conditions.push(castToRID(original.subject));
+        }
+    }
+
+    if (!changes.displayNameTemplate) {
+        const postUpdateRecord = { ...content, ...changes };
+        changes.displayNameTemplate = await fetchDisplayName(db, model, postUpdateRecord);
+    }
+
+    content.deletedAt = timeStampNow();
+    content.deletedBy = userRID;
+    changes.updatedBy = userRID;
+    changes.updatedAt = timeStampNow();
+    const formattedChanges = model.formatRecord(omitDBAttributes(changes), {
+        addDefaults: false,
+        dropExtra: true,
+        ignoreMissing: true,
+    });
+
+    const commit = db
+        .let('copy', tx => tx.create('VERTEX', 'Statement')
+            .set(content));
+
+    commit
+        .let('updated', tx => tx.update(original['@rid'])
+            .set(formattedChanges)
+            .set('history = $copy[0]')
+            .where({ createdAt: original.createdAt })
+            .return('AFTER @rid'))
+        .let('result', tx => tx.select()
+            .from(original['@class']).where({ '@rid': original['@rid'] }));
+
+    return commit.commit();
+};
+
+
+/**
+ * Create the transaction to copy the current node as history and then update the current node
+ * with the changes
+ *
+ * @param {orientjs.Db} db the database connection object
+ * @param {Object} opt options
+ * @param {Object} opt.changes the changes to the edge properties. Null for deletions
+ * @param {Object} opt.original the original edge record to be updated
+ * @param {Object} opt.user the user performing the record update
+ */
 const updateNodeTx = async (db, opt) => {
     const { original, changes, model } = opt;
+
+    if (model.name === 'Statement') {
+        return updateStatementTx(db, opt);
+    }
     const userRID = castToRID(opt.user);
 
     const content = model.formatRecord(omitDBAttributes(original), {
