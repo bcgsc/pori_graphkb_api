@@ -345,21 +345,15 @@ const deleteNodeTx = async (db, opt) => {
  */
 const modify = async (db, opt) => {
     const {
-        model, user, query,
+        model, user, query, paranoid = true,
     } = opt;
 
     if (!query || !model || !user) {
         throw new AttributeError('missing required argument');
     }
-    const changes = opt.changes === null
-        ? null
-        : Object.assign({}, model.formatRecord(opt.changes, {
-            addDefaults: false,
-            dropExtra: false,
-            ignoreExtra: false,
-            ignoreMissing: true,
-        }));
-    query.projection = nestedProjection(2);
+    if (paranoid) {
+        query.projection = nestedProjection(2);
+    }
     // select the original record and check permissions
     // select will also throw an error when the user attempts to modify a deleted record
 
@@ -370,31 +364,53 @@ const modify = async (db, opt) => {
     if (!hasRecordAccess(user, original)) {
         throw new PermissionError(`The user '${user.name}' does not have sufficient permissions to interact with record ${original['@rid']}`);
     }
-    let commit;
+    const changes = opt.changes === null
+        ? null
+        : Object.assign({}, model.formatRecord(opt.changes, {
+            addDefaults: false,
+            dropExtra: false,
+            ignoreExtra: false,
+            ignoreMissing: true,
+        }));
 
-    if (model.isEdge) {
-        commit = await modifyEdgeTx(db, { changes, original, user });
-    } else if (changes === null) {
-        // vertex deletion
-        commit = await deleteNodeTx(db, { original, user });
-    } else {
-        // vertex update
-        commit = await updateNodeTx(db, {
-            changes, model, original, user,
-        });
-    }
-    logger.log('debug', commit.buildStatement());
+    if (!paranoid) {
+        try {
+            const { count } = await db.update(castToRID(original)).set(changes).one();
 
-    try {
-        const result = await commit.return('$result').one();
-
-        if (!result) {
-            throw new Error('Failed to modify');
+            if (count !== 1) {
+                throw new Error('Failed to modify');
+            }
+            return count;
+        } catch (err) {
+            throw wrapIfTypeError(err);
         }
-        return result;
-    } catch (err) {
-        err.sql = commit.buildStatement();
-        throw wrapIfTypeError(err);
+    } else {
+        let commit;
+
+        if (model.isEdge) {
+            commit = await modifyEdgeTx(db, { changes, original, user });
+        } else if (changes === null) {
+        // vertex deletion
+            commit = await deleteNodeTx(db, { original, user });
+        } else {
+        // vertex update
+            commit = await updateNodeTx(db, {
+                changes, model, original, user,
+            });
+        }
+        logger.log('debug', commit.buildStatement());
+
+        try {
+            const result = await commit.return('$result').one();
+
+            if (!result) {
+                throw new Error('Failed to modify');
+            }
+            return result;
+        } catch (err) {
+            err.sql = commit.buildStatement();
+            throw wrapIfTypeError(err);
+        }
     }
 };
 
