@@ -5,6 +5,7 @@ const request = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
 
 const { getUserByName } = require('./../repo/commands');
+const { incrementUserVisit } = require('./../repo');
 const { logger } = require('./../repo/logging');
 const { AuthenticationError, PermissionError, NoRecordFoundError } = require('./../repo/error');
 
@@ -159,7 +160,14 @@ const addPostToken = (app) => {
 
         try {
             token = await generateToken(session, kcTokenContent.preferred_username, GKB_KEY, kcTokenContent.exp);
-            session.close();
+
+            // increment the login count for this user but do not wait for this to return the response
+            incrementUserVisit(session, kcTokenContent.preferred_username)
+                .then(() => { session.close(); })
+                .catch((err) => {
+                    session.close();
+                    logger.log('warn', err);
+                });
         } catch (err) {
             session.close();
             logger.log('debug', err);
