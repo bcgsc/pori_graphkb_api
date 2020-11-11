@@ -1,13 +1,12 @@
 const jwt = require('jsonwebtoken');
 const jc = require('json-cycle');
-const form = require('form-urlencoded').default;
-const request = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
 
 const { getUserByName } = require('./../repo/commands');
 const { incrementUserVisit } = require('./../repo');
 const { logger } = require('./../repo/logging');
 const { AuthenticationError, PermissionError, NoRecordFoundError } = require('./../repo/error');
+const { fetchToken: fetchKeyCloakToken } = require('./keycloak');
 
 const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
 
@@ -32,48 +31,6 @@ const generateToken = async (db, username, key, exp = null) => {
 
 
 /**
- * Given a username and password, authenticate against keycloak and return the token
- *
- * @param {string} username the user name
- * @param {string} password the password
- * @param {object} keycloakSettings
- * @param {string} keycloakSettings.clientID key cloak client id
- * @param {string} keycloakSettings.uri the url to post to, to retrieve the token
- *
- * @returns {string} the access token
- *
- * @example
- * // The response we expect from KeyCloak
- * {
- *      access_token: 'eyJhbGciOiJSUzI1NiIsInR5cCIgOi...',
- *      expires_in: 43200,
- *      refresh_expires_in: 43200,
- *      refresh_token: 'eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6IC...'
- *      token_type: 'bearer',
- *      'not-before-policy': 0,
- *      session_state: '1ecbceaf-bf4f-4fd8-96e7-...'
- * }
- */
-const fetchKeyCloakToken = async (username, password, {
-    GKB_KEYCLOAK_URI, GKB_KEYCLOAK_CLIENT_ID, GKB_KEYCLOAK_CLIENT_SECRET,
-}) => {
-    logger.log('debug', `[POST] ${GKB_KEYCLOAK_URI}`);
-    const resp = JSON.parse(await request({
-        body: form({
-            client_id: GKB_KEYCLOAK_CLIENT_ID,
-            client_secret: GKB_KEYCLOAK_CLIENT_SECRET,
-            grant_type: 'password',
-            password,
-            username,
-        }),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        method: 'POST',
-        uri: GKB_KEYCLOAK_URI,
-    }));
-    return resp.access_token;
-};
-
-/**
  * Verify the token and ensure the user has the appropriate role to access GraphKB
  *
  * @param {string} token the token to be parsed
@@ -92,7 +49,11 @@ const validateKeyCloakToken = (token, key, role) => {
         throw new AuthenticationError(err);
     }
 
-    if (parsed.realm_access.roles && parsed.realm_access.roles.includes(role)) {
+    if (
+        parsed.realm_access
+        && parsed.realm_access.roles
+        && parsed.realm_access.roles.includes(role)
+    ) {
         return parsed;
     }
     throw new PermissionError(`Insufficient permissions. User must have the role: ${role}`);
@@ -181,4 +142,4 @@ const addPostToken = (app) => {
     });
 };
 
-module.exports = { addPostToken, generateToken };
+module.exports = { addPostToken, generateToken, validateKeyCloakToken };
