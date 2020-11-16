@@ -29,6 +29,7 @@ const { GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS } = req
 const {
     ABOUT_FILE, QUERY_ABOUT,
 } = require('./constants');
+const { generatePropertiesMd } = require('./returnProperties');
 
 
 const SCHEMA_PREFIX = '#/components/schemas';
@@ -314,10 +315,11 @@ const generateSwaggerSpec = (schema, metadata) => {
     );
     // Add the MD about section
 
-    const about = Array.from(
-        [ABOUT_FILE, QUERY_ABOUT],
-        filename => fs.readFileSync(filename).toString(),
-    ).join('\n\n');
+    const about = Array.from([
+        fs.readFileSync(ABOUT_FILE).toString(),
+        fs.readFileSync(QUERY_ABOUT).toString()
+            .replace('MODEL_PROPERTY_LIST_INSERT', generatePropertiesMd()),
+    ]).join('\n\n');
     docs.info.description = about;
 
     // simple routes
