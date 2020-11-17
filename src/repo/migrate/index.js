@@ -523,6 +523,40 @@ const migrate3xFrom12xto13x = async (db) => {
 };
 
 
+const migrate3xFrom13xto14x = async (db) => {
+    const dbClass = await db.class.get('User');
+
+    for (const propertyName of ['firstLoginAt', 'lastLoginAt', 'loginCount']) {
+        logger.info(`adding the property User.${propertyName}`);
+        const prop = SCHEMA_DEFN.User.properties[propertyName];
+        await Property.create(prop, dbClass);
+    }
+
+    // set the default value for firstLoginAt to the first record the user created
+    logger.info('selecting user metrics');
+    const userInitialLogins = await db.query(`
+        SELECT updatedBy AS user, updatedBy.name as name, min(updatedAt) AS first, max(updatedAt) as last
+        FROM V
+        GROUP BY updatedBy`).all();
+
+    for (const user of userInitialLogins) {
+        logger.info(`updating login times for user (${user.name})`);
+        await db.command(`
+            UPDATE ${user.user} SET lastLoginAt = :lastLoginAt,
+                firstLoginAt = :firstLoginAt,
+                loginCount = :loginCount`, {
+            params: {
+                firstLoginAt: user.first || null,
+                lastLoginAt: user.last || null,
+                loginCount: user.first === user.last
+                    ? 1
+                    : 2,
+            },
+        }).all();
+    }
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -579,6 +613,7 @@ const migrate = async (db, opt = {}) => {
         ['3.10.0', '3.11.0', migrate3xFrom10xto11x],
         ['3.11.0', '3.12.0', migrate3xFrom11xto12x],
         ['3.12.0', '3.13.0', migrate3xFrom12xto13x],
+        ['3.13.0', '3.14.0', migrate3xFrom13xto14x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {

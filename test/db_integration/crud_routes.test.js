@@ -8,7 +8,6 @@ const { util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
 const { AppServer } = require('../../src');
 const { createUser } = require('../../src/repo/commands/create');
 const { generateToken } = require('../../src/routes/auth');
-
 const { createEmptyDb, tearDownDb, clearDB } = require('./util');
 
 const request = async opt => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
@@ -16,6 +15,31 @@ const request = async opt => requestPromise({ json: true, resolveWithFullRespons
 const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
 jest.setTimeout(TEST_TIMEOUT_MS);
+const PUBLIC_KEY = 'test/data/test_key.pem';
+const GKB_KEYCLOAK_ROLE = 'monkeys';
+
+// fake the KC token
+jest.mock('../../src/routes/keycloak', () => {
+    const fs = require('fs'); // eslint-disable-line
+    const jwt = require('jsonwebtoken');  // eslint-disable-line
+    const PRIVATE_KEY = fs.readFileSync('test/data/test_key');
+
+    return {
+        fetchToken: async (username) => {
+            const token = jwt.sign(
+                {
+                    preferred_username: username,
+                    realm_access: {
+                        roles: ['monkeys'],
+                    },
+                },
+                PRIVATE_KEY,
+                { algorithm: 'RS256', expiresIn: 10000000000 },
+            );
+            return token;
+        },
+    };
+});
 
 const describeWithAuth = process.env.GKB_DBS_PASS
     ? describe
@@ -69,7 +93,13 @@ describeWithAuth('api crud routes', () => {
 
     beforeAll(async () => {
         db = await createEmptyDb();
-        app = new AppServer({ ...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true });
+        app = new AppServer({
+            ...db.conf,
+            GKB_DB_CREATE: false,
+            GKB_DISABLE_AUTH: false,
+            GKB_KEYCLOAK_KEY_FILE: PUBLIC_KEY,
+            GKB_KEYCLOAK_ROLE,
+        });
         await app.listen();
         session = await app.pool.acquire();
         adminUserToken = await generateToken(
@@ -94,6 +124,56 @@ describeWithAuth('api crud routes', () => {
 
     afterEach(async () => {
         await clearDB({ admin: db.admin, session });
+    });
+
+    describe('/token', () => {
+        test('login with username/password', async () => {
+            const res = await request({
+                body: {
+                    password: 'anything',
+                    username: db.admin.name,
+                },
+                method: 'POST',
+                uri: `${app.url}/token`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body).toHaveProperty('kbToken');
+            expect(res.body).toHaveProperty('keyCloakToken');
+        });
+
+        test('error on missing username', async () => {
+            try {
+                await request({
+                    body: {
+                        password: 'anything',
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/token`,
+                });
+            } catch (err) {
+                const res = err.response;
+                expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
+
+        test('error on missing password', async () => {
+            try {
+                await request({
+                    body: {
+                        username: db.admin.name,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/token`,
+                });
+            } catch (err) {
+                const res = err.response;
+                expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
     });
 
     describe('/:model create new record', () => {

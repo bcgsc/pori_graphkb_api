@@ -1,12 +1,13 @@
 const { OrientDBClient } = require('orientjs');
 
-const { util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
+const { util: { timeStampNow }, schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
 
 const { logger } = require('./logging');
 const { loadSchema, createSchema } = require('./schema');
 const { migrate } = require('./migrate');
-const { createUser } = require('./commands');
+const { createUser, update, getUserByName } = require('./commands');
 const { RecordExistsError } = require('./error');
+const { parseRecord } = require('./query_builder');
 
 
 /**
@@ -169,4 +170,27 @@ const connectDB = async ({
 };
 
 
-module.exports = { connectDB };
+/**
+ * Add a login to the users record
+ */
+const incrementUserVisit = async (db, username) => {
+    const userRecord = await getUserByName(db, username);
+    const changes = { firstLoginAt: timeStampNow(), lastLoginAt: timeStampNow(), loginCount: 1 };
+
+    if (userRecord.loginCount) {
+        changes.loginCount = userRecord.loginCount + 1;
+    }
+    if (userRecord.firstLoginAt) {
+        changes.firstLoginAt = userRecord.firstLoginAt;
+    }
+    await update(db, {
+        changes,
+        model: SCHEMA_DEFN.User,
+        paranoid: false,
+        query: parseRecord(SCHEMA_DEFN.User, { '@rid': userRecord['@rid'] }),
+        user: userRecord,
+    });
+};
+
+
+module.exports = { connectDB, incrementUserVisit };
