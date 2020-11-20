@@ -11,6 +11,7 @@ const cors = require('cors');
 const HTTP_STATUS = require('http-status-codes');
 const { getPortPromise } = require('portfinder');
 const morgan = require('morgan');
+const path = require('path');
 
 const { logger, morganFormatter } = require('./repo/logging');
 const {
@@ -88,6 +89,8 @@ class AppServer {
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(bodyParser.json());
         this.app.use(compression());
+        this.app.use('/public', express.static(path.join(__dirname, 'static')));
+
         // add some basic logging
         const originWhiteList = (conf.GKB_CORS_ORIGIN || '.*').split(/[\s,]+/g).map((patt) => {
             if (patt.startsWith('^') && patt.endsWith('$')) {

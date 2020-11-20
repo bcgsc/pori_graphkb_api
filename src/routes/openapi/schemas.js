@@ -21,6 +21,7 @@ const PREFIX = '#/components/schemas';
 const NODE_MODEL_NAMES = schema.getModels().filter(m => !m.isEdge).map(m => m.name);
 const EDGE_MODEL_NAMES = schema.getModels().filter(m => m.isEdge && !m.isAbstract).map(m => m.name);
 
+
 const dependency = {
     $ref: `${PREFIX}/RecordLink`,
     description: 'For an ontology term, a dependency is defined if the information defining the term was collected as a side-effect of creating another term.',
@@ -399,7 +400,13 @@ module.exports = {
     },
     orderBy: { description: 'CSV delimited list of property names (traversals) to sort the results by', type: 'string' },
     orderByDirection: { description: 'When orderBy is given, this is used to determine the ordering direction', enum: ['ASC', 'DESC'], type: 'string' },
-    returnProperties: { description: 'array of property names to return (defaults to all)', items: { type: 'string' }, type: 'array' },
+    returnProperties: {
+        description: 'array of property names to return (defaults to all). Note that the properties which can be returned must match the target model being returned',
+        items: { type: 'string' },
+        type: 'array',
+
+    },
+
     skip: {
         description: 'The number of records to skip. Used in combination with limit for paginating queries.', min: 0, nullable: true, type: 'integer',
     },
