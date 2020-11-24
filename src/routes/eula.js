@@ -113,7 +113,7 @@ const addEulaRoutes = (app) => {
             const license = await getCurrentLicense(session);
 
             if (!user.signedLicenseAt || license.enactedAt > user.signedLicenseAt) {
-                throw new PermissionError('User must sign the license agreement before they can access data. See https://graphkb.bcgsc.ca/about/terms');
+                throw new PermissionError('User must sign the license agreement before they can access data. See https://graphkb.bcgsc.ca/about/terms. After you have signed you\'ll need to retrieve a new token');
             }
             session.close();
             return next();

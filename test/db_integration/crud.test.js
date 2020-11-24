@@ -125,7 +125,26 @@ describeWithAuth('CRUD operations', () => {
                 });
                 expect(updated).toHaveProperty('name', 'bob');
                 expect(updated).toHaveProperty('history');
-                expect(update.history).not.toBeNull();
+                expect(updated.history).not.toBeNull();
+            });
+
+            test('non-paranoid update does not duplicate record', async () => {
+                const query = parseRecord(
+                    schema.User,
+                    original,
+                    {
+                        history: true,
+                        neighbors: 3,
+                    },
+                );
+                const updated = await update(session, {
+                    changes: { name: 'bob2' },
+                    model: schema.User,
+                    paranoid: false,
+                    query,
+                    user: db.admin,
+                });
+                expect(updated).toEqual(1);
             });
 
             test('delete', async () => {
