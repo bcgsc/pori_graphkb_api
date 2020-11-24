@@ -46,4 +46,4 @@ const fetchKeyCloakToken = async (username, password, {
 };
 
 
-module.exports = { fetchKeyCloakToken };
+module.exports = { fetchToken: fetchKeyCloakToken };
