@@ -33,7 +33,7 @@ module.exports = {
         GKB_DB_CREATE: false,
         GKB_DB_HOST: 'orientdb.bcgsc.ca',
         GKB_DB_NAME: 'production',
-        GKB_KEYCLOAK_KEY_FILE: 'config/keys/keycloak.sso.key',
+        GKB_KEYCLOAK_KEY_FILE: 'config/keys/keycloak.key',
         GKB_KEYCLOAK_URI: 'https://sso.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
         GKB_LOG_LEVEL: 'info',
         GKB_LOG_MAX_FILES: 28,
