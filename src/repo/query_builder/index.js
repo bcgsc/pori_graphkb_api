@@ -1,6 +1,6 @@
 
 
-const { schema: schemaDefn } = require('@bcgsc/knowledgebase-schema');
+const { schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     checkStandardOptions, displayQuery, getQueryableProps,

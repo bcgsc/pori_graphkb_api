@@ -12,7 +12,7 @@ const {
     error: { AttributeError },
     constants: { PERMISSIONS },
     schema: schemaDefn,
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('./../logging');
 

@@ -2,7 +2,7 @@ const { RecordID: RID } = require('orientjs');
 const {
     error: { AttributeError },
     util: { castInteger },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 const { MAX_LIMIT, MAX_NEIGHBORS } = require('./constants');
 
 /**

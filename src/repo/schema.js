@@ -7,7 +7,7 @@
 const _ = require('lodash');
 
 const { RID } = require('orientjs');
-const { constants, schema: { schema: SCHEMA_DEFN }, util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
+const { constants, schema: { schema: SCHEMA_DEFN }, util: { timeStampNow } } = require('@bcgsc-pori/graphkb-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 

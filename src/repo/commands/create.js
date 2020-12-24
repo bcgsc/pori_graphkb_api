@@ -2,7 +2,7 @@ const {
     error: { AttributeError },
     schema: { schema: SCHEMA_DEFN },
     constants: { PERMISSIONS },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 const { logger } = require('../logging');
 const { parseRecord } = require('../query_builder');
 const {

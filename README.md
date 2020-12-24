@@ -5,24 +5,11 @@
 The KB is implemented using [orientDB](https://github.com/orientechnologies/orientdb) and [orientjs](https://github.com/orientechnologies/orientjs).
 It is a graph database which is used to store variants, ontologies, and the relevance of this terms and variants. The KB uses strict controlled vocabulary to provide a parseable and machine-readable interface for other applications to build on. The API is a REST API built on node/express.
 
-### Table Of Contents
-
-- [About](#about)
-  - [Database Schema](#database-schema)
-  - [OpenAPI Specification](#openapi-specification)
-  - [Authentication](#authentication)
-- [Guidelines for Developers](#guidelines-for-developers)
-  - [Style](#style)
-  - [Getting Started](#getting-started)
-  - [Test Envinronments](#test-envinronments)
-  - [Generate the User Manual](#generate-the-user-manual)
-- [Deploy with PM2](#deploy-with-pm2)
-
 ## About
 
 ### Database Schema
 
-The [schema](http://npm.bcgsc.ca:8080/#/detail/@bcgsc/knowledgebase-schema) is defined in a separate NPM package.
+The [schema](http://npm.bcgsc.ca:8080/#/detail/@bcgsc-pori/graphkb-schema) is defined in a separate NPM package.
 In general it consists of four major types of data: ontology terms, variants, evidence, and statements.
 
 ### OpenAPI Specification
@@ -46,8 +33,7 @@ In summary, KB Client will send user credentials and recieve a token which will 
 ### Style
 
 1. In-code documentation should follow [JSDocs](http://usejsdoc.org) format
-2. TDD. New tests should be added for any new functionality. Using mocha (https://mochajs.org/) for testing. As mocha has several
-   test styles, please match the existing style in the current tests.
+2. TDD. New tests should be added for any new functionality. Using Jest
 3. API must follow REST guidelines (for example see https://github.com/Microsoft/api-guidelines/blob/vNext/Guidelines.md)
 4. JS code should be written with ES6 syntax (where possible) see https://github.com/lukehoban/es6features
 

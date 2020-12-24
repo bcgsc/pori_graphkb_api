@@ -1,19 +1,19 @@
 {
-  "name": "@bcgsc/knowledgebase-api",
+  "name": "@bcgsc/graphkb-api",
   "main": "server.js",
-  "version": "3.11.1",
+  "version": "3.11.2",
   "repository": {
     "type": "git",
-    "url": "https://svn.bcgsc.ca/bitbucket/projects/dat/repos/knowledgebase_api/browse"
+    "url": "https://github.com/bcgsc/pori_graphkb_api.git"
   },
   "bugs": {
     "email": "graphkb@bcgsc.ca"
   },
-  "license": "ISC",
+  "license": "GPL-3.0",
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
-    "@bcgsc/knowledgebase-parser": "^0.9.0",
-    "@bcgsc/knowledgebase-schema": "^3.14.1",
+    "@bcgsc-pori/graphkb-parser": "^1.0.0",
+    "@bcgsc-pori/graphkb-schema": "^3.14.2",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
@@ -38,12 +38,10 @@
     "xml2js": "^0.4.19"
   },
   "devDependencies": {
-    "@bcgsc/jsdocref": "^1.0.2",
     "chai": "^3.5.0",
     "chai-http": "^4.3.0",
     "commitizen": "^4.2.2",
     "cz-conventional-changelog": "^3.1.0",
-    "docdash": "^1.0.0",
     "docsify": "^4.11.4",
     "docsify-cli": "^4.4.1",
     "eslint": "^5.16.0",

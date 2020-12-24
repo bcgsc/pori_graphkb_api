@@ -6,7 +6,7 @@
  * @constant
  * @ignore
  */
-const { schema } = require('@bcgsc/knowledgebase-schema');
+const { schema } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     constants: {

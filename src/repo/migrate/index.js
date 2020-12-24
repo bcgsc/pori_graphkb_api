@@ -10,7 +10,7 @@ const {
     schema: { schema: SCHEMA_DEFN },
     util: { timeStampNow },
     sentenceTemplates: { chooseDefaultTemplate },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 const { PERMISSIONS } = constants;

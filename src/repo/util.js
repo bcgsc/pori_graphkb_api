@@ -3,7 +3,7 @@ const {
     constants: { PERMISSIONS },
     util: { castToRID },
     schema,
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 const { RecordID: RID } = require('orientjs');
 
 

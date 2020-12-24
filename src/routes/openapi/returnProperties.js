@@ -1,4 +1,4 @@
-const { schema } = require('@bcgsc/knowledgebase-schema');
+const { schema } = require('@bcgsc-pori/graphkb-schema');
 
 
 const NODE_MODEL_NAMES = schema.getModels().filter(m => !m.isEdge).map(m => m.name);

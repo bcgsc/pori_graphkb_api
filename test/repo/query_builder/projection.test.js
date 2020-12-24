@@ -1,6 +1,6 @@
 const {
     schema: schemaDefn,
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { stripSQL } = require('./util');
 const { nonSpecificProjection, propsToProjection, parsePropertyList } = require('./../../../src/repo/query_builder/projection');
