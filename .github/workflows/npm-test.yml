@@ -17,4 +17,4 @@ jobs:
         if: always()
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: coverage/junit.xml/junit.xml
+          files: coverage/junit.xml
