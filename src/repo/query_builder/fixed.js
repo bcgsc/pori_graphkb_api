@@ -9,11 +9,11 @@
 const {
     util: { castToRID, looksLikeRID },
     error: { AttributeError }, schema: { schema },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 const {
     variant: { parse: parseVariant },
     error: { ParsingError },
-} = require('@bcgsc/knowledgebase-parser');
+} = require('@bcgsc-pori/graphkb-parser');
 const { quoteWrap } = require('./../util');
 
 const {

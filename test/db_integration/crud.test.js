@@ -1,4 +1,4 @@
-const { schema: { schema }, util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema }, util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     create,

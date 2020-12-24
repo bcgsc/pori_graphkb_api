@@ -1,7 +1,7 @@
 
 const jc = require('json-cycle');
 
-const { error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
 const { logger } = require('./../repo/logging');
 const { parse } = require('../repo/query_builder');
 const { select } = require('../repo/commands');

@@ -17,7 +17,7 @@ const getCurrentVersion = async (db) => {
  */
 const getLoadVersion = () => {
     const pathToVersionInfo = path.join(
-        path.dirname(require.resolve('@bcgsc/knowledgebase-schema')),
+        path.dirname(require.resolve('@bcgsc-pori/graphkb-schema')),
         '../package.json',
     );
     // must be a global require, currently no other way to obtain dependency package version info of the actual install

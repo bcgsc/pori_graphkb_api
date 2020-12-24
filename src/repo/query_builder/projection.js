@@ -2,7 +2,7 @@ const { merge } = require('lodash');
 const {
     error: { AttributeError },
     schema: schemaDefn,
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { getQueryableProps } = require('./util');
 

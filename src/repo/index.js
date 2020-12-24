@@ -1,6 +1,6 @@
 const { OrientDBClient } = require('orientjs');
 
-const { util: { timeStampNow }, schema: { schema: SCHEMA_DEFN } } = require('@bcgsc/knowledgebase-schema');
+const { util: { timeStampNow }, schema: { schema: SCHEMA_DEFN } } = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('./logging');
 const { loadSchema, createSchema } = require('./schema');

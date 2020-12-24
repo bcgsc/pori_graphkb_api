@@ -11,8 +11,8 @@ const {
     error: { AttributeError },
     sentenceTemplates: { chooseDefaultTemplate },
     util: { castToRID },
-} = require('@bcgsc/knowledgebase-schema');
-const { variant: { VariantNotation } } = require('@bcgsc/knowledgebase-parser');
+} = require('@bcgsc-pori/graphkb-schema');
+const { variant: { VariantNotation } } = require('@bcgsc-pori/graphkb-parser');
 
 const { logger } = require('../logging');
 const { parse } = require('../query_builder');

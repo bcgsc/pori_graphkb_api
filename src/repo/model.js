@@ -5,7 +5,7 @@
  * @ignore
  */
 const orientjs = require('orientjs');
-const kbSchema = require('@bcgsc/knowledgebase-schema');
+const kbSchema = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('./logging');
 

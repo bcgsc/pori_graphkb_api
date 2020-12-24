@@ -3,7 +3,7 @@ const {
     schema: {
         schema,
     },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { fetchDisplayName } = require('../../../src/repo/commands/select');
 

@@ -7,7 +7,7 @@
 const HTTP_STATUS = require('http-status-codes');
 const jwt = require('jsonwebtoken');
 
-const { constants: { PERMISSIONS } } = require('@bcgsc/knowledgebase-schema');
+const { constants: { PERMISSIONS } } = require('@bcgsc-pori/graphkb-schema');
 
 const { PermissionError } = require('./../repo/error');
 const { logger } = require('./../repo/logging');
