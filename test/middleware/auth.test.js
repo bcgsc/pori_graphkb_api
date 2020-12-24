@@ -6,7 +6,7 @@ const {
             Vocabulary, User, UserGroup, Source,
         },
     },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { checkClassPermissions } = require('../../src/middleware/auth');
 const { generateDefaultGroups } = require('../../src/repo/schema');

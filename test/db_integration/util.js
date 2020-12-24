@@ -1,6 +1,6 @@
 const uuidV4 = require('uuid/v4');
 
-const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
 
 
 const { getUserByName, create, update } = require('../../src/repo/commands');

@@ -2,7 +2,7 @@ const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 const _ = require('lodash');
 
-const { util: { looksLikeRID }, error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
+const { util: { looksLikeRID }, error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     NoRecordFoundError,

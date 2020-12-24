@@ -2,8 +2,8 @@
 const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 
-const { error: { AttributeError }, schema: { schema }, schema: schemaDefn } = require('@bcgsc/knowledgebase-schema');
-const { variant: { parse: variantParser }, error: { ParsingError } } = require('@bcgsc/knowledgebase-parser');
+const { error: { AttributeError }, schema: { schema }, schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
+const { variant: { parse: variantParser }, error: { ParsingError } } = require('@bcgsc-pori/graphkb-parser');
 
 const openapi = require('./openapi');
 const resource = require('./resource');

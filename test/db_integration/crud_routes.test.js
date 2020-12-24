@@ -3,7 +3,7 @@
  */
 const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
-const { util: { timeStampNow } } = require('@bcgsc/knowledgebase-schema');
+const { util: { timeStampNow } } = require('@bcgsc-pori/graphkb-schema');
 
 const { AppServer } = require('../../src');
 const { createUser } = require('../../src/repo/commands/create');

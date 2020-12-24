@@ -3,7 +3,7 @@ const {
     util: { timeStampNow },
     schema: { schema: SCHEMA_DEFN },
     constants: { PERMISSIONS },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('./../repo/logging');
 const { RecordNotFoundError, PermissionError } = require('./../repo/error');

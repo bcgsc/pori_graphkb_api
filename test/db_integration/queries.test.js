@@ -1,7 +1,7 @@
 /**
  * Tests for building read only queries at the db level
  */
-const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     select,

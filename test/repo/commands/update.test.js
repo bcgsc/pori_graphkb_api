@@ -5,7 +5,7 @@ const {
             SubClassOf,
         },
     },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { modifyEdgeTx } = require('../../../src/repo/commands/update');
 const {

@@ -2,7 +2,7 @@
 
 const { RecordID: RID } = require('orientjs');
 
-const { error: { AttributeError }, schema: { schema }, util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError }, schema: { schema }, util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
 
 
 const { OPERATORS, PARAM_PREFIX } = require('./constants');

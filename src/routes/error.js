@@ -1,6 +1,6 @@
 const HTTP_STATUS = require('http-status-codes');
 
-const { error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     DatabaseConnectionError,

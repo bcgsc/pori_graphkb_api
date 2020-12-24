@@ -2,7 +2,7 @@
 
 const _ = require('lodash');
 
-const { util: { castToRID } } = require('@bcgsc/knowledgebase-schema');
+const { util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     NoRecordFoundError,

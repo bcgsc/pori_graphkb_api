@@ -2,7 +2,7 @@
  * Route definition components (components/routes) that cannot be auto generated only from the schema
  * @module app/routes/openapi/routes
  */
-const { schema: { schema } } = require('@bcgsc/knowledgebase-schema');
+const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
 const { groupableParams } = require('../../repo/commands/select');
 
 

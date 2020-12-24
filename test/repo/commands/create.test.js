@@ -5,7 +5,7 @@ const {
             SubClassOf,
         },
     },
-} = require('@bcgsc/knowledgebase-schema');
+} = require('@bcgsc-pori/graphkb-schema');
 
 const { create } = require('../../../src/repo/commands/create');
 const {

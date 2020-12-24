@@ -3,7 +3,7 @@
  */
 const Ajv = require('ajv');
 
-const { error: { AttributeError: ValidationError } } = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError: ValidationError } } = require('@bcgsc-pori/graphkb-schema');
 
 const { requestWithRetry } = require('./util');
 

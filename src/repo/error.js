@@ -1,7 +1,7 @@
 
 
-const { error: { ErrorMixin } } = require('@bcgsc/knowledgebase-parser');
-const { error: { AttributeError } } = require('@bcgsc/knowledgebase-schema');
+const { error: { ErrorMixin } } = require('@bcgsc-pori/graphkb-parser');
+const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
 
 
 class ParsingError extends ErrorMixin {}

@@ -3,7 +3,7 @@
  */
 const HTTP_STATUS_CODES = require('http-status-codes');
 
-const { error: { AttributeError: ValidationError } } = require('@bcgsc/knowledgebase-schema');
+const { error: { AttributeError: ValidationError } } = require('@bcgsc-pori/graphkb-schema');
 
 const { fetchRecord } = require('./entrez');
 const { fetchRecord: fetchClinicalTrial } = require('./clinicaltrialsgov');
