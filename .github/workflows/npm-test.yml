@@ -1,0 +1,43 @@
+name: build
+
+on:
+  push:
+    paths-ignore:
+     - README.md
+     - 'docs/**'
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      orientdb:
+        image: orientdb:3.0
+        ports:
+          - 2424:2424
+          - 2480:2480
+        env:
+          ORIENTDB_ROOT_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - run: yes | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
+      - run: npm ci
+      - run: npm run test
+        env:
+          GKB_DB_HOST: localhost
+          GKB_DBS_PASS: root # default password for new db
+          GKB_LOG_LEVEL: ERROR
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1.6
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: coverage/junit.xml
+      - uses: codecov/codecov-action@v1
+        with:
+          yml: codecov.yml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_if_ci_error: true

@@ -1,15 +1,15 @@
-# Knowledgebase Database and API
+# GraphKB API
 
-![Build Status](https://www.bcgsc.ca/bamboo/plugins/servlet/wittified/build-status/KNOW-KNOW)
+![centos build](https://www.bcgsc.ca/bamboo/plugins/servlet/wittified/build-status/KNOW-KNOW) ![build](https://github.com/bcgsc/pori_graphkb_api/workflows/build/badge.svg?branch=master) [![codecov](https://codecov.io/gh/bcgsc/pori_graphkb_api/branch/master/graph/badge.svg?token=XDTDIQ5793)](https://codecov.io/gh/bcgsc/pori_graphkb_api)
 
-The KB is implemented using [orientDB](https://github.com/orientechnologies/orientdb) and [orientjs](https://github.com/orientechnologies/orientjs).
+The GraphKB database is implemented using [orientDB](https://github.com/orientechnologies/orientdb) and [orientjs](https://github.com/orientechnologies/orientjs).
 It is a graph database which is used to store variants, ontologies, and the relevance of this terms and variants. The KB uses strict controlled vocabulary to provide a parseable and machine-readable interface for other applications to build on. The API is a REST API built on node/express.
 
 ## About
 
 ### Database Schema
 
-The [schema](http://npm.bcgsc.ca:8080/#/detail/@bcgsc-pori/graphkb-schema) is defined in a separate NPM package.
+The [schema](https://github.com/bcgsc/pori_graphkb_schema) is defined in a separate NPM package.
 In general it consists of four major types of data: ontology terms, variants, evidence, and statements.
 
 ### OpenAPI Specification
@@ -24,26 +24,20 @@ to keycloak with the users credentials and a token is returned if the user exist
 
 The next step happens when KB looks up the username in the KB database. Each user in KB belongs to one or more UserGroups. Each of these UserGroups contains table-level permission schemas.
 
-![KB Authentication Process](authentication.svg)
+![KB Authentication Process](docs/authentication.svg)
 
 In summary, KB Client will send user credentials and recieve a token which will be used in the header of all subsequent requests.
 
-## Guidelines for Developers
+## Quick Start
 
-### Style
-
-1. In-code documentation should follow [JSDocs](http://usejsdoc.org) format
-2. TDD. New tests should be added for any new functionality. Using Jest
-3. API must follow REST guidelines (for example see https://github.com/Microsoft/api-guidelines/blob/vNext/Guidelines.md)
-4. JS code should be written with ES6 syntax (where possible) see https://github.com/lukehoban/es6features
-
-### Getting Started
+Most of the time you will want the deployment instructions rather than the ones below. For
+these please see the [contributing guide](./docs/CONTRIBUTING.md).
 
 Clone the repository
 
 ```bash
-git clone https://svn.bcgsc.ca/bitbucket/scm/vdb/knowledgebase_api.git
-cd knowledgebase_api
+git clone https://github.com/bcgsc/pori_graphkb_api.git
+cd pori_graphkb_api
 git checkout develop
 ```
 
@@ -58,105 +52,19 @@ To actually use the API, the orientDB instance must already be running. To confi
 ```bash
 GKB_DBS_PASS=root
 GKB_DBS_USER=root
-GKB_DB_HOST='orientdb02.bcgsc.ca'
+GKB_DB_HOST='HOST NAME'
 GKB_DB_PORT=2480
 GKB_KEY_FILE='id_rsa'  # used in generating the tokens
 ```
 
-After these options are configured, the full set of tests can be run
-
-```bash
-npm run test
-```
-
-The non-database tests can be run without the above configuration
-
-```bash
-npm run test:unit
-```
-
-Import/Migration tests can be run with
-
-```bash
-npm run test:import
-```
-
-### Test Envinronments
-
-Default configurations for all non-sensitive content can be set using the various start commands
-
-The local test envinronment should be used for testing without authentication
-
-```bash
-npm run start:local
-```
-
-The dev test environment should be used for developing against the test keycloak server (can only be used within the GSC network).
-This defaults connecting to the development database (backup of production)
-
-```bash
-npm run start:dev
-```
-
-### Generate the User Manual
-
-```bash
-npm run build:docs
-npm run start:docs
-```
-
-## Deploy with PM2
-
-This example deploys a tag named v1.1.0
-
-Ssh to the host server and clone the repository
-
-```bash
-ssh kbapi01
-cd /var/www/kb/knowledgebase-api
-git clone https://svn.bcgsc.ca/bitbucket/scm/vdb/knowledgebase_api.git v1.1.0
-cd v1.1.0
-git checkout v1.1.0
-```
-
-Install the dependencies
-
-```bash
-npm install
-```
-
-Create the keyfile
+Create the keyfile (pick the current directory)
 
 ```bash
 yes | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
 ```
 
-Create the logging directories
+After these options are configured, the server can be started
 
 ```bash
-mkdir logs
-```
-
-Create an env.sh file to hold the [configurable environment variables](doc/env.md) as well as the PM2 ones
-
-```bash
-export PM2_HOME=/var/www/kb/knowledgebase-api/pm2_logs
-```
-
-Set the Database password (It is better not to store this)
-
-```bash
-export GKB_DBS_PASS=<some password>
-```
-
-Now source the file and start your pm2 process
-
-```bash
-pm2 start config/pm2.config.js --env development
-```
-
-You should now be able to view the running process with
-
-```bash
-pm2 ls
+npm start
 ```
