@@ -14,6 +14,7 @@ constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert
 const { logger } = require('./logging');
 const { ClassModel, Property } = require('./model');
 const { getLoadVersion } = require('./migrate/version');
+const { createUser } = require('./commands');
 
 const DEFAULT_LICENSE_CONTENT = [
     { content: 'Canada\'s Michael Smith Genome Sciences Centre retains ownership of all intellectual property rights of any kind related to the Platform and Service, including applicable copyrights, patents, trademarks, and other proprietary rights. Other trademarks, service marks, graphics and logos used in connection with the GraphKB platform and its services may be the trademarks of users and third parties. Canada\'s Michael Smith Genome Sciences Centre does not transfer to users any intellectual property. All rights, titles and interests in and to such property will remain solely with the original owner. Canada\'s Michael Smith Genome Sciences Centre reserve all rights that are not expressly granted under this Term of Use.', id: 'copyright', label: 'Copyright' },
@@ -199,6 +200,9 @@ const createSchema = async (db) => {
         content: DEFAULT_LICENSE_CONTENT,
         enactedAt: timeStampNow(),
     }).one();
+
+    logger.info('create default import user (graphkb_importer)');
+    await createUser(db, { groupNames: ['manager', 'regular'], signedLicenseAt: timeStampNow(), userName: 'graphkb_importer' });
 
     logger.log('info', 'Schema is Complete');
 };
