@@ -33,6 +33,11 @@ In summary, KB Client will send user credentials and recieve a token which will 
 Most of the time you will want the deployment instructions rather than the ones below. For
 these please see the [contributing guide](./docs/CONTRIBUTING.md).
 
+Requirements
+
+- orientdb 3.0 or 3.1
+- node v10 or v12
+
 Clone the repository
 
 ```bash
