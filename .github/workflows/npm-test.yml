@@ -8,7 +8,7 @@ on:
 
 
 jobs:
-  orient3-0:
+  orientdb3-0:
     runs-on: ubuntu-latest
     services:
       orientdb:
@@ -41,7 +41,7 @@ jobs:
           yml: codecov.yml
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_if_ci_error: true
-  orient3-1:
+  orientdb3-1:
     runs-on: ubuntu-latest
     services:
       orientdb:
