@@ -10,6 +10,10 @@ on:
 jobs:
   orientdb3-0:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [ '10', '12' ]
+    name: Node v${{ matrix.node }}
     services:
       orientdb:
         image: orientdb:3.0
@@ -20,9 +24,9 @@ jobs:
           ORIENTDB_ROOT_PASSWORD: root
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: ${{ matrix.node }}
       - run: yes | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
       - run: npm ci
       - run: npm run test
