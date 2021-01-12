@@ -1,13 +1,19 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+    image: node:12
     ports:
       - 8080:8080
     volumes:
       - .:/code
-    links:
-      - orientdb
-  orientdb:
+    environment:
+      GKB_DB_HOST: db
+    depends_on:
+      - db
+  db:
     image: orientdb:3.0
     ports:
       - 2424:2424
+    environment:
+      ORIENTDB_ROOT_PASSWORD: root
