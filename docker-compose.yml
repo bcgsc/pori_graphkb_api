@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    ports:
+      - 8080:8080
+    volumes:
+      - .:/code
+    links:
+      - orientdb
+  orientdb:
+    image: orientdb:3.0
+    ports:
+      - 2424:2424
