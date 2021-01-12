@@ -14,7 +14,7 @@ jobs:
       matrix:
         node: [10, 12]
         orientdb: ['3.0', '3.1']
-    name: orientdb v${{ matrix.orientdb }} node v${{ matrix.node }}
+    name: orientdb-${{ matrix.orientdb }} node-${{ matrix.node }}
     services:
       orientdb:
         image: orientdb:${{ matrix.orientdb }}
