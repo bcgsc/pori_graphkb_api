@@ -8,16 +8,25 @@ services:
       - 8080:8080
     environment:
       GKB_DB_HOST: db
+      GKB_DBS_PASS: root
+      GKB_DB_NAME: graphkb
+      GKB_DB_CREATE: 0
+      KEY_PASSPHRASE: ''
     depends_on:
       - db
     networks:
       - app-network
+    restart: always
   db:
     image: orientdb:3.0
     environment:
       ORIENTDB_ROOT_PASSWORD: root
+    ports:
+      - 2424:2424
+      - 2480:2480
     networks:
       - app-network
 networks:
   app-network:
     driver: bridge
+
