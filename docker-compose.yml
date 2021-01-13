@@ -1,19 +1,23 @@
+version: '3'
 services:
   api:
     build:
       context: .
-    image: node:12
+      dockerfile: Dockerfile
     ports:
       - 8080:8080
-    volumes:
-      - .:/code
     environment:
       GKB_DB_HOST: db
     depends_on:
       - db
+    networks:
+      - app-network
   db:
     image: orientdb:3.0
-    ports:
-      - 2424:2424
     environment:
       ORIENTDB_ROOT_PASSWORD: root
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
