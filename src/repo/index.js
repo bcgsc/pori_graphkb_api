@@ -97,17 +97,19 @@ const connectDB = async ({
         ? 'exists'
         : 'does not exist'}`);
 
-    if (!exists) {
-        // the db does not exist, create it
-        await createDB(server, {
-            GKB_DBS_PASS,
-            GKB_DBS_USER,
-            GKB_DB_NAME,
-            GKB_USER_CREATE,
-        });
-    } else if (GKB_NEW_DB) {
-        // this check it mainly to stop us from accidentally connecting to a prod instance for testing
-        throw new Error(`Cannot create a new database (${GKB_DB_NAME}) it already exists`);
+    if (GKB_DB_CREATE) {
+        if (!exists) {
+            // the db does not exist, create it
+            await createDB(server, {
+                GKB_DBS_PASS,
+                GKB_DBS_USER,
+                GKB_DB_NAME,
+                GKB_USER_CREATE,
+            });
+        } else if (GKB_NEW_DB) {
+            // this check it mainly to stop us from accidentally connecting to a prod instance for testing
+            throw new Error(`Cannot create a new database (${GKB_DB_NAME}) it already exists`);
+        }
     }
 
 
