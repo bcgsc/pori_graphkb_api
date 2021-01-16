@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [10, 12]
+        node: [10, 12, 14]
         orientdb: ['3.0', '3.1']
     name: orientdb-${{ matrix.orientdb }} node-${{ matrix.node }}
     services:
