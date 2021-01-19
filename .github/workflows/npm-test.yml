@@ -10,9 +10,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [10, 12, 14]
+        orientdb: ['3.0', '3.1']
+    name: orientdb-${{ matrix.orientdb }} node-${{ matrix.node }}
     services:
       orientdb:
-        image: orientdb:3.0
+        image: orientdb:${{ matrix.orientdb }}
         ports:
           - 2424:2424
           - 2480:2480
@@ -20,9 +25,9 @@ jobs:
           ORIENTDB_ROOT_PASSWORD: root
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: 12
+          node-version: ${{ matrix.node }}
       - run: yes | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
       - run: npm ci
       - run: npm run test
@@ -30,14 +35,14 @@ jobs:
           GKB_DB_HOST: localhost
           GKB_DBS_PASS: root # default password for new db
           GKB_LOG_LEVEL: ERROR
-      - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1.6
-        if: always()
+      - uses: EnricoMi/publish-unit-test-result-action@v1.6
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           files: coverage/junit.xml
+        if: matrix.node == 12 && matrix.orientdb == '3.0'
       - uses: codecov/codecov-action@v1
         with:
           yml: codecov.yml
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_if_ci_error: true
+        if: matrix.node == 12 && matrix.orientdb == '3.0'

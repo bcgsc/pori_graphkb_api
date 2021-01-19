@@ -5,7 +5,7 @@ const { logger } = require('./src/repo/logging');
 // process.on('uncaughtException', app.close);
 let app;
 
-(async () => {
+const main = async () => {
     try {
         app = new AppServer(createConfig({ GKB_DBS_PASS: process.env.GKB_DBS_PASS }));
         await app.listen();
@@ -23,4 +23,8 @@ let app;
         app.close();
         throw err;
     }
-})();
+};
+main()
+    .catch(() => {
+        process.exit(1);
+    });

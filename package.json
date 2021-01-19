@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc-pori/graphkb-api",
   "main": "server.js",
-  "version": "3.11.2",
+  "version": "3.12.0",
   "private": true,
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   "license": "GPL-3.0",
   "description": "GraphKB (Knowledgebase) REST API server",
   "dependencies": {
-    "@bcgsc-pori/graphkb-parser": "^1.0.0",
+    "@bcgsc-pori/graphkb-parser": "^1.1.1",
     "@bcgsc-pori/graphkb-schema": "^3.14.2",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",

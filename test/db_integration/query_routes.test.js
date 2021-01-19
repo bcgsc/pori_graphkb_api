@@ -64,7 +64,7 @@ describeWithAuth('api read-only routes', () => {
             });
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
-            expect(response.body.result).toHaveProperty('User', 1);
+            expect(response.body.result).toHaveProperty('User', 2); // includes default importer user
             expect(response.body.result).not.toHaveProperty('ProteinPosition'); // ignore embedded
             expect(response.body.result).not.toHaveProperty('Variant'); // ignore abstract
             expect(response.body.result).toHaveProperty('Disease', 3); // ignore deleted
@@ -79,7 +79,7 @@ describeWithAuth('api read-only routes', () => {
             });
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
-            expect(response.body.result).toHaveProperty('User', 1);
+            expect(response.body.result).toHaveProperty('User', 2); // includes default importer user
             expect(response.body.result).not.toHaveProperty('ProteinPosition'); // ignore embedded
             expect(response.body.result).not.toHaveProperty('Variant'); // ignore abstract
             expect(response.body.result).toHaveProperty('Disease', 4); // include deleted
@@ -260,7 +260,7 @@ describeWithAuth('api read-only routes', () => {
                 uri,
             });
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
-            expect(response.body.result).toEqual([{ count: 1 }]);
+            expect(response.body.result).toEqual([{ count: 2 }]); // includes default importer user
         });
 
         test('query iterable property by single value', async () => {
