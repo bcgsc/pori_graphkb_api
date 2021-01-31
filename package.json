@@ -62,12 +62,12 @@
     "qs": "^6.5.2"
   },
   "scripts": {
-    "start": "NODE_ENV=development node server.js",
-    "start:prod": "NODE_ENV=production node server.js",
-    "start:staging": "NODE_ENV=production node server.js",
-    "start:dev": "NODE_ENV=development node server.js",
-    "start:test": "NODE_ENV=test node server.js",
-    "start:local": "NODE_ENV=local node server.js",
+    "start": "NODE_ENV=development node bin/server.js",
+    "start:prod": "NODE_ENV=production node bin/server.js",
+    "start:staging": "NODE_ENV=production node bin/server.js",
+    "start:dev": "NODE_ENV=development node bin/server.js",
+    "start:test": "NODE_ENV=test node bin/server.js",
+    "start:local": "NODE_ENV=local node bin/server.js",
     "test": "NODE_ENV=test jest --config config/jest/config.js --detectOpenHandles --forceExit",
     "test:unit": "NODE_ENV=test jest --config config/jest/unit.config.js",
     "test:integration": "NODE_ENV=test jest --config config/jest/config.js --testRegex test/db_integration/",
