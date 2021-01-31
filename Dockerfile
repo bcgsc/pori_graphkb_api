@@ -10,4 +10,4 @@ RUN ssh-keygen -t rsa -b 4096 -f id_rsa -N "${KEY_PASSPHRASE}"
 # Bundle app source
 COPY . .
 EXPOSE 8080
-CMD [ "node", "bin/server.js"]
+CMD [ "npm", "run", "start:prod"]
