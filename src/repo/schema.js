@@ -201,8 +201,15 @@ const createSchema = async (db) => {
         enactedAt: timeStampNow(),
     }).one();
 
-    logger.info('create default import user (graphkb_importer)');
+    // create the default users
+    logger.info('create default user: graphkb_importer');
     await createUser(db, { groupNames: ['manager', 'regular'], signedLicenseAt: timeStampNow(), userName: 'graphkb_importer' });
+
+    logger.info('create default user: graphkb_admin');
+    await createUser(db, { groupNames: ['admin', 'manager', 'regular'], signedLicenseAt: timeStampNow(), userName: 'graphkb_admin' });
+
+    logger.info('create default user: ipr_graphkb_link');
+    await createUser(db, { groupNames: ['readonly'], signedLicenseAt: timeStampNow(), userName: 'ipr_graphkb_link' });
 
     logger.log('info', 'Schema is Complete');
 };
