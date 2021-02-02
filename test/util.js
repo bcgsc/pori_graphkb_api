@@ -10,7 +10,7 @@ const setUpEmptyDB = async (conf) => {
     conf.GKB_DB_CREATE = true;
     conf.GKB_USER_CREATE = true;
 
-    const { server, db, schema } = await connectDB(conf);
+    const { server, db, schema } = await connectDB({ ...conf, GKB_NEW_DB: true });
 
     const user = await getUserByName(db, process.env.USER || 'admin');
 

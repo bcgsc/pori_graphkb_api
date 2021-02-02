@@ -127,7 +127,7 @@ class AppServer {
         return `http://${this.host}:${this.port}${this.prefix}`;
     }
 
-    async connectToDb() {
+    async connectToDb(opt = {}) {
         // connect to the database
         const {
             GKB_DB_HOST,
@@ -135,7 +135,7 @@ class AppServer {
         } = this.conf;
 
         logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
-        const { pool, schema } = await connectDB(this.conf);
+        const { pool, schema } = await connectDB({ ...this.conf, ...opt });
         this.pool = pool;
         this.schema = schema;
     }

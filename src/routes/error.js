@@ -38,7 +38,7 @@ const addErrorRoute = (app) => {
             logger.warn('connection error, attempting to restart the database connection');
 
             try {
-                await app.connectToDb();
+                await app.connectToDb({ GKB_DB_CREATE: false });
             } catch (secondErr) {}
         }
         if (res.headersSent) {

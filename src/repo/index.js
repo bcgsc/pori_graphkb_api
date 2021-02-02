@@ -81,6 +81,7 @@ const connectDB = async ({
     GKB_DBS_USER,
     GKB_USER_CREATE,
     GKB_DB_POOL,
+    GKB_NEW_DB = false, // MUST create new db
 }) => {
     // set up the database server
     const server = await OrientDBClient.connect({
@@ -105,10 +106,12 @@ const connectDB = async ({
                 GKB_DB_NAME,
                 GKB_USER_CREATE,
             });
-        } else {
-            throw new Error(`Cannot create the database ${GKB_DB_NAME} it already exists`);
+        } else if (GKB_NEW_DB) {
+            // this check it mainly to stop us from accidentally connecting to a prod instance for testing
+            throw new Error(`Cannot create a new database (${GKB_DB_NAME}) it already exists`);
         }
     }
+
 
     logger.log('info', `connecting to the database (${GKB_DB_NAME}) as ${GKB_DB_USER}`);
     let pool,
