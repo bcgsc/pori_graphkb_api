@@ -30,6 +30,8 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: yes | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
       - run: npm ci
+      - run: npm run lint -- --quiet # errors only, no warnings
+        name: eslint
       - run: npm run test
         env:
           GKB_DB_HOST: localhost
