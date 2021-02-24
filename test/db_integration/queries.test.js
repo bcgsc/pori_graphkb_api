@@ -89,7 +89,7 @@ describeWithAuth('query builder', () => {
         test('defaults to all classes', async () => {
             const counts = await selectCounts(session);
             expect(counts).toHaveProperty('Disease', 3);
-            expect(counts).toHaveProperty('User', 2); // includes default importer user
+            expect(counts).toHaveProperty('User', 4); // includes default users
         });
 
         test('with source subgrouping', async () => {

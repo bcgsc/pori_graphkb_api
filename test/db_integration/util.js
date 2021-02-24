@@ -24,7 +24,7 @@ const createEmptyDb = async () => {
         GKB_PORT: null,
         GKB_USER_CREATE: true,
     });
-    const { server, pool } = await connectDB(conf);
+    const { server, pool } = await connectDB({ ...conf, GKB_NEW_DB: true });
     const session = await pool.acquire();
     const user = await getUserByName(session, process.env.USER || 'admin');
     session.close();

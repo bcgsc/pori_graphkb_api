@@ -1,10 +1,7 @@
 name: build
 
 on:
-  push:
-    paths-ignore:
-     - README.md
-     - 'docs/**'
+  - push
 
 
 jobs:
@@ -30,6 +27,8 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: yes | ssh-keygen -t rsa -b 4096 -f id_rsa -N ''
       - run: npm ci
+      - run: npm run lint -- --quiet # errors only, no warnings
+        name: eslint
       - run: npm run test
         env:
           GKB_DB_HOST: localhost
@@ -46,3 +45,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_if_ci_error: true
         if: matrix.node == 12 && matrix.orientdb == '3.0'
+  docker:
+    runs-on: ubuntu-latest
+    name: docker build
+    steps:
+      - uses: actions/checkout@v2
+      - name: build the API docker container
+        run: |
+          docker build --file Dockerfile --tag pori/graphkb-api .

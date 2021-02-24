@@ -1,6 +1,6 @@
 // required packages
-const { AppServer, createConfig } = require('./src');
-const { logger } = require('./src/repo/logging');
+const { AppServer, createConfig } = require('../src');
+const { logger } = require('../src/repo/logging');
 
 // process.on('uncaughtException', app.close);
 let app;

@@ -16,13 +16,11 @@
 
 ## API Settings
 
-| Variable          | Default | Description                                                 |
-| ----------------- | ------- | ----------------------------------------------------------- |
-| GKB_PORT          | 8080    | Port for the API to start on                                |
-| GKB_KEY_FILE      | id_rsa  | Path to the private key to use for generating tokens        |
-| GKB_LOG_DIR       |         | Write log files to this directory                           |
-| GKB_LOG_LEVEL     | info    | The level of information to log to the screen and log files |
-| GKB_LOG_MAX_FILES | 14      | The number of days to retain log files for                  |
+| Variable      | Default | Description                                                 |
+| ------------- | ------- | ----------------------------------------------------------- |
+| GKB_PORT      | 8080    | Port for the API to start on                                |
+| GKB_KEY_FILE  | id_rsa  | Path to the private key to use for generating tokens        |
+| GKB_LOG_LEVEL | info    | The level of information to log to the screen and log files |
 
 ## Key Cloak Settings
 
@@ -43,11 +41,3 @@ variable `GKB_LOG_LEVEL` which must be one of: info, error, warn, info, verbose,
 ```bash
 export GKB_LOG_LEVEL=error
 ```
-
-Additionally logging can be recorded in a file. To do this the `LOG_DIR` environment variable must be set.
-
-```bash
-export GKB_LOG_DIR=/path/to/dir
-```
-
-This will be used as the directly to write logs to. If the variable is not set, no log files will be written and only console will be logged to.
