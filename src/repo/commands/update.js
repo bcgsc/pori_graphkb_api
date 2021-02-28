@@ -374,6 +374,7 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
     } else if (model.inherits.includes('Ontology')) {
         // check variants
         let { result: [{ count }] } = await select(db, parse({
+            count: true,
             filters: {
                 OR: [
                     { reference1: ridToDelete },
@@ -388,6 +389,7 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
         }
         // check statements
         ({ result: [{ count }] } = await select(db, parse({
+            count: true,
             filters: {
                 OR: [
                     { conditions: ridToDelete, operator: 'CONTAINS' },
