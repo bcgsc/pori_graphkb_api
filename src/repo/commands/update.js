@@ -344,7 +344,7 @@ const deleteNodeTx = async (db, opt) => {
 const deletionLinkChecks = async (db, model, ridToDelete) => {
     if (model.name === 'Vocabulary') {
         // check variants
-        let { result: [{ count }] } = await select(db, parse({
+        let [{ count }] = await select(db, parse({
             count: true,
             filters: {
                 type: ridToDelete,
@@ -356,7 +356,7 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
             throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Variant records`);
         }
         // check statements
-        ({ result: [{ count }] } = await select(db, parse({
+        [{ count }] = await select(db, parse({
             count: true,
             filters: {
                 OR: [
@@ -366,14 +366,14 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
                 ],
             },
             target: 'Statement',
-        })));
+        }));
 
         if (count > 0) {
             throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Statement records`);
         }
     } else if (model.inherits.includes('Ontology')) {
         // check variants
-        let { result: [{ count }] } = await select(db, parse({
+        let [{ count }] = await select(db, parse({
             count: true,
             filters: {
                 OR: [
@@ -388,7 +388,7 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
             throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Variant records`);
         }
         // check statements
-        ({ result: [{ count }] } = await select(db, parse({
+        [{ count }] = await select(db, parse({
             count: true,
             filters: {
                 OR: [
@@ -398,7 +398,7 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
                 ],
             },
             target: 'Statement',
-        })));
+        }));
 
         if (count > 0) {
             throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Statement records`);
