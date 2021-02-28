@@ -6,7 +6,7 @@ const { logger } = require('./logging');
 const { loadSchema, createSchema } = require('./schema');
 const { migrate } = require('./migrate');
 const { createUser, update, getUserByName } = require('./commands');
-const { RecordExistsError } = require('./error');
+const { RecordConflictError } = require('./error');
 const { parseRecord } = require('./query_builder');
 
 
@@ -140,7 +140,7 @@ const connectDB = async ({
                 userName: process.env.USER,
             });
         } catch (err) {
-            if (!(err instanceof RecordExistsError)) {
+            if (!(err instanceof RecordConflictError)) {
                 logger.log('error', `Error in creating the current user ${err}`);
             }
         }

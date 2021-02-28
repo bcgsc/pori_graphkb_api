@@ -19,12 +19,14 @@ const { logger } = require('./../logging');
 const {
     NotImplementedError,
     PermissionError,
+    RecordConflictError,
 } = require('./../error');
 const {
     omitDBAttributes, wrapIfTypeError, hasRecordAccess,
 } = require('./util');
 const { select, fetchDisplayName } = require('./select');
 const { nestedProjection } = require('../query_builder/projection');
+const { parse } = require('../query_builder');
 const { checkUserAccessFor } = require('../../middleware/auth');
 
 
@@ -331,6 +333,78 @@ const deleteNodeTx = async (db, opt) => {
     return commit.commit();
 };
 
+
+/**
+ * Check if the record to be deleted is used by some links
+ *
+ * @param {orientjs.Db} db database connection object
+ * @param {ClassModel} model the model of the current record
+ * @param {string} ridToDelete the recordId being deleted
+ */
+const deletionLinkChecks = async (db, model, ridToDelete) => {
+    if (model.name === 'Vocabulary') {
+        // check variants
+        let { result: [{ count }] } = await select(db, parse({
+            count: true,
+            filters: {
+                type: ridToDelete,
+            },
+            target: 'Variant',
+        }));
+
+        if (count > 0) {
+            throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Variant records`);
+        }
+        // check statements
+        ({ result: [{ count }] } = await select(db, parse({
+            count: true,
+            filters: {
+                OR: [
+                    { conditions: ridToDelete, operator: 'CONTAINS' },
+                    { evidence: ridToDelete, operator: 'CONTAINS' },
+                    { subject: ridToDelete },
+                ],
+            },
+            target: 'Statement',
+        })));
+
+        if (count > 0) {
+            throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Statement records`);
+        }
+    } else if (model.inherits.includes('Ontology')) {
+        // check variants
+        let { result: [{ count }] } = await select(db, parse({
+            filters: {
+                OR: [
+                    { reference1: ridToDelete },
+                    { reference2: ridToDelete },
+                ],
+            },
+            target: 'Variant',
+        }));
+
+        if (count > 0) {
+            throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Variant records`);
+        }
+        // check statements
+        ({ result: [{ count }] } = await select(db, parse({
+            filters: {
+                OR: [
+                    { conditions: ridToDelete, operator: 'CONTAINS' },
+                    { evidence: ridToDelete, operator: 'CONTAINS' },
+                    { subject: ridToDelete },
+                ],
+            },
+            target: 'Statement',
+        })));
+
+        if (count > 0) {
+            throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Statement records`);
+        }
+    }
+};
+
+
 /**
  * uses a transaction to copy the current record into a new record
  * then update the actual current record (to preserve links)
@@ -364,6 +438,13 @@ const modify = async (db, opt) => {
     if (!hasRecordAccess(user, original)) {
         throw new PermissionError(`The user '${user.name}' does not have sufficient permissions to interact with record ${original['@rid']}`);
     }
+
+    // check for outstanding links before deleting
+    if (opt.changes === null) {
+        await deletionLinkChecks(db, model, original['@rid'].toString());
+    }
+
+    // now delete the record
     const changes = opt.changes === null
         ? null
         : Object.assign({}, model.formatRecord(opt.changes, {

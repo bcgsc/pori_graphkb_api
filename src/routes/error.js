@@ -5,7 +5,7 @@ const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
 const {
     DatabaseConnectionError,
     NoRecordFoundError,
-    RecordExistsError,
+    RecordConflictError,
     AuthenticationError,
     PermissionError,
 } = require('./../repo/error');
@@ -32,7 +32,7 @@ const addErrorRoute = (app) => {
             code = HTTP_STATUS.BAD_REQUEST;
         } else if (err instanceof NoRecordFoundError) {
             code = HTTP_STATUS.NOT_FOUND;
-        } else if (err instanceof RecordExistsError) {
+        } else if (err instanceof RecordConflictError) {
             code = HTTP_STATUS.CONFLICT;
         } else if (err instanceof DatabaseConnectionError) {
             logger.warn('connection error, attempting to restart the database connection');

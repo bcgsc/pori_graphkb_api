@@ -6,7 +6,7 @@ const { util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     NoRecordFoundError,
-    RecordExistsError,
+    RecordConflictError,
     DatabaseConnectionError,
     DatabaseRequestError,
 } = require('../error');
@@ -22,7 +22,7 @@ const wrapIfTypeError = (err) => {
             const type = err.type.toLowerCase();
 
             if (type.includes('orecordduplicatedexception')) {
-                return new RecordExistsError(err);
+                return new RecordConflictError(err);
             } if (type.includes('orecordnotfoundexception')) {
                 return new NoRecordFoundError(err);
             } if (type.includes('odatabaseexception')) {
