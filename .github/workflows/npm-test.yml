@@ -43,7 +43,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
-          verbose: true
         if: matrix.node == 12 && matrix.orientdb == '3.0'
   docker:
     runs-on: ubuntu-latest
