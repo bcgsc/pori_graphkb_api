@@ -41,9 +41,9 @@ jobs:
         if: matrix.node == 12 && matrix.orientdb == '3.0'
       - uses: codecov/codecov-action@v1
         with:
-          yml: codecov.yml
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_if_ci_error: true
+          fail_ci_if_error: true
+          verbose: true
         if: matrix.node == 12 && matrix.orientdb == '3.0'
   docker:
     runs-on: ubuntu-latest
