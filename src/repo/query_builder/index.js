@@ -136,7 +136,12 @@ class WrapperQuery {
     }
 }
 
-
+/**
+ * Given some input record, create a query to find it
+ *
+ * @param {object} query JSON query object
+ *
+ */
 const parse = query => WrapperQuery.parse(query);
 
 /**

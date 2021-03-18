@@ -6,7 +6,7 @@ const {
 const { logger } = require('../logging');
 const { parseRecord } = require('../query_builder');
 const {
-    RecordExistsError, PermissionError,
+    RecordConflictError, PermissionError,
 } = require('../error');
 const { select, getUserByName, fetchDisplayName } = require('./select');
 const { wrapIfTypeError, omitDBAttributes } = require('./util');
@@ -111,7 +111,7 @@ const create = async (db, opt) => {
             const records = await select(db, query);
 
             if (records.length) {
-                throw new RecordExistsError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
+                throw new RecordConflictError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
             }
         } catch (err) {
             logger.error(err);
