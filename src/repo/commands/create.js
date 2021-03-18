@@ -6,7 +6,7 @@ const {
 const { logger } = require('../logging');
 const { parseRecord } = require('../query_builder');
 const {
-    RecordExistsError, PermissionError,
+    RecordConflictError, PermissionError,
 } = require('../error');
 const { select, getUserByName, fetchDisplayName } = require('./select');
 const { wrapIfTypeError, omitDBAttributes } = require('./util');
@@ -103,20 +103,6 @@ const create = async (db, opt) => {
 
     if (model.isEdge) {
         return createEdge(db, opt);
-    } if (model.getActiveProperties()) {
-        // try select before create if active properties are defined (as they may not be db enforceable)
-        try {
-            const query = parseRecord(model, content, { activeIndexOnly: true });
-
-            const records = await select(db, query);
-
-            if (records.length) {
-                throw new RecordExistsError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
-            }
-        } catch (err) {
-            logger.error(err);
-            throw wrapIfTypeError(err);
-        }
     }
     const newRecordContent = { ...content, createdBy: user['@rid'] };
 
@@ -133,6 +119,22 @@ const create = async (db, opt) => {
             record.conditions.push(record.subject);
             // TODO: handle this on the front-end instead of the API
             // throw new AttributeError('Statement subject must also be present in the record conditions');
+        }
+    }
+
+    if (model.getActiveProperties()) {
+        // try select before create if active properties are defined (as they may not be db enforceable)
+        try {
+            const query = parseRecord(model, record, { activeIndexOnly: true });
+
+            const records = await select(db, query);
+
+            if (records.length) {
+                throw new RecordConflictError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
+            }
+        } catch (err) {
+            logger.error(err);
+            throw wrapIfTypeError(err);
         }
     }
 
