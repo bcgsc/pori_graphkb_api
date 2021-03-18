@@ -130,7 +130,7 @@ const create = async (db, opt) => {
             const records = await select(db, query);
 
             if (records.length) {
-                throw new RecordExistsError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
+                throw new RecordConflictError(`Cannot create the record. Violates the unique constraint (${model.name}.active)`);
             }
         } catch (err) {
             logger.error(err);
