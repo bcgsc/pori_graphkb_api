@@ -213,7 +213,7 @@ const describePost = (model) => {
             400: { $ref: '#/components/responses/BadInput' },
             401: { $ref: '#/components/responses/NotAuthorized' },
             403: { $ref: '#/components/responses/Forbidden' },
-            409: { $ref: '#/components/responses/RecordExistsError' },
+            409: { $ref: '#/components/responses/RecordConflictError' },
         },
         summary: `create a new ${model.name} record`,
         tags: [model.name],
@@ -265,7 +265,7 @@ const describeOperationByID = (model, operation = 'delete') => {
     };
 
     if (operation !== 'delete') {
-        description.responses[409] = { $ref: '#/components/responses/RecordExistsError' };
+        description.responses[409] = { $ref: '#/components/responses/RecordConflictError' };
     }
     if (operation === 'get') {
         description.parameters.push({ $ref: '#/components/parameters/neighbors' });

@@ -6,7 +6,7 @@ const {
 const { logger } = require('../logging');
 const { parseRecord } = require('../query_builder');
 const {
-    RecordExistsError, PermissionError,
+    RecordConflictError, PermissionError,
 } = require('../error');
 const { select, getUserByName, fetchDisplayName } = require('./select');
 const { wrapIfTypeError, omitDBAttributes } = require('./util');

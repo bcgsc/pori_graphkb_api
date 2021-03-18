@@ -26,12 +26,12 @@ const NotAuthorized = {
     },
     description: 'Authorization failed or insufficient permissions were found',
 };
-const RecordExistsError = {
+const RecordConflictError = {
     content: {
         'application/json': {
             schema: {
                 $ref: '#/components/schemas/Error',
-                properties: { name: { example: 'RecordExistsError' } },
+                properties: { name: { example: 'RecordConflictError' } },
             },
         },
     },
@@ -61,5 +61,5 @@ const RecordNotFound = {
 };
 
 module.exports = {
-    BadInput, Forbidden, NotAuthorized, RecordExistsError, RecordNotFound,
+    BadInput, Forbidden, NotAuthorized, RecordConflictError, RecordNotFound,
 };

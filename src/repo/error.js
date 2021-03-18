@@ -22,7 +22,7 @@ class AuthenticationError extends ErrorMixin {}
 class MultipleRecordsFoundError extends ErrorMixin {}
 
 
-class RecordExistsError extends ErrorMixin {}
+class RecordConflictError extends ErrorMixin {}
 
 
 class NotImplementedError extends ErrorMixin {}
@@ -46,5 +46,5 @@ module.exports = {
     NotImplementedError,
     ParsingError,
     PermissionError,
-    RecordExistsError,
+    RecordConflictError,
 };

@@ -7,7 +7,7 @@ const {
     select,
 } = require('../../src/repo/commands');
 const {
-    RecordExistsError, AttributeError, NotImplementedError,
+    RecordConflictError, AttributeError, NotImplementedError,
 } = require('../../src/repo/error');
 const {
     parseRecord,
@@ -81,7 +81,7 @@ describeWithAuth('CRUD operations', () => {
                 try {
                     await create(session, { content: { name: 'alice' }, model: schema.User, user: db.admin });
                 } catch (err) {
-                    expect(err).toBeInstanceOf(RecordExistsError);
+                    expect(err).toBeInstanceOf(RecordConflictError);
                     return;
                 }
                 throw new Error('Did not throw expected error');
@@ -105,7 +105,7 @@ describeWithAuth('CRUD operations', () => {
                         { content: { name: original.name }, model: schema.User, user: db.admin },
                     );
                 } catch (err) {
-                    expect(err).toBeInstanceOf(RecordExistsError);
+                    expect(err).toBeInstanceOf(RecordConflictError);
                     return;
                 }
                 throw new Error('Did not throw expected error');
@@ -532,7 +532,7 @@ describeWithAuth('CRUD operations', () => {
                 },
             );
 
-            // throws RecordExistsError on next create call
+            // throws RecordConflictError on next create call
             try {
                 await create(
                     session,
@@ -548,7 +548,7 @@ describeWithAuth('CRUD operations', () => {
                     },
                 );
             } catch (err) {
-                expect(err).toBeInstanceOf(RecordExistsError);
+                expect(err).toBeInstanceOf(RecordConflictError);
                 return;
             }
             throw new Error('Did not throw the expected error');
