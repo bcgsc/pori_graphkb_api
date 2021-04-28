@@ -27,7 +27,7 @@ if (!process.env.GKB_DBS_PASS) {
 }
 
 jest.mock('../../src/extensions/util', () => {
-    const original = require.requireActual('../../src/extensions/util');
+    const original = jest.requireActual('../../src/extensions/util');
     return { ...original, requestWithRetry: jest.fn() };
 });
 
