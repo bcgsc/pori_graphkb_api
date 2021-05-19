@@ -557,6 +557,71 @@ const migrate3xFrom13xto14x = async (db) => {
 };
 
 
+const migrate3xFrom14xto15x = async (db) => {
+    // remove the MIN constraint
+    await db.command(
+        'ALTER PROPERTY CdsPosition.pos MIN NULL',
+    ).all();
+
+    // update mis-parsed variants
+    const misParsed = await db.query(
+        `SELECT
+            *
+        FROM
+            PositionalVariant
+        WHERE
+            (
+                (
+                    break1Start.@class == 'CdsPosition'
+                    AND break1Start.pos == 1
+                    AND break1Start.offset < 0
+                )
+                OR (
+                    break2Start.@class == 'CdsPosition'
+                    AND break2Start.pos == 1
+                    AND break2Start.offset < 0
+                )
+                OR (
+                    break2End.@class == 'CdsPosition'
+                    AND break2End.pos == 1
+                    AND break2End.offset < 0
+                )
+                OR (
+                    break1End.@class == 'CdsPosition'
+                    AND break1End.pos == 1
+                    AND break1End.offset < 0
+                )
+            )
+            AND deletedAt IS NULL`,
+    ).all();
+    logger.info(`found ${misParsed.length} variants to be updated`);
+
+    for (const variant of misParsed) {
+        const updated = { };
+
+        for (const breakPoint of ['break1Start', 'break2Start', 'break1End', 'break2End']) {
+            if (
+                variant[breakPoint]
+                && variant[breakPoint]['@class'] === 'CdsPosition'
+                && variant[breakPoint].pos === 1
+                && variant[breakPoint].offset < 0
+            ) {
+                updated[breakPoint] = { ...variant[breakPoint], offset: 0, pos: variant[breakPoint].offset };
+            }
+        }
+
+        for (const repr of ['break1Repr', 'break2Repr', 'displayName']) {
+            if (variant[repr]) {
+                updated[repr] = variant[repr].replace(/([._])1(-\d+)/g, '$1$2');
+            }
+        }
+
+        logger.info(`updating record ${variant['@rid']}`);
+        await db.update(variant['@rid']).set(updated).one();
+    }
+};
+
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -614,6 +679,7 @@ const migrate = async (db, opt = {}) => {
         ['3.11.0', '3.12.0', migrate3xFrom11xto12x],
         ['3.12.0', '3.13.0', migrate3xFrom12xto13x],
         ['3.13.0', '3.14.0', migrate3xFrom13xto14x],
+        ['3.14.0', '3.15.0', migrate3xFrom14xto15x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
