@@ -21,7 +21,7 @@
 | GKB_PORT      | 8080    | Port for the API to start on                                                                                      |
 | GKB_KEY_FILE  | id_rsa  | Path to the private key to use for generating tokens                                                              |
 | GKB_LOG_LEVEL | info    | The level of information to log to the screen and log files                                                       |
-| GKB_BASE_PATH | /       | The base path for requests to the API. This should be changed if you are serving the API from a subdirectory/path |
+| GKB_BASE_PATH |         | The base path for requests to the API. This should be changed if you are serving the API from a subdirectory/path |
 
 ## Key Cloak Settings
 

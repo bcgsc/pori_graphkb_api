@@ -113,7 +113,7 @@ class AppServer {
 
         // set up the routes
         this.router = express.Router();
-        this.prefix = `${conf.GKB_BASE_PATH}/api`;
+        this.prefix = `${conf.GKB_BASE_PATH || ''}/api`;
         this.app.use(this.prefix, this.router);
 
         if (conf.GKB_LOG_LEVEL) {
