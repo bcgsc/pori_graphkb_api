@@ -1,5 +1,7 @@
+// All settings in this file are overloadable via environment variables at runtime
 module.exports = {
     common: {
+        GKB_BASE_PATH: '',
         GKB_CORS_ORIGIN: '^.*$',
         GKB_DBS_USER: 'root',
         GKB_DB_CREATE: true,

@@ -89,7 +89,7 @@ class AppServer {
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(bodyParser.json());
         this.app.use(compression());
-        this.app.use('/public', express.static(path.join(__dirname, 'static')));
+        this.app.use(`${conf.GKB_BASE_PATH || ''}/public`, express.static(path.join(__dirname, 'static')));
 
         // add some basic logging
         const originWhiteList = (conf.GKB_CORS_ORIGIN || '.*').split(/[\s,]+/g).map((patt) => {
@@ -113,7 +113,7 @@ class AppServer {
 
         // set up the routes
         this.router = express.Router();
-        this.prefix = '/api';
+        this.prefix = `${conf.GKB_BASE_PATH || ''}/api`;
         this.app.use(this.prefix, this.router);
 
         if (conf.GKB_LOG_LEVEL) {
