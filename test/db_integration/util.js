@@ -2,7 +2,6 @@ const uuidV4 = require('uuid/v4');
 
 const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
 
-
 const { getUserByName, create, update } = require('../../src/repo/commands');
 const { connectDB } = require('../../src/repo');
 const { createConfig } = require('../../src');
@@ -14,7 +13,6 @@ const clearDB = async ({ session, admin }) => {
     await session.command(`delete from user where name != '${admin.name}'`).all();
     await session.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\'').all();
 };
-
 
 const createEmptyDb = async () => {
     const conf = createConfig({
@@ -33,7 +31,6 @@ const createEmptyDb = async () => {
     };
 };
 
-
 /**
  * Creates a RO DB to be used in testing complex queries
  */
@@ -47,7 +44,7 @@ const createSeededDb = async () => {
         { content: { name: 'default source' }, model: schema.Source, user: admin },
     );
 
-    const createRecord = async opt => create(
+    const createRecord = async (opt) => create(
         session,
         { ...opt, content: { ...opt.content, source }, user: admin },
     );
@@ -174,7 +171,6 @@ const createSeededDb = async () => {
         ...db,
     };
 };
-
 
 const tearDownDb = async ({ server, conf }) => {
     if (server) {

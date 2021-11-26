@@ -5,12 +5,11 @@ const {
     constants: { PERMISSIONS },
 } = require('@bcgsc-pori/graphkb-schema');
 
-const { logger } = require('./../repo/logging');
-const { RecordNotFoundError, PermissionError } = require('./../repo/error');
+const { logger } = require('../repo/logging');
+const { RecordNotFoundError, PermissionError } = require('../repo/error');
 const { checkUserAccessFor } = require('../middleware/auth');
 
-
-const getCurrentLicense = async db => db.query(
+const getCurrentLicense = async (db) => db.query(
     `SELECT * FROM ${SCHEMA_DEFN.LicenseAgreement.name} ORDER BY enactedAt DESC LIMIT 1`,
 ).one();
 
@@ -20,7 +19,8 @@ const getCurrentLicense = async db => db.query(
  * @param {AppServer} app the GraphKB app server
  */
 const addEulaRoutes = (app) => {
-    app.router.get('/license',
+    app.router.get(
+        '/license',
         async (req, res, next) => {
             let session;
 
@@ -39,9 +39,11 @@ const addEulaRoutes = (app) => {
                 logger.log('debug', err);
                 return next(err);
             }
-        });
+        },
+    );
 
-    app.router.post('/license/sign',
+    app.router.post(
+        '/license/sign',
         async (req, res, next) => {
             const { user } = req;
             let session;
@@ -66,9 +68,11 @@ const addEulaRoutes = (app) => {
                 logger.log('debug', err);
                 return next(err);
             }
-        });
+        },
+    );
 
-    app.router.post('/license',
+    app.router.post(
+        '/license',
         async (req, res, next) => {
             const { body: content, user } = req;
 
@@ -96,7 +100,8 @@ const addEulaRoutes = (app) => {
                 logger.log('debug', err);
                 return next(err);
             }
-        });
+        },
+    );
 
     // add the route to enforce unsigned users cannot access
     app.router.use(async (req, res, next) => {

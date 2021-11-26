@@ -42,7 +42,7 @@ const projectEdge = (model, direction, opt) => {
         : 'out';
 
     const edgeProjection = projectionFromProperties(
-        Object.values(model.queryProperties).filter(p => !['out', 'in'].includes(p.name)),
+        Object.values(model.queryProperties).filter((p) => !['out', 'in'].includes(p.name)),
         { ...opt, isEdge: true },
     ).join(', ');
     const targetModel = schemaDefn.schema[
@@ -59,7 +59,6 @@ const projectEdge = (model, direction, opt) => {
         : `'${model.name}'`;
     return `${direction}E(${edgeString}):{${edgeProjection}, ${target}:{${targetProjection}}} as ${direction}_${model.name}`;
 };
-
 
 /**
  * calculate the SQL (orientdb) projection from an list of properties record
@@ -167,10 +166,9 @@ const nonSpecificProjection = (model, opt) => {
         },
     );
     return props
-        .filter(p => p !== '!history') // cannot top level exclude
+        .filter((p) => p !== '!history') // cannot top level exclude
         .join(', ');
 };
-
 
 /**
  * Convert a list of property names to a nested object representing the projection of
@@ -195,7 +193,6 @@ const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
 
         const nestedProps = prop.trim().slice(directProp.length + 1);
 
-
         if (nestedProps) {
             if (!propModel.linkedClass) {
                 throw new AttributeError(`Cannot return nested property (${prop}), the property (${propModel.name}) does not have a linked class`);
@@ -206,7 +203,6 @@ const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
     }
     return projections;
 };
-
 
 const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
     const projection = parsePropertyList(model, properties, allowDirectEmbedded);
@@ -225,7 +221,6 @@ const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
     };
     return convertToString(projection);
 };
-
 
 module.exports = {
     nestedProjection,

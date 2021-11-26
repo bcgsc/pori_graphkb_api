@@ -19,7 +19,6 @@ const requestWithRetry = async (requestOpt, { waitSeconds = 2, retries = 1 } = {
     }
 };
 
-
 const parseXmlToJson = (xmlContent, opts = {}) => new Promise((resolve, reject) => {
     xml2js.parseString(
         xmlContent,
@@ -39,6 +38,5 @@ const parseXmlToJson = (xmlContent, opts = {}) => new Promise((resolve, reject) 
         },
     );
 });
-
 
 module.exports = { parseXmlToJson, requestWithRetry };

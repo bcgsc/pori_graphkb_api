@@ -503,7 +503,6 @@ describe('checkClassPermissions', () => {
                 req.method = 'PATCH';
             });
 
-
             test('admin calls next', () => {
                 req.user = { groups: [groups.admin] };
                 checkClassPermissions(req, res, next);
@@ -534,7 +533,6 @@ describe('checkClassPermissions', () => {
             beforeEach(() => {
                 req.method = 'DELETE';
             });
-
 
             test('admin calls next', () => {
                 req.user = { groups: [groups.admin] };

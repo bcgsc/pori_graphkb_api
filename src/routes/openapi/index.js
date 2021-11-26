@@ -11,7 +11,6 @@ const fs = require('fs');
 const HTTP_STATUS = require('http-status-codes');
 const swaggerUi = require('swagger-ui-express');
 
-
 const {
     POST_TOKEN,
     POST_PARSE,
@@ -31,9 +30,7 @@ const {
 } = require('./constants');
 const { generatePropertiesMd } = require('./returnProperties');
 
-
 const SCHEMA_PREFIX = '#/components/schemas';
-
 
 const STUB = {
     components: {
@@ -52,7 +49,7 @@ const STUB = {
             },
         },
         responses,
-        schemas: Object.assign({
+        schemas: {
             '@rid': {
                 description: 'Record ID',
                 example: '#44:0',
@@ -60,7 +57,8 @@ const STUB = {
                 type: 'string',
             },
             RecordId: { $ref: '#/components/schemas/@rid' },
-        }, schemas),
+            ...schemas,
+        },
     },
     info: {
         title: 'GraphKB',
@@ -113,7 +111,6 @@ const STUB = {
     }],
 };
 
-
 /**
  * Create a OneOf statement to show that links can be the expanded object or just the @rid
  *
@@ -139,7 +136,6 @@ const linkOrModel = (model, nullable = false) => {
     }
     return param;
 };
-
 
 /**
  * Given a class model, generate the swagger documentation for the POST route
@@ -190,7 +186,7 @@ const describePost = (model) => {
         };
     }
     const post = {
-        parameters: Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({ $ref: `#/components/parameters/${p.name}` })),
+        parameters: Array.from(Object.values(BASIC_HEADER_PARAMS), (p) => ({ $ref: `#/components/parameters/${p.name}` })),
         requestBody: {
             content: { 'application/json': { schema: { $ref: `${SCHEMA_PREFIX}/${model.name}` } } },
             required: true,
@@ -221,7 +217,6 @@ const describePost = (model) => {
     return post;
 };
 
-
 /**
  * Given a class model, generate the swagger documentation for the OPERATION/:id route where
  * OPERATION can be delete, patch, etc.
@@ -231,7 +226,8 @@ const describePost = (model) => {
  */
 const describeOperationByID = (model, operation = 'delete') => {
     const description = {
-        parameters: _.concat(Array.from(Object.values(BASIC_HEADER_PARAMS), p => ({ $ref: `#/components/parameters/${p.name}` })),
+        parameters: _.concat(
+            Array.from(Object.values(BASIC_HEADER_PARAMS), (p) => ({ $ref: `#/components/parameters/${p.name}` })),
             [{
                 description: 'The record identifier',
                 example: '#34:1',
@@ -239,7 +235,8 @@ const describeOperationByID = (model, operation = 'delete') => {
                 name: 'rid',
                 required: true,
                 schema: { $ref: `${SCHEMA_PREFIX}/@rid` },
-            }]),
+            }],
+        ),
         responses: {
             200: {
                 content: {
@@ -273,7 +270,6 @@ const describeOperationByID = (model, operation = 'delete') => {
     return description;
 };
 
-
 const tagsSorter = (tag1, tag2) => {
     const starterTags = ['Metadata', 'General', 'Statement'];
     tag1 = tag1.name || tag1;
@@ -289,7 +285,6 @@ const tagsSorter = (tag1, tag2) => {
     }
     return tag1.localeCompare(tag2);
 };
-
 
 /**
  * Generates the JSON object that represents the openapi specification for this API
@@ -333,7 +328,7 @@ const generateSwaggerSpec = (schema, metadata) => {
             type: 'object',
         };
 
-        if (Object.values(model.routes).some(x => x) && docs.paths[model.routeName] === undefined) {
+        if (Object.values(model.routes).some((x) => x) && docs.paths[model.routeName] === undefined) {
             docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
         if (model.routes.POST && !docs.paths[model.routeName].post) {
@@ -355,7 +350,7 @@ const generateSwaggerSpec = (schema, metadata) => {
         }
         if (model.isAbstract) {
             // should inherit from its concrete subclasses instead
-            const anyOf = model.subclasses.map(m => ({ $ref: `#/components/schemas/${m.name}` }));
+            const anyOf = model.subclasses.map((m) => ({ $ref: `#/components/schemas/${m.name}` }));
             docs.components.schemas[model.name].anyOf = anyOf;
             continue;
         }
@@ -420,12 +415,12 @@ const generateSwaggerSpec = (schema, metadata) => {
                 if (p1.$ref) {
                     let pname = p1.$ref.split('/');
                     pname = pname[pname.length - 1];
-                    p1 = Object.assign({}, docs.components.parameters[pname], p1);
+                    p1 = { ...docs.components.parameters[pname], ...p1 };
                 }
                 if (p2.$ref) {
                     let pname = p2.$ref.split('/');
                     pname = pname[pname.length - 1];
-                    p2 = Object.assign({}, docs.components.parameters[pname], p2);
+                    p2 = { ...docs.components.parameters[pname], ...p2 };
                 }
                 if (p1.required && !p2.required) {
                     return -1;
@@ -444,12 +439,12 @@ const generateSwaggerSpec = (schema, metadata) => {
     docs.tags.sort(tagsSorter);
 
     const vertexTags = Object.values(schema)
-        .filter(model => !model.isEdge && model.name !== 'Statement')
-        .map(model => model.name);
+        .filter((model) => !model.isEdge && model.name !== 'Statement')
+        .map((model) => model.name);
 
     const edgeTags = Object.values(schema)
-        .filter(model => model.isEdge)
-        .map(model => model.name);
+        .filter((model) => model.isEdge)
+        .map((model) => model.name);
 
     docs['x-tagGroups'] = [
         {
@@ -467,7 +462,6 @@ const generateSwaggerSpec = (schema, metadata) => {
     ];
     return docs;
 };
-
 
 /**
  * Add the /spec.json, /spec, and /spec/redoc endpoints to a router

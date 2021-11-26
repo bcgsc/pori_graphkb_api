@@ -4,7 +4,6 @@ const { logger } = require('../repo/logging');
 
 const { requestWithRetry, parseXmlToJson } = require('./util');
 
-
 const BASE_URL = 'https://clinicaltrials.gov/ct2/show';
 
 const ajv = new Ajv();
@@ -120,7 +119,6 @@ const validateAPITrialRecord = ajv.compile({
     type: 'object',
 });
 
-
 const standardizeDate = (dateString) => {
     const dateObj = new Date(Date.parse(dateString));
     const month = dateObj.getMonth() + 1 < 10
@@ -131,7 +129,6 @@ const standardizeDate = (dateString) => {
         : dateObj.getDate();
     return `${dateObj.getFullYear()}-${month}-${date}`;
 };
-
 
 const processPhases = (phaseList) => {
     const phases = [];
@@ -152,7 +149,6 @@ const processPhases = (phaseList) => {
     }
     return phases.sort().join('/');
 };
-
 
 /**
  * Given some records from the API, convert its form to a standard represention
@@ -206,7 +202,6 @@ const parseRecord = (result) => {
     return content;
 };
 
-
 /**
  * Given some NCT ID, fetch and load the corresponding clinical trial information
  *
@@ -227,7 +222,6 @@ const fetchRecord = async (id) => {
     const result = await parseXmlToJson(resp);
     return parseRecord(result);
 };
-
 
 module.exports = {
     fetchRecord,

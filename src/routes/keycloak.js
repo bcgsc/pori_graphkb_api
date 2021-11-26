@@ -1,7 +1,6 @@
 const form = require('form-urlencoded').default;
 const request = require('request-promise');
-const { logger } = require('./../repo/logging');
-
+const { logger } = require('../repo/logging');
 
 /**
  * Given a username and password, authenticate against keycloak and return the token
@@ -44,6 +43,5 @@ const fetchKeyCloakToken = async (username, password, {
     }));
     return resp.access_token;
 };
-
 
 module.exports = { fetchToken: fetchKeyCloakToken };

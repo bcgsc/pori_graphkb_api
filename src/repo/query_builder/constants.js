@@ -1,4 +1,3 @@
-
 /**
  * @constant
  * @type {Number}
@@ -69,7 +68,6 @@ const SIMILARITY_EDGES = [
     'GeneralizationOf',
     'Infers',
 ];
-
 
 module.exports = {
     DEFAULT_NEIGHBORS: 3,

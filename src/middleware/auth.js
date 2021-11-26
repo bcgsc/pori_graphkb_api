@@ -9,14 +9,13 @@ const jwt = require('jsonwebtoken');
 
 const { constants: { PERMISSIONS } } = require('@bcgsc-pori/graphkb-schema');
 
-const { PermissionError } = require('./../repo/error');
-const { logger } = require('./../repo/logging');
-
+const { PermissionError } = require('../repo/error');
+const { logger } = require('../repo/logging');
 
 /*
  * checks that the kbToken is valid/active
  */
-const checkToken = privateKey => async (req, res, next) => {
+const checkToken = (privateKey) => async (req, res, next) => {
     if (req.method === 'OPTIONS') {
         return next();
     }
@@ -52,7 +51,6 @@ const checkUserAccessFor = (user, modelName, operationPermission) => {
     }
     return false;
 };
-
 
 /**
  * Check that the user has permissions for the intended operation on a given route

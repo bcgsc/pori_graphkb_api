@@ -3,14 +3,11 @@ const {
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { stripSQL } = require('./util');
-const { nonSpecificProjection, propsToProjection, parsePropertyList } = require('./../../../src/repo/query_builder/projection');
-
+const { nonSpecificProjection, propsToProjection, parsePropertyList } = require('../../../src/repo/query_builder/projection');
 
 describe('nonSpecificProjection', () => {
     test('linkDepth 0', () => {
-        const result = nonSpecificProjection(
-            schemaDefn.schema.Statement, { depth: 0, edges: null },
-        );
+        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 0, edges: null });
         expect(result).toEqual([
             '@class',
             '@rid',
@@ -19,9 +16,7 @@ describe('nonSpecificProjection', () => {
     });
 
     test('linkDepth 1', () => {
-        const result = nonSpecificProjection(
-            schemaDefn.schema.Statement, { depth: 1, edges: null },
-        );
+        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 1, edges: null });
         expect(result).toEqual([
             '@class',
             '@rid',
@@ -38,9 +33,7 @@ describe('nonSpecificProjection', () => {
     });
 
     test('linkDepth 2', () => {
-        const result = nonSpecificProjection(
-            schemaDefn.schema.Statement, { depth: 2, edges: null },
-        );
+        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 2, edges: null });
         expect(result).toEqual([
             '@class',
             '@rid',
@@ -57,9 +50,7 @@ describe('nonSpecificProjection', () => {
     });
 
     test('linkDepth 1 with edges', () => {
-        const result = nonSpecificProjection(
-            schemaDefn.schema.Statement, { depth: 1, edges: ['AliasOf'] },
-        );
+        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 1, edges: ['AliasOf'] });
         expect(result).toEqual(stripSQL(`
         @class, @rid, *,
         conditions:{@class, @rid, *, !history},
@@ -100,7 +91,6 @@ describe('nonSpecificProjection', () => {
         } as in_AliasOf`));
     });
 });
-
 
 describe('propsToProjection', () => {
     test('deeply nested projection', () => {

@@ -1,4 +1,3 @@
-
 const {
     schema: {
         schema: {
@@ -14,7 +13,6 @@ const {
 const { generateDefaultGroups } = require('../../../src/repo/schema');
 
 const groups = generateDefaultGroups();
-
 
 describe('create (createEdge)', () => {
     const db = {
@@ -44,7 +42,7 @@ describe('create (createEdge)', () => {
             await create(db, {
                 content: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
                 model: SubClassOf,
-                user: { '@rid': '#45:1', groups: groups.filter(g => g.name === 'regular') },
+                user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'regular') },
             });
         } catch (err) {
             expect(err).toBeInstanceOf(PermissionError);
@@ -59,7 +57,7 @@ describe('create (createEdge)', () => {
             await create(db, {
                 content: { '@class': 'SubClassOf', in: '#3:4', out: '#3:4' },
                 model: SubClassOf,
-                user: { '@rid': '#45:1', groups: groups.filter(g => g.name === 'admin') },
+                user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'admin') },
             });
         } catch (err) {
             expect(err).toBeInstanceOf(AttributeError);

@@ -1,5 +1,3 @@
-
-
 // required packages
 const express = require('express');
 const compression = require('compression');
@@ -33,14 +31,12 @@ const config = require('./config');
 http.globalAgent.keepAlive = true;
 http.globalAgent.options.keepAlive = true;
 
-
 const BOOLEAN_FLAGS = [
     'GKB_USER_CREATE',
     'GKB_DB_CREATE',
     'GKB_DISABLE_AUTH',
     'GKB_DB_MIGRATE',
 ];
-
 
 const createConfig = (overrides = {}) => {
     const ENV = {
@@ -70,7 +66,6 @@ const createConfig = (overrides = {}) => {
 
     return ENV;
 };
-
 
 class AppServer {
     /**
@@ -154,7 +149,6 @@ class AppServer {
             GKB_DISABLE_AUTH,
             GKB_KEYCLOAK_KEY_FILE,
         } = this.conf;
-
 
         // set up the swagger docs
         this.spec = generateSwaggerSpec(this.schema, { host: this.host, port: this.port });

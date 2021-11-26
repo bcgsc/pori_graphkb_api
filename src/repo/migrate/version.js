@@ -25,5 +25,4 @@ const getLoadVersion = () => {
     return { name, url: _resolved, version };
 };
 
-
 module.exports = { getCurrentVersion, getLoadVersion };

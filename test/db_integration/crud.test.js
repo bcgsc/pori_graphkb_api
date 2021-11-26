@@ -13,9 +13,7 @@ const {
     parseRecord,
 } = require('../../src/repo/query_builder');
 
-
 const { clearDB, createEmptyDb, tearDownDb } = require('./util');
-
 
 const TEST_TIMEOUT_MS = 100000;
 jest.setTimeout(TEST_TIMEOUT_MS);
@@ -188,7 +186,7 @@ describeWithAuth('CRUD operations', () => {
                 { sourceId: 'cancer' },
                 { sourceId: 'carcinoma' },
             ].map(
-                async content => create(
+                async (content) => create(
                     session,
                     { content: { ...content, source }, model: schema.Disease, user: db.admin },
                 ),
@@ -501,13 +499,13 @@ describeWithAuth('CRUD operations', () => {
                 { content: { name: 'sensitivity', sourceId: 'sensitivity' }, model: schema.Vocabulary },
                 { content: { sourceId: 'therapy:1234' }, model: schema.Therapy },
                 { content: { biotype: 'gene', sourceId: 'feature:1234' }, model: schema.Feature },
-            ].map(async opt => create(
+            ].map(async (opt) => create(
                 session,
                 { ...opt, content: { ...opt.content, source }, user: db.admin },
             )));
             [disease, trial, publication, relevance, therapy, feature] = parts
                 .map(castToRID)
-                .map(x => x.toString());
+                .map((x) => x.toString());
 
             variant = await create(session, {
                 content: { reference1: feature, type: relevance },
@@ -646,7 +644,7 @@ describeWithAuth('CRUD operations', () => {
                 expect(result).toHaveProperty('subject');
                 expect(result.subject.toString()).toEqual(trial);
                 expect(result).toHaveProperty('conditions');
-                expect(result.conditions.map(x => x.toString())).toContain(trial);
+                expect(result.conditions.map((x) => x.toString())).toContain(trial);
             });
 
             test('adds the subject to conditions when updated and conditions given without', async () => {
@@ -665,8 +663,8 @@ describeWithAuth('CRUD operations', () => {
                 expect(result).toHaveProperty('subject');
                 expect(result.subject.toString()).toEqual(trial);
                 expect(result).toHaveProperty('conditions');
-                expect(result.conditions.map(x => x.toString())).toContain(trial);
-                expect(result.conditions.map(x => x.toString())).toContain(disease);
+                expect(result.conditions.map((x) => x.toString())).toContain(trial);
+                expect(result.conditions.map((x) => x.toString())).toContain(disease);
             });
 
             test('does not allow excluding the subject from conditions', async () => {
@@ -685,8 +683,8 @@ describeWithAuth('CRUD operations', () => {
                 expect(result).toHaveProperty('subject');
                 expect(result.subject.toString()).toEqual(therapy);
                 expect(result).toHaveProperty('conditions');
-                expect(result.conditions.map(x => x.toString())).toContain(therapy);
-                expect(result.conditions.map(x => x.toString())).toContain(castToRID(variant).toString());
+                expect(result.conditions.map((x) => x.toString())).toContain(therapy);
+                expect(result.conditions.map((x) => x.toString())).toContain(castToRID(variant).toString());
             });
         });
     });

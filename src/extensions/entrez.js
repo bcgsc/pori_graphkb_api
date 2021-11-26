@@ -11,7 +11,6 @@ const ajv = new Ajv();
 const PUBMED_LINK_URL = 'https://pubmed.ncbi.nlm.nih.gov';
 const GENE_LINK_URL = 'https://www.ncbi.nlm.nih.gov/gene';
 
-
 const publicationSpec = ajv.compile({
     properties: {
         // get the doi
@@ -133,7 +132,6 @@ const parsePubmedRecord = (record) => {
     return parsed;
 };
 
-
 const fetchRecord = async (db, id) => {
     const { result: { [id]: result } } = await requestWithRetry({
         headers: { Accept: 'application/json' },
@@ -155,7 +153,6 @@ const fetchRecord = async (db, id) => {
     }
     throw new ValidationError(`no parser for database (${db})`);
 };
-
 
 module.exports = {
     fetchRecord,

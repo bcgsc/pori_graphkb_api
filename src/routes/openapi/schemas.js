@@ -1,4 +1,3 @@
-
 /**
  * reuseable schema objects (components/schemas)
  */
@@ -12,15 +11,14 @@ const {
     constants: {
         OPERATORS, DIRECTIONS, SIMILARITY_EDGES, TREE_EDGES,
     },
-} = require('./../../repo/query_builder');
+} = require('../../repo/query_builder');
 const {
     MAX_QUERY_LIMIT, MAX_JUMPS,
 } = require('./constants');
 
 const PREFIX = '#/components/schemas';
-const NODE_MODEL_NAMES = schema.getModels().filter(m => !m.isEdge).map(m => m.name);
-const EDGE_MODEL_NAMES = schema.getModels().filter(m => m.isEdge && !m.isAbstract).map(m => m.name);
-
+const NODE_MODEL_NAMES = schema.getModels().filter((m) => !m.isEdge).map((m) => m.name);
+const EDGE_MODEL_NAMES = schema.getModels().filter((m) => m.isEdge && !m.isAbstract).map((m) => m.name);
 
 const dependency = {
     $ref: `${PREFIX}/RecordLink`,
@@ -138,7 +136,6 @@ const Error = {
     type: 'object',
 };
 
-
 const SubQuery = {
     description: 'Query based on the conditions in the filters clause',
     properties: {
@@ -161,7 +158,6 @@ const SubQuery = {
     type: 'object',
 };
 
-
 const FixedSubQuery = {
     anyOf: [
         { $ref: `${PREFIX}/KeywordQuery` },
@@ -171,7 +167,6 @@ const FixedSubQuery = {
     ],
     description: 'Fixed subquery',
 };
-
 
 const KeywordQuery = {
     description: 'Search by keyword',
@@ -183,7 +178,6 @@ const KeywordQuery = {
     required: ['queryType', 'target', 'keyword'],
     type: 'object',
 };
-
 
 const SimilarityQuery = {
     description: 'Expand some query or list of records based on following edges indicating equivalence or similarity',
@@ -222,7 +216,6 @@ const SimilarityQuery = {
     type: 'object',
 };
 
-
 const TreeQuery = {
     description: 'Query for a given vertex and then follow edges for a given direction as long as possible',
     properties: {
@@ -260,7 +253,6 @@ const TreeQuery = {
     type: 'object',
 };
 
-
 const NeighborhoodQuery = {
     description: 'Query for a vertex and then grab surrounding vertices up to a given depth',
     properties: {
@@ -295,7 +287,6 @@ const NeighborhoodQuery = {
     type: 'object',
 };
 
-
 const Query = {
     anyOf: [
         { $ref: `${PREFIX}/SubQuery` },
@@ -310,7 +301,6 @@ const Query = {
         skip: { $ref: `${PREFIX}/skip` },
     },
 };
-
 
 const Clause = {
     oneOf: [
@@ -360,11 +350,10 @@ const Comparison = {
     minProperties: 1,
     properties: {
         negate: { default: false, description: 'Negation of this comparison', type: 'boolean' },
-        operator: { enum: Object.values(OPERATORS).filter(op => !['AND', 'OR'].includes(op)), type: 'string' },
+        operator: { enum: Object.values(OPERATORS).filter((op) => !['AND', 'OR'].includes(op)), type: 'string' },
     },
     type: 'object',
 };
-
 
 module.exports = {
     Clause,
