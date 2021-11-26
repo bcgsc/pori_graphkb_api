@@ -6,7 +6,6 @@ const {
 
 const { stripSQL } = require('./util');
 
-
 describe('WrapperQuery.parseRecord', () => {
     test('select basic record', () => {
         const record = { name: 'bob' };
@@ -37,7 +36,6 @@ describe('WrapperQuery.parseRecord', () => {
         expect(params.param0).toEqual('ProteinPosition');
     });
 });
-
 
 describe('WrapperQuery.parse', () => {
     test('multiple keyword search params', () => {
@@ -91,7 +89,10 @@ describe('WrapperQuery.parse', () => {
         });
         const { query, params } = parsed.toString();
         expect(query).toEqual('SELECT *, *:{*, @rid, @class, !history} FROM (SELECT * FROM (SELECT * FROM (SELECT expand(outE(\'ElementOf\')) FROM [#124:35332]) WHERE in = :param0 AND out = :param1 AND source = :param2) WHERE deletedAt IS NULL) LIMIT 1000');
-        expect(params).toEqual({ param0: '#124:42320', param1: '#124:35332', param2: '#38:1' });
+        expect(`${params.param0}`).toEqual('#124:42320');
+        expect(`${params.param1}`).toEqual('#124:35332');
+        expect(`${params.param2}`).toEqual('#38:1');
+        expect(Object.keys(params)).toEqual(['param0', 'param1', 'param2']);
     });
 
     test('parses a simple single Comparison', () => {
@@ -127,8 +128,8 @@ describe('WrapperQuery.parse', () => {
         });
         const { query, params } = parsed.toString();
         expect(query).toEqual('SELECT * FROM Statement WHERE (conditions CONTAINSALL [:param0, :param1] AND conditions.size() = :param2)');
-        expect(params.param0).toEqual('#3:2');
-        expect(params.param1).toEqual('#4:3');
+        expect(`${params.param0}`).toEqual('#3:2');
+        expect(`${params.param1}`).toEqual('#4:3');
         expect(params.param2).toEqual(2);
     });
 
@@ -141,8 +142,8 @@ describe('WrapperQuery.parse', () => {
         });
         const { query, params } = parsed.toString();
         expect(query).toEqual('SELECT * FROM Statement WHERE conditions CONTAINSALL [:param0, :param1]');
-        expect(params.param0).toEqual('#3:2');
-        expect(params.param1).toEqual('#4:3');
+        expect(`${params.param0}`).toEqual('#3:2');
+        expect(`${params.param1}`).toEqual('#4:3');
     });
 
     test('parses embedded attribute traversal', () => {
