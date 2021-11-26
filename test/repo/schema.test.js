@@ -9,14 +9,12 @@ const {
     Property,
 } = require('../../src/repo/model');
 
-
 const OJS_TYPES = {};
 
 for (const num of Object.keys(types)) {
     const name = types[num].toLowerCase();
     OJS_TYPES[name] = num;
 }
-
 
 describe('splitSchemaClassLevels', () => {
     test('splits dependency chain', () => {
@@ -38,7 +36,6 @@ describe('splitSchemaClassLevels', () => {
         expect(levels).toHaveProperty('length', 3);
     });
 });
-
 
 describe('SCHEMA', () => {
     describe('PositionalVariant.formatRecord', () => {
@@ -121,7 +118,6 @@ describe('SCHEMA', () => {
         });
     });
 });
-
 
 describe('ClassModel', () => {
     describe('compareToDbClass', () => {
@@ -247,7 +243,7 @@ describe('ClassModel', () => {
             name: 'child',
             properties: {
                 age: { name: 'age' },
-                mom: { cast: x => x.toLowerCase(), mandatory: true, name: 'mom' },
+                mom: { cast: (x) => x.toLowerCase(), mandatory: true, name: 'mom' },
             },
             sourceModel: true,
         });
@@ -336,7 +332,7 @@ describe('ClassModel', () => {
                 name: 'example',
                 properties: {
                     thing: new Property({
-                        cast: x => x.toLowerCase().trim(),
+                        cast: (x) => x.toLowerCase().trim(),
                         name: 'thing',
                         type: 'embeddedset',
                     }),
@@ -354,7 +350,7 @@ describe('ClassModel', () => {
                 name: 'example',
                 properties: {
                     thing: new Property({
-                        cast: x => x.toLowerCase().trim(),
+                        cast: (x) => x.toLowerCase().trim(),
                         name: 'thing',
                         type: 'embeddedset',
                     }),

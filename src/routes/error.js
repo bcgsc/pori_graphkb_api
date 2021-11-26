@@ -8,9 +8,8 @@ const {
     RecordConflictError,
     AuthenticationError,
     PermissionError,
-} = require('./../repo/error');
-const { logger } = require('./../repo/logging');
-
+} = require('../repo/error');
+const { logger } = require('../repo/logging');
 
 /**
  * Main error handling for responding to the request

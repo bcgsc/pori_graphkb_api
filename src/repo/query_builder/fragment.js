@@ -1,9 +1,6 @@
-
-
 const { RecordID: RID } = require('orientjs');
 
 const { error: { AttributeError }, schema: { schema }, util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
-
 
 const { OPERATORS, PARAM_PREFIX } = require('./constants');
 const { FixedSubquery } = require('./fixed');
@@ -56,7 +53,6 @@ class Comparison {
         if (this.length && [...NUMBER_ONLY_OPERATORS, OPERATORS.EQ, OPERATORS.NE].includes(this.operator)) {
             throw new AttributeError('The length comparison can only be used with number values');
         }
-
 
         if (NUMBER_ONLY_OPERATORS.includes(this.operator)) {
             if (prop.iterable || this.valueIsIterable) {
@@ -145,7 +141,7 @@ class Comparison {
 
         const properties = getQueryableProps(model);
         const prop = name === '@this'
-            ? { choices: Object.values(schema).map(m => m.name) }
+            ? { choices: Object.values(schema).map((m) => m.name) }
             : properties[name];
 
         if (!prop) {
@@ -230,13 +226,13 @@ class Comparison {
                 const pname = `${PARAM_PREFIX}${paramIndex}`;
                 paramIndex += 1;
                 query = `(${attr} ${OPERATORS.CONTAINSALL} [${
-                    Array.from(Object.keys(params), p => `:${p}`).join(', ')
+                    Array.from(Object.keys(params), (p) => `:${p}`).join(', ')
                 }] AND ${attr}.size() = :${pname})`;
 
                 params[pname] = this.value.length;
             } else {
                 query = `${attr} ${this.operator} [${
-                    Array.from(Object.keys(params), p => `:${p}`).join(', ')
+                    Array.from(Object.keys(params), (p) => `:${p}`).join(', ')
                 }]`;
             }
         } else if (attr === '@this') {
@@ -262,7 +258,6 @@ class Comparison {
         return { params, query };
     }
 }
-
 
 class Clause {
     constructor(model, operator, filters) {
@@ -309,7 +304,6 @@ class Clause {
         return new this(model, operator, parsedFilters);
     }
 
-
     /**
      * @param {int} [initialParamIndex=0] the number to append to parameter names
      */
@@ -319,9 +313,7 @@ class Clause {
         let paramIndex = initialParamIndex;
 
         for (const comp of this.filters) {
-            const result = comp.toString(
-                paramIndex, prefix,
-            );
+            const result = comp.toString(paramIndex, prefix);
 
             if (comp instanceof Clause && comp.filters.length > 1) {
                 // wrap in brackets
@@ -335,7 +327,6 @@ class Clause {
         return { params, query };
     }
 }
-
 
 class Subquery {
     constructor({
@@ -360,7 +351,7 @@ class Subquery {
             params = {};
 
         if (Array.isArray(target)) {
-            targetString = `[${target.map(rid => rid.toString()).join(', ')}]`;
+            targetString = `[${target.map((rid) => rid.toString()).join(', ')}]`;
         } else if (target.isSubquery) {
             const { query: subQuery, params: subParams } = target.toString(paramIndex, prefix);
             paramIndex += Object.keys(subParams).length;
@@ -437,19 +428,19 @@ class Subquery {
 
         if (model && model.isEdge && queryType !== 'edge' && filters && typeof target === 'string') {
             // stop the user from making very inefficient queries
-            if (filters.AND.some(cond => cond.out)) {
+            if (filters.AND.some((cond) => cond.out)) {
                 target = this.parse({
                     direction: 'out',
                     queryType: 'edge',
                     target: model.name,
-                    vertexFilter: filters.AND.find(cond => cond.out).out,
+                    vertexFilter: filters.AND.find((cond) => cond.out).out,
                 });
-            } else if (filters.AND.some(cond => cond.in)) {
+            } else if (filters.AND.some((cond) => cond.in)) {
                 target = this.parse({
                     direction: 'in',
                     queryType: 'edge',
                     target: model.name,
-                    vertexFilter: filters.AND.find(cond => cond.in).in,
+                    vertexFilter: filters.AND.find((cond) => cond.in).in,
                 });
             }
         }
@@ -462,7 +453,6 @@ class Subquery {
         if (filters) {
             filters = Clause.parse(model || defaultModel, filters);
         }
-
 
         if (queryType) {
             if (!filters) {
@@ -479,6 +469,5 @@ class Subquery {
         });
     }
 }
-
 
 module.exports = { Subquery };

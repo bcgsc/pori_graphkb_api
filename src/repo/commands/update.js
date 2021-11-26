@@ -1,4 +1,3 @@
-
 /**
  * Contains all functions for directly interacting with the database
  */
@@ -14,13 +13,13 @@ const {
     schema: schemaDefn,
 } = require('@bcgsc-pori/graphkb-schema');
 
-const { logger } = require('./../logging');
+const { logger } = require('../logging');
 
 const {
     NotImplementedError,
     PermissionError,
     RecordConflictError,
-} = require('./../error');
+} = require('../error');
 const {
     omitDBAttributes, wrapIfTypeError, hasRecordAccess,
 } = require('./util');
@@ -28,7 +27,6 @@ const { select, fetchDisplayName } = require('./select');
 const { nestedProjection } = require('../query_builder/projection');
 const { parse } = require('../query_builder');
 const { checkUserAccessFor } = require('../../middleware/auth');
-
 
 /**
  * Create the transaction to copy the current node as history and then update the current node
@@ -81,21 +79,20 @@ const updateStatementTx = async (db, opt) => {
     });
 
     const commit = db
-        .let('copy', tx => tx.create('VERTEX', 'Statement')
+        .let('copy', (tx) => tx.create('VERTEX', 'Statement')
             .set(content));
 
     commit
-        .let('updated', tx => tx.update(original['@rid'])
+        .let('updated', (tx) => tx.update(original['@rid'])
             .set(formattedChanges)
             .set('history = $copy[0]')
             .where({ createdAt: original.createdAt })
             .return('AFTER @rid'))
-        .let('result', tx => tx.select()
+        .let('result', (tx) => tx.select()
             .from(original['@class']).where({ '@rid': original['@rid'] }));
 
     return commit.commit();
 };
-
 
 /**
  * Create the transaction to copy the current node as history and then update the current node
@@ -135,9 +132,7 @@ const updateNodeTx = async (db, opt) => {
 
     // regenerate the displayName if it was not given
     if (!changes.displayName && model.properties.displayName) {
-        changes.displayName = await fetchDisplayName(
-            db, model, postUpdateRecord,
-        );
+        changes.displayName = await fetchDisplayName(db, model, postUpdateRecord);
     }
     content.deletedAt = timeStampNow();
     content.deletedBy = userRID;
@@ -154,20 +149,20 @@ const updateNodeTx = async (db, opt) => {
 
     if (model.inherits.includes('V')) {
         commit = db
-            .let('copy', tx => tx.create('VERTEX', original['@class'])
+            .let('copy', (tx) => tx.create('VERTEX', original['@class'])
                 .set(content));
     } else {
         commit = db
-            .let('copy', tx => tx.insert().into(original['@class'])
+            .let('copy', (tx) => tx.insert().into(original['@class'])
                 .set(content));
     }
     commit
-        .let('updated', tx => tx.update(original['@rid'])
+        .let('updated', (tx) => tx.update(original['@rid'])
             .set(omitDBAttributes(changes))
             .set('history = $copy[0]')
             .where({ createdAt: original.createdAt })
             .return('AFTER @rid'))
-        .let('result', tx => tx.select()
+        .let('result', (tx) => tx.select()
             .from(original['@class']).where({ '@rid': original['@rid'] }));
 
     return commit.commit();
@@ -219,31 +214,30 @@ const modifyEdgeTx = async (db, opt) => {
     }
     // create the transaction to update the edge. Uses the createdAt stamp to avoid concurrency errors
     const commit = db
-        .let('srcCopy', tx => tx.create('VERTEX', src['@class'])
+        .let('srcCopy', (tx) => tx.create('VERTEX', src['@class'])
             .set(srcCopy))
-        .let('src', tx => tx.update(src['@rid'])
+        .let('src', (tx) => tx.update(src['@rid'])
             .set('history = $srcCopy[0]')
             .set({ createdAt: timeStampNow(), createdBy: userRID })
             .where({ createdAt: src.createdAt })
             .return('AFTER @rid'))
-        .let('tgtCopy', tx => tx.create('VERTEX', tgt['@class'])
+        .let('tgtCopy', (tx) => tx.create('VERTEX', tgt['@class'])
             .set(tgtCopy))
-        .let('tgt', tx => tx.update(tgt['@rid'])
+        .let('tgt', (tx) => tx.update(tgt['@rid'])
             .set('history = $tgtCopy[0]')
             .set({ createdAt: timeStampNow(), createdBy: userRID })
             .where({ createdAt: tgt.createdAt })
             .return('AFTER @rid'));
 
-
     if (changes === null) {
         // deletion
         commit
-            .let('deleted', tx => tx.update(`EDGE ${original['@rid']}`)
+            .let('deleted', (tx) => tx.update(`EDGE ${original['@rid']}`)
                 .where({ createdAt: original.createdAt })
                 .set('out = $srcCopy[0]').set('in = $tgtCopy[0]')
                 .set({ deletedAt: timeStampNow(), deletedBy: userRID })
                 .return('AFTER @rid'))
-            .let('result', tx => tx.select().from(original['@class']).where({ '@rid': original['@rid'] }));
+            .let('result', (tx) => tx.select().from(original['@class']).where({ '@rid': original['@rid'] }));
         // .let('result', tx => tx.select('*, *:{*, @rid, @class}').from('(select expand($deleted[0]))')); // See https://github.com/orientechnologies/orientdb/issues/8786
     } else {
         // edge update
@@ -274,7 +268,7 @@ const deleteNodeTx = async (db, opt) => {
     const { original } = opt;
     const userRID = castToRID(opt.user);
     const commit = db
-        .let('deleted', tx => tx.update(original['@rid'])
+        .let('deleted', (tx) => tx.update(original['@rid'])
             .set({ deletedAt: timeStampNow(), deletedBy: userRID })
             .where({ createdAt: original.createdAt }));
     const updatedVertices = {}; // mapping of rid string to let variable name
@@ -310,9 +304,9 @@ const deleteNodeTx = async (db, opt) => {
             if (updatedVertices[target.toString()] === undefined) {
                 const name = `newVertex${Object.keys(updatedVertices).length}`;
                 commit
-                    .let(name, tx => tx.create('VERTEX', targetNode['@class'])
+                    .let(name, (tx) => tx.create('VERTEX', targetNode['@class'])
                         .set(targetContent))
-                    .let(`vertex${Object.keys(updatedVertices).length}`, tx => tx.update(target)
+                    .let(`vertex${Object.keys(updatedVertices).length}`, (tx) => tx.update(target)
                         .set(`history = $${name}[0]`)
                         .set({ createdAt: timeStampNow(), createdBy: userRID })
                         .where({ createdAt: targetContent.createdAt })
@@ -322,17 +316,16 @@ const deleteNodeTx = async (db, opt) => {
 
             // move the current edge to point to the copied node
             edgeCount += 1;
-            commit.let(`edge${edgeCount}`, tx => tx.update(castToRID(value))
+            commit.let(`edge${edgeCount}`, (tx) => tx.update(castToRID(value))
                 .set({ deletedAt: timeStampNow(), deletedBy: userRID })
                 .set(`${direction} = $${updatedVertices[target.toString()]}[0]`)
                 .where({ createdAt: value.createdAt })
                 .return('AFTER @rid'));
         }
     }
-    commit.let('result', tx => tx.select().from(original['@class']).where({ '@rid': original['@rid'] }));
+    commit.let('result', (tx) => tx.select().from(original['@class']).where({ '@rid': original['@rid'] }));
     return commit.commit();
 };
-
 
 /**
  * Check if the record to be deleted is used by some links
@@ -406,7 +399,6 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
     }
 };
 
-
 /**
  * uses a transaction to copy the current record into a new record
  * then update the actual current record (to preserve links)
@@ -449,12 +441,14 @@ const modify = async (db, opt) => {
     // now delete the record
     const changes = opt.changes === null
         ? null
-        : Object.assign({}, model.formatRecord(opt.changes, {
-            addDefaults: false,
-            dropExtra: false,
-            ignoreExtra: false,
-            ignoreMissing: true,
-        }));
+        : ({
+            ...model.formatRecord(opt.changes, {
+                addDefaults: false,
+                dropExtra: false,
+                ignoreExtra: false,
+                ignoreMissing: true,
+            }),
+        });
 
     if (!paranoid) {
         try {
@@ -497,7 +491,6 @@ const modify = async (db, opt) => {
     }
 };
 
-
 /**
  * Update a node or edge.
  *
@@ -524,8 +517,7 @@ const update = async (db, opt) => {
  * @param {Object} opt.user the user updating the record
  * @param {ClassModel} opt.model the class model
  */
-const remove = async (db, opt) => modify(db, Object.assign({}, opt, { changes: null }));
-
+const remove = async (db, opt) => modify(db, { ...opt, changes: null });
 
 module.exports = {
     modifyEdgeTx,

@@ -1,5 +1,3 @@
-
-
 /**
  * Contains all functions for directly interacting with the database
  */
@@ -24,15 +22,14 @@ const {
 const { trimRecords } = require('../util');
 const { wrapIfTypeError } = require('./util');
 
-
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
 
 const groupableParams = Object.values(schema.V.queryProperties)
-    .filter(prop => prop.linkedClass && (
+    .filter((prop) => prop.linkedClass && (
         Object.keys(prop.linkedClass.queryProperties).includes('displayName')
     ))
-    .map(prop => prop.name);
+    .map((prop) => prop.name);
 
 /**
  * @param {orientjs.Db} db the database connection object
@@ -89,7 +86,6 @@ const selectCounts = async (db, opt = {}) => {
     return counts;
 };
 
-
 /**
  * Given a user name return the active record. Groups will be returned in full so that table level
  * permissions can be checked
@@ -114,7 +110,7 @@ const getUserByName = async (db, username) => {
     }
 
     if (user.length > 1) {
-        logger.error(`selected multiple users: ${user.map(r => r['@rid']).join(', ')}`);
+        logger.error(`selected multiple users: ${user.map((r) => r['@rid']).join(', ')}`);
         throw new MultipleRecordsFoundError(`username (${username}) is not unique and returned multiple (${user.length}) records`);
     } else if (user.length === 0) {
         throw new NoRecordFoundError(`no user found for the username '${username}'`);
@@ -122,7 +118,6 @@ const getUserByName = async (db, username) => {
         return user[0];
     }
 };
-
 
 /**
  * Builds the query statement for selecting or matching records from the database
@@ -235,15 +230,15 @@ const fetchDisplayName = async (db, model, content) => {
             }),
         );
         const recordsById = {};
-        const recId = x => castToRID(x).toString();
+        const recId = (x) => castToRID(x).toString();
 
         for (const record of records) {
             recordsById[record['@rid']] = record;
         }
         const templateContent = {
             ...content,
-            conditions: content.conditions.map(rid => recordsById[recId(rid)]),
-            evidence: content.evidence.map(rid => recordsById[recId(rid)]),
+            conditions: content.conditions.map((rid) => recordsById[recId(rid)]),
+            evidence: content.evidence.map((rid) => recordsById[recId(rid)]),
             relevance: recordsById[recId(content.relevance)],
             subject: recordsById[recId(content.subject)],
         };
@@ -251,7 +246,6 @@ const fetchDisplayName = async (db, model, content) => {
     }
     return content.name;
 };
-
 
 module.exports = {
     QUERY_LIMIT,

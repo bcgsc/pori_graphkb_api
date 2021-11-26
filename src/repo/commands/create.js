@@ -26,8 +26,8 @@ const createUser = async (db, opt) => {
     } = opt;
     const userGroups = await db.select().from('UserGroup').all();
     const groupIds = Array.from(userGroups.filter(
-        group => groupNames.includes(group.name),
-    ), group => group['@rid']);
+        (group) => groupNames.includes(group.name),
+    ), (group) => group['@rid']);
     const record = SCHEMA_DEFN.User.formatRecord({
         groups: groupIds,
         name: userName,
@@ -85,7 +85,6 @@ const createEdge = async (db, opt) => {
     }
 };
 
-
 /**
  * create new record in the database
  *
@@ -115,7 +114,7 @@ const create = async (db, opt) => {
     );
 
     if (model.name === 'Statement') {
-        if (!record.conditions.map(c => c.toString()).includes(record.subject.toString())) {
+        if (!record.conditions.map((c) => c.toString()).includes(record.subject.toString())) {
             record.conditions.push(record.subject);
             // TODO: handle this on the front-end instead of the API
             // throw new AttributeError('Statement subject must also be present in the record conditions');
@@ -154,6 +153,5 @@ const create = async (db, opt) => {
         throw wrapIfTypeError(err);
     }
 };
-
 
 module.exports = { create, createUser };

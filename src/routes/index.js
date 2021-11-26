@@ -1,4 +1,3 @@
-
 const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 
@@ -7,7 +6,7 @@ const { variant: { parse: variantParser }, error: { ParsingError } } = require('
 
 const openapi = require('./openapi');
 const resource = require('./resource');
-const { logger } = require('./../repo/logging');
+const { logger } = require('../repo/logging');
 const {
     checkStandardOptions,
 } = require('../repo/query_builder/util');
@@ -15,14 +14,12 @@ const { selectCounts } = require('../repo/commands');
 const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
 
-
-const parseClassListQueryParam = param => param.split(',').map(cls => schemaDefn.get(cls).name);
-
+const parseClassListQueryParam = (param) => param.split(',').map((cls) => schemaDefn.get(cls).name);
 
 const addStatsRoute = (app) => {
     // add the stats route
     const defaultClassList = Object.keys(schema).filter(
-        name => !schema[name].isAbstract
+        (name) => !schema[name].isAbstract
             && schema[name].subclasses.length === 0 // terminal classes only
             && !schema[name].embedded,
     );
@@ -51,7 +48,6 @@ const addStatsRoute = (app) => {
     });
 };
 
-
 const addParserRoute = (app) => {
     logger.info('NEW ROUTE [POST] /parse');
     app.router.post('/parse', async (req, res, next) => {
@@ -75,7 +71,6 @@ const addParserRoute = (app) => {
         }
     });
 };
-
 
 module.exports = {
     addErrorRoute, addParserRoute, addQueryRoute, addStatsRoute, openapi, resource,

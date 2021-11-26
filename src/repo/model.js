@@ -9,7 +9,6 @@ const kbSchema = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('./logging');
 
-
 class Property extends kbSchema.Property {
     /**
      * Create the property in the database
@@ -46,7 +45,6 @@ class Property extends kbSchema.Property {
     }
 }
 
-
 class ClassModel extends kbSchema.ClassModel {
     /**
      * Create this class (and its properties) in the database
@@ -64,7 +62,7 @@ class ClassModel extends kbSchema.ClassModel {
             graceful = false,
         } = opt;
         const inherits = model._inherits
-            ? Array.from(model._inherits, x => x.name).join(',')
+            ? Array.from(model._inherits, (x) => x.name).join(',')
             : null;
         let cls;
 
@@ -76,8 +74,8 @@ class ClassModel extends kbSchema.ClassModel {
 
         if (properties) {
             await Promise.all(Array.from(
-                Object.values(model._properties).filter(prop => !prop.name.startsWith('@') && !model.inheritsProperty(prop.name)),
-                async prop => Property.create(prop, cls),
+                Object.values(model._properties).filter((prop) => !prop.name.startsWith('@') && !model.inheritsProperty(prop.name)),
+                async (prop) => Property.create(prop, cls),
             ));
         }
         if (indices) {
@@ -107,7 +105,7 @@ class ClassModel extends kbSchema.ClassModel {
             };
             await Promise.all(
                 model.indices
-                    .filter(i => this.checkDbCanCreateIndex(model, i))
+                    .filter((i) => this.checkDbCanCreateIndex(model, i))
                     .map(createIndex),
             );
         }
@@ -180,7 +178,6 @@ class ClassModel extends kbSchema.ClassModel {
         }
     }
 }
-
 
 module.exports = {
     ClassModel,

@@ -5,7 +5,6 @@
 const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
 const { groupableParams } = require('../../repo/commands/select');
 
-
 const POST_TOKEN = {
     parameters: [
         { $ref: '#/components/parameters/Content-Type' },
@@ -81,7 +80,6 @@ const POST_TOKEN = {
     tags: ['General', 'Permissions'],
 };
 
-
 const POST_PARSE = {
     requestBody: {
         content: {
@@ -127,7 +125,6 @@ const GET_SCHEMA = {
     tags: ['Metadata'],
 };
 
-
 const GET_VERSION = {
     parameters: [
         { $ref: '#/components/parameters/Accept' },
@@ -152,7 +149,6 @@ const GET_VERSION = {
     tags: ['Metadata'],
 };
 
-
 const GET_STATS = {
     parameters: [
         { $ref: '#/components/parameters/Accept' },
@@ -172,7 +168,7 @@ const GET_STATS = {
             name: 'classList',
             schema: {
                 example: 'Statement',
-                pattern: `^(${Object.values(schema).filter(model => !model.isAbstract).map(model => model.name).join('|')})+$`,
+                pattern: `^(${Object.values(schema).filter((model) => !model.isAbstract).map((model) => model.name).join('|')})+$`,
                 type: 'string',
             },
         },
@@ -238,7 +234,6 @@ const GET_STATS = {
     summary: 'Returns counts for all non-abstract database classes',
     tags: ['Metadata'],
 };
-
 
 const QUERY = {
     requestBody: {
@@ -338,7 +333,6 @@ const QUERY = {
     summary: 'Query the database',
     tags: ['General'],
 };
-
 
 const POST_SIGN_LICENSE = {
     responses: {

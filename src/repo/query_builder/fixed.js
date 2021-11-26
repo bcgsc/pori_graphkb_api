@@ -14,15 +14,14 @@ const {
     variant: { parse: parseVariant },
     error: { ParsingError },
 } = require('@bcgsc-pori/graphkb-parser');
-const { quoteWrap } = require('./../util');
+const { quoteWrap } = require('../util');
 
 const {
     MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE, SIMILARITY_EDGES, TREE_EDGES,
 } = require('./constants');
 const { castRangeInt } = require('./util');
 
-
-const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map(e => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
+const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
 
 /**
  * @param {Object} opt options
@@ -43,7 +42,7 @@ const treeQuery = (opt) => {
         target = rawTarget;
 
     if (Array.isArray(rawTarget)) {
-        target = `[${rawTarget.map(castToRID).map(rid => rid.toString()).join(', ')}]`;
+        target = `[${rawTarget.map(castToRID).map((rid) => rid.toString()).join(', ')}]`;
     } else if (schema[target] === undefined) {
         throw new AttributeError(`Invalid target class (${target})`);
     } else {
@@ -100,9 +99,7 @@ RETURN DISTINCT $pathElements)`;
     return { params, query: statement };
 };
 
-
-const recordsAsTarget = (...target) => `[${target.map(p => castToRID(p).toString()).join(', ')}]`;
-
+const recordsAsTarget = (...target) => `[${target.map((p) => castToRID(p).toString()).join(', ')}]`;
 
 const similarTo = ({
     target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = TREE_EDGES, matchType, ...rest
@@ -132,7 +129,7 @@ const similarTo = ({
         params = { ...initialParams };
     }
 
-    const treeEdgeStrings = treeEdges.map(e => `'${e}'`).join(', ');
+    const treeEdgeStrings = treeEdges.map((e) => `'${e}'`).join(', ');
 
     // disambiguate
 
@@ -167,7 +164,6 @@ const similarTo = ({
     }
     return { params, query };
 };
-
 
 /**
  * From some starting node (defined by the where clause conditions) follow all incoming edges and
@@ -211,7 +207,6 @@ const buildLooseSearch = (cls, name) => ({
         target: cls,
     },
 });
-
 
 const buildHgvsQuery = (hgvsInput) => {
     const parsed = parseVariant(hgvsInput);
@@ -306,7 +301,6 @@ const buildHgvsQuery = (hgvsInput) => {
 
     return payload;
 };
-
 
 const singleKeywordSearch = ({
     target,
@@ -438,7 +432,6 @@ const edgeQuery = ({
     };
 };
 
-
 const keywordSearch = ({
     target,
     keyword,
@@ -466,13 +459,13 @@ const keywordSearch = ({
 
     // remove any duplicate words
     const wordList = operator === OPERATORS.CONTAINSTEXT
-        ? keyword.split(/\s+/).map(word => word.trim().toLowerCase())
+        ? keyword.split(/\s+/).map((word) => word.trim().toLowerCase())
         : [keyword.trim().toLowerCase()];
 
     if (wordList.length < 1) {
         throw new AttributeError('missing keywords');
     }
-    const keywords = Array.from(new Set(wordList)).filter(k => k).sort();
+    const keywords = Array.from(new Set(wordList)).filter((k) => k).sort();
 
     const params = {};
 
@@ -485,9 +478,7 @@ const keywordSearch = ({
             try {
                 return subQueryParser(
                     buildHgvsQuery(word),
-                ).toString(
-                    paramIndex, prefix,
-                );
+                ).toString(paramIndex, prefix);
             } catch (err) {
                 if (!(err instanceof ParsingError)) {
                     throw err;
@@ -518,7 +509,6 @@ const keywordSearch = ({
 
     return { params, query: `SELECT DISTINCT * FROM (${query}) WHERE deletedAt IS NULL` };
 };
-
 
 class FixedSubquery {
     constructor(queryType, queryBuilder, opt = {}) {
@@ -554,6 +544,5 @@ class FixedSubquery {
         throw new AttributeError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
     }
 }
-
 
 module.exports = { FixedSubquery };

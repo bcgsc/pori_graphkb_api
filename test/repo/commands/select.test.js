@@ -1,4 +1,3 @@
-
 const {
     schema: {
         schema,
@@ -6,7 +5,6 @@ const {
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { fetchDisplayName } = require('../../../src/repo/commands/select');
-
 
 describe('fetchDisplayName', () => {
     afterEach(() => {

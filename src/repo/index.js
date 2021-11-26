@@ -9,7 +9,6 @@ const { createUser, update, getUserByName } = require('./commands');
 const { RecordConflictError } = require('./error');
 const { parseRecord } = require('./query_builder');
 
-
 /**
  * Create the database and schema
  */
@@ -112,7 +111,6 @@ const connectDB = async ({
         }
     }
 
-
     logger.log('info', `connecting to the database (${GKB_DB_NAME}) as ${GKB_DB_USER}`);
     let pool,
         session;
@@ -172,7 +170,6 @@ const connectDB = async ({
     return { pool, schema, server };
 };
 
-
 /**
  * Add a login to the users record
  */
@@ -194,6 +191,5 @@ const incrementUserVisit = async (db, username) => {
         user: userRecord,
     });
 };
-
 
 module.exports = { connectDB, incrementUserVisit };

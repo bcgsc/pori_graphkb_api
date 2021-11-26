@@ -1,10 +1,7 @@
-
-
 const {
     groupRecordsBy,
     trimRecords,
 } = require('../../src/repo/util');
-
 
 describe('groupRecordsBy', () => {
     test('groups single level', () => {
@@ -67,7 +64,6 @@ describe('groupRecordsBy', () => {
         });
     });
 });
-
 
 describe('trimRecords', () => {
     test('removes protected records (default ok)', async () => {

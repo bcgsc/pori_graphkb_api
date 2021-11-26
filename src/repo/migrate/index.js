@@ -15,7 +15,7 @@ const {
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 const { PERMISSIONS } = constants;
 
-const { logger } = require('./../logging');
+const { logger } = require('../logging');
 const { Property, ClassModel } = require('../model');
 const { generateDefaultGroups, DEFAULT_LICENSE_CONTENT } = require('../schema');
 
@@ -42,18 +42,17 @@ const requiresMigration = (currentVersion, targetVersion) => {
 const migrate16Xto17X = async (db) => {
     logger.info('Indexing Variant.type');
     await db.index.create(
-        SCHEMA_DEFN.Variant.indices.find(item => item.name === 'Variant.type'),
+        SCHEMA_DEFN.Variant.indices.find((item) => item.name === 'Variant.type'),
     );
     logger.info('Indexing Statement.relevance');
     await db.index.create(
-        SCHEMA_DEFN.Statement.indices.find(item => item.name === 'Statement.relevance'),
+        SCHEMA_DEFN.Statement.indices.find((item) => item.name === 'Statement.relevance'),
     );
     logger.info('Indexing Statement.appliesTo');
     await db.index.create(
-        SCHEMA_DEFN.Statement.indices.find(item => item.name === 'Statement.appliesTo'),
+        SCHEMA_DEFN.Statement.indices.find((item) => item.name === 'Statement.appliesTo'),
     );
 };
-
 
 /**
  * Migrate any 1.7.X database to any 1.8.X database
@@ -66,7 +65,6 @@ const migrate17Xto18X = async (db) => {
     const dbClass = await db.class.get(SCHEMA_DEFN.Statement.name);
     await Property.create(evidenceLevel, dbClass);
 };
-
 
 const addClassToPermissionsSchema = async (db, model) => {
     await db.command(`CREATE PROPERTY Permissions.${model.name} INTEGER (NOTNULL TRUE, MIN 0, MAX 15)`).all();
@@ -84,7 +82,6 @@ const addClassToPermissionsSchema = async (db, model) => {
     await db.command(`UPDATE UserGroup SET permissions.${model.name} = ${Number(PERMISSIONS.READ)} where name = 'readonly'`).all();
 };
 
-
 /**
  * Migrate any 1.8.X database to any 1.9.X database
  *
@@ -97,7 +94,6 @@ const migrate18Xto19X = async (db) => {
     await db.command('DROP PROPERTY Permissions.EvidenceGroup').all();
     logger.info('Update the existing usergroup permission schemes: remove Permissions.EvidenceGroup');
     await db.command('UPDATE UserGroup REMOVE permissions.EvidenceGroup').all();
-
 
     for (const subclass of ['EvidenceLevel', 'ClinicalTrial', 'Publication']) {
         logger.info(`Remove Evidence as parent from ${subclass}`);
@@ -116,7 +112,6 @@ const migrate18Xto19X = async (db) => {
         await db.command(`ALTER CLASS ${subclass} SUPERCLASS +Evidence`).all();
     }
 
-
     logger.info('Add actionType property to class TargetOf');
     const { actionType } = SCHEMA_DEFN.TargetOf.properties;
     const targetof = await db.class.get(SCHEMA_DEFN.TargetOf.name);
@@ -129,7 +124,7 @@ const migrate18Xto19X = async (db) => {
     logger.info('Add addition Source properties');
     const source = await db.class.get(SCHEMA_DEFN.Source.name);
     const { license, licenseType, citation } = SCHEMA_DEFN.Source.properties;
-    await Promise.all([license, licenseType, citation].map(prop => Property.create(prop, source)));
+    await Promise.all([license, licenseType, citation].map((prop) => Property.create(prop, source)));
 };
 
 /**
@@ -159,7 +154,6 @@ const migrate2from0xto1x = async (db) => {
     await db.command('DROP Property ClinicalTrial.completionYear').all();
 };
 
-
 const migrate2from1xto2x = async (db) => {
     for (const name of ['Therapy', 'Feature', 'AnatomicalEntity', 'Disease', 'Pathway', 'Signature', 'Vocabulary', 'CatalogueVariant']) {
         logger.info(`removing Biomarker from superclasses of ${name}`);
@@ -171,7 +165,6 @@ const migrate2from1xto2x = async (db) => {
     logger.info('Create the new RnaPostion class');
     await ClassModel.create(SCHEMA_DEFN.RnaPosition, db);
 };
-
 
 const migrate2from2xto3x = async () => {
     // add timestamp index tp vertex class (typo prevents edge index)
@@ -192,15 +185,14 @@ const migrate2from3xto4x = async (db) => {
     await addClassToPermissionsSchema(db, SCHEMA_DEFN.Abstract);
 };
 
-
 const migrate2from4xto5x = async (db) => {
     logger.info('Indexing V.createdAt');
     await db.index.create(
-        SCHEMA_DEFN.V.indices.find(item => item.name === 'V.createdAt'),
+        SCHEMA_DEFN.V.indices.find((item) => item.name === 'V.createdAt'),
     );
     logger.info('Indexing E.createdAt');
     await db.index.create(
-        SCHEMA_DEFN.E.indices.find(item => item.name === 'E.createdAt'),
+        SCHEMA_DEFN.E.indices.find((item) => item.name === 'E.createdAt'),
     );
 };
 
@@ -260,7 +252,6 @@ const migrate2to3From6xto0x = async (db) => {
     await ClassModel.create(SCHEMA_DEFN.Statement, db, { graceful: true, indices: true, properties: false });
 };
 
-
 const migrate3From0xto1x = async (db) => {
     // remake any missing indices (were renamed here)
     await ClassModel.create(SCHEMA_DEFN.Statement, db, { graceful: true, indices: true, properties: false });
@@ -271,7 +262,6 @@ const migrate3From0xto1x = async (db) => {
     const source = await db.class.get(SCHEMA_DEFN.Source.name);
     await Property.create(sort, source);
 };
-
 
 const migrate3From1xto2x = async (db) => {
     // convert evidence level to a linkset
@@ -298,10 +288,9 @@ const migrate3From1xto2x = async (db) => {
     // re-build the indices
     logger.info('Indexing Statement.evidenceLevel');
     await db.index.create(
-        SCHEMA_DEFN.Statement.indices.find(item => item.name === 'Statement.evidenceLevel'),
+        SCHEMA_DEFN.Statement.indices.find((item) => item.name === 'Statement.evidenceLevel'),
     );
 };
-
 
 const migrate3From2xto3x = async (db) => {
     // add the new user groups
@@ -315,7 +304,7 @@ const migrate3From2xto3x = async (db) => {
     logger.info('get the user group class');
 
     for (const group of userGroups) {
-        const existing = groups.find(g => g.name === group.name);
+        const existing = groups.find((g) => g.name === group.name);
 
         if (!existing) {
             logger.info(`creating the user group (${group.name})`);
@@ -327,7 +316,6 @@ const migrate3From2xto3x = async (db) => {
         }
     }
 };
-
 
 const migrate3From3xto4x = async (db) => {
     // add the new user groups
@@ -366,7 +354,7 @@ const migrate3From3xto4x = async (db) => {
     for (const [template, recordList] of Object.entries(updatedTemplates)) {
         logger.info(`Updating ${recordList.length} statements to use the template "${template}"`);
         await db.command(`UPDATE Statement SET displayNameTemplate = :template WHERE @rid IN [${
-            recordList.map(r => r.toString()).join(', ')
+            recordList.map((r) => r.toString()).join(', ')
         }]`, { params: { template } }).all();
     }
 };
@@ -376,7 +364,7 @@ const migrate3From4xto5x = async (db) => {
     // modify the permissions on the existing groups
     logger.info('recreate fulltext index');
 
-    for (const index of SCHEMA_DEFN.Ontology.indices.filter(i => i.type === 'FULLTEXT')) {
+    for (const index of SCHEMA_DEFN.Ontology.indices.filter((i) => i.type === 'FULLTEXT')) {
         await db.command(`DROP INDEX ${index.name}`).all();
         await db.index.create(index);
     }
@@ -426,7 +414,6 @@ const migrate3xFrom8xto9x = async (db) => {
         await Property.create(prop, dbClass);
     }
 };
-
 
 const migrate3xFrom9xto10x = async (db) => {
     const trialsClass = await db.class.get(SCHEMA_DEFN.ClinicalTrial.name);
@@ -482,10 +469,9 @@ const migrate3xFrom9xto10x = async (db) => {
 
     logger.info('create the index on V.updatedAt');
     await db.index.create(
-        SCHEMA_DEFN.V.indices.find(item => item.name === 'V.updatedAt'),
+        SCHEMA_DEFN.V.indices.find((item) => item.name === 'V.updatedAt'),
     );
 };
-
 
 const migrate3xFrom10xto11x = async (db) => {
     for (const [className, propertyName] of [
@@ -501,7 +487,6 @@ const migrate3xFrom10xto11x = async (db) => {
     }
 };
 
-
 const migrate3xFrom11xto12x = async (db) => {
     for (const [className, propertyName] of [
         ['Ontology', 'alias'],
@@ -516,12 +501,10 @@ const migrate3xFrom11xto12x = async (db) => {
     await db.command('UPDATE Ontology SET alias = FALSE WHERE alias IS NULL').all();
 };
 
-
 const migrate3xFrom12xto13x = async (db) => {
     logger.info('Create the new NonCdsPostion class');
     await ClassModel.create(SCHEMA_DEFN.NonCdsPosition, db);
 };
-
 
 const migrate3xFrom13xto14x = async (db) => {
     const dbClass = await db.class.get('User');
@@ -555,7 +538,6 @@ const migrate3xFrom13xto14x = async (db) => {
         }).all();
     }
 };
-
 
 const migrate3xFrom14xto15x = async (db) => {
     // remove the MIN constraint
@@ -621,7 +603,6 @@ const migrate3xFrom14xto15x = async (db) => {
     }
 };
 
-
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -632,7 +613,6 @@ const logMigration = async (db, name, url, version) => {
     });
     return version;
 };
-
 
 /**
  * Detects the current version of the db, the version of the node module and attempts

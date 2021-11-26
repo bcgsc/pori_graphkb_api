@@ -1,5 +1,3 @@
-
-
 const uuidV4 = require('uuid/v4');
 
 const { getUserByName } = require('../src/repo/commands');
@@ -19,7 +17,6 @@ const setUpEmptyDB = async (conf) => {
     };
 };
 
-
 const clearDB = async (db, admin) => {
     // clear all V/E records
     await db.command('delete edge e').all();
@@ -27,6 +24,5 @@ const clearDB = async (db, admin) => {
     await db.command(`delete from user where name != '${admin.name}'`).all();
     await db.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\'').all();
 };
-
 
 module.exports = { clearDB, setUpEmptyDB };

@@ -1,4 +1,4 @@
-const stripSQL = string => string
+const stripSQL = (string) => string
     .replace(/\s+\./g, '.')
     .replace(/\(\s+/g, '(')
     .replace(/\s+\)/g, ')')
@@ -6,7 +6,6 @@ const stripSQL = string => string
     .replace(/\n\s+\}/g, '}')
     .replace(/\s+/g, ' ')
     .trim();
-
 
 const printFunctionName = (func, value) => {
     if (value instanceof Function) {

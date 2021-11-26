@@ -12,7 +12,7 @@ const { generateToken } = require('../../src/routes/auth');
 
 const { createEmptyDb, tearDownDb } = require('./util');
 
-const request = async opt => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
+const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 
 const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
