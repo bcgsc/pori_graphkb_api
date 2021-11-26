@@ -1,6 +1,6 @@
 # GraphKB API
 
-![build](https://github.com/bcgsc/pori_graphkb_api/workflows/build/badge.svg?branch=master) [![codecov](https://codecov.io/gh/bcgsc/pori_graphkb_api/branch/master/graph/badge.svg?token=XDTDIQ5793)](https://codecov.io/gh/bcgsc/pori_graphkb_api) ![node versions](https://img.shields.io/badge/node-12%20%7C%2014%20%7C%2016-blue) [![orientdb versions](https://img.shields.io/badge/orientdb-3.0%20%7C%203.1-blue)](https://www.orientdb.org/) ![centos build](https://www.bcgsc.ca/bamboo/plugins/servlet/wittified/build-status/PORI-GA)
+![build](https://github.com/bcgsc/pori_graphkb_api/workflows/build/badge.svg?branch=master) [![codecov](https://codecov.io/gh/bcgsc/pori_graphkb_api/branch/master/graph/badge.svg?token=XDTDIQ5793)](https://codecov.io/gh/bcgsc/pori_graphkb_api) ![node versions](https://img.shields.io/badge/node-12%20%7C%2014%20%7C%2016-blue) [![orientdb versions](https://img.shields.io/badge/orientdb-3.0%20%7C%203.1-blue)](https://www.orientdb.org/) ![centos build](https://www.bcgsc.ca/bamboo/plugins/servlet/wittified/build-status/PORI-GA) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5730581.svg)](https://doi.org/10.5281/zenodo.5730581)
 
 This repository is part of the [platform for oncogenomic reporting and interpretation](https://github.com/bcgsc/pori).
 
