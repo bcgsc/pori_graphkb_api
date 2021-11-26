@@ -6,7 +6,6 @@ const {
 } = require('@bcgsc-pori/graphkb-schema');
 const { RecordID: RID } = require('orientjs');
 
-
 /**
  * Join a list of strings as you would for putting into a sentence
  *
@@ -29,7 +28,6 @@ const naturalListJoin = (list) => {
     return result;
 };
 
-
 /**
  * wrap a string in single quotations
  *
@@ -40,8 +38,7 @@ const naturalListJoin = (list) => {
  *  "'thing'"
  *
  */
-const quoteWrap = string => `'${string}'`;
-
+const quoteWrap = (string) => `'${string}'`;
 
 /**
  * @param {Array.<Object>} records the records to be nested
@@ -94,7 +91,6 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
     }
     return nested;
 };
-
 
 /**
  * Given a list of records, removes any object which contains a non-null deletedAt property
@@ -226,7 +222,6 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
     }
     return result;
 };
-
 
 module.exports = {
     groupRecordsBy,

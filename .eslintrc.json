@@ -34,6 +34,7 @@
             "error",
             "unix"
         ],
+        "max-classes-per-file": "off",
         "max-len": "warn",
         "multiline-ternary": [
             "error",

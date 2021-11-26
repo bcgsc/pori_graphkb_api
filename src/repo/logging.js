@@ -15,7 +15,7 @@ const transports = [
     }),
 ];
 
-const logFormat = winston.format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`);
+const logFormat = winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`);
 
 const logger = winston.createLogger({
     format: winston.format.combine(
@@ -29,7 +29,6 @@ const logger = winston.createLogger({
 logger.stream = split().on('data', (message) => {
     logger.info(message);
 });
-
 
 const morganFormatter = (tokens, req, res) => {
     const userName = (req.user && req.user.name)

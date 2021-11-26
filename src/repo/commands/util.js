@@ -1,5 +1,3 @@
-
-
 const _ = require('lodash');
 
 const { util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
@@ -10,7 +8,6 @@ const {
     DatabaseConnectionError,
     DatabaseRequestError,
 } = require('../error');
-
 
 /**
  * Check if the error is a particular type (expected from orientdb) and return an instance of the
@@ -38,7 +35,7 @@ const wrapIfTypeError = (err) => {
                     name, type, message, sql,
                 } = err;
                 // error messages exceed 500 lines and are unreadable
-                const trimmed = message.split('\n').filter(line => !/^\s*[<"].*\s*\.\.\.\s*$/.exec(line)).join('\n');
+                const trimmed = message.split('\n').filter((line) => !/^\s*[<"].*\s*\.\.\.\s*$/.exec(line)).join('\n');
                 return new DatabaseRequestError({
                     message: trimmed, name, sql, type,
                 });
@@ -48,9 +45,8 @@ const wrapIfTypeError = (err) => {
     return err;
 };
 
-
-const omitDBAttributes = rec => _.omit(rec, Object.keys(rec).filter(
-    k => k.startsWith('@')
+const omitDBAttributes = (rec) => _.omit(rec, Object.keys(rec).filter(
+    (k) => k.startsWith('@')
         || k.startsWith('out_')
         || k.startsWith('in_')
         || k.startsWith('_'),

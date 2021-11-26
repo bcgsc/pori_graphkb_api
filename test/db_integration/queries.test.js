@@ -16,9 +16,7 @@ const {
     parse,
 } = require('../../src/repo/query_builder');
 
-
 const { createSeededDb, tearDownDb } = require('./util');
-
 
 const TEST_TIMEOUT_MS = 100000;
 jest.setTimeout(TEST_TIMEOUT_MS);
@@ -245,23 +243,17 @@ describeWithAuth('query builder', () => {
 
     describe('fetchDisplayName', () => {
         test('PositionalVariant', async () => {
-            const name = await fetchDisplayName(
-                session, schema.PositionalVariant, db.records.krasSub,
-            );
+            const name = await fetchDisplayName(session, schema.PositionalVariant, db.records.krasSub);
             expect(name).toEqual('KRAS1:p.G12D');
         });
 
         test('CategoryVariant', async () => {
-            const name = await fetchDisplayName(
-                session, schema.CategoryVariant, db.records.krasMut,
-            );
+            const name = await fetchDisplayName(session, schema.CategoryVariant, db.records.krasMut);
             expect(name).toEqual('KRAS mutation');
         });
 
         test('Statement', async () => {
-            const name = await fetchDisplayName(
-                session, schema.Statement, db.records.sensToDrug,
-            );
+            const name = await fetchDisplayName(session, schema.Statement, db.records.sensToDrug);
             expect(name).toContain('is associated with {relevance} to {subject}');
         });
     });

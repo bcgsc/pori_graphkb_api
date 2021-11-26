@@ -43,13 +43,13 @@ const splitSchemaClassLevels = (schema) => {
                 dependencies.push(prop.linkedClass.name);
             }
         }
-        dependencies = dependencies.filter(name => schema[name] !== undefined);
+        dependencies = dependencies.filter((name) => schema[name] !== undefined);
 
         if (dependencies.length > 0) {
-            if (dependencies.some(name => ranks[name] === undefined)) {
+            if (dependencies.some((name) => ranks[name] === undefined)) {
                 queue.push(curr);
             } else {
-                ranks[curr.name] = Math.max(...Array.from(dependencies, name => ranks[name])) + 1;
+                ranks[curr.name] = Math.max(...Array.from(dependencies, (name) => ranks[name])) + 1;
             }
         } else {
             ranks[curr.name] = 0;
@@ -65,7 +65,6 @@ const splitSchemaClassLevels = (schema) => {
     }
     return split;
 };
-
 
 /**
  * Uses a table to track the last version of the schema for this db
@@ -114,7 +113,6 @@ const createSchemaHistory = async (db) => {
     return cls;
 };
 
-
 const generateDefaultGroups = () => {
     // create the default user groups
     const userGroups = {
@@ -137,7 +135,6 @@ const generateDefaultGroups = () => {
     return Object.entries(userGroups).map(([name, permissions]) => ({ name, permissions }));
 };
 
-
 /**
  * Defines and uilds the schema in the database
  *
@@ -159,16 +156,16 @@ const createSchema = async (db) => {
     // modify the existing vertex and edge classes to add the minimum required attributes for tracking etc
     const V = await db.class.get('V');
     await Promise.all(Array.from(
-        Object.values(SCHEMA_DEFN.V._properties).filter(p => !p.name.startsWith('@')),
-        async prop => Property.create(prop, V),
+        Object.values(SCHEMA_DEFN.V._properties).filter((p) => !p.name.startsWith('@')),
+        async (prop) => Property.create(prop, V),
     ));
     const E = await db.class.get('E');
     await Promise.all(Array.from(
-        Object.values(SCHEMA_DEFN.E._properties).filter(p => !p.name.startsWith('@')),
-        async prop => Property.create(prop, E),
+        Object.values(SCHEMA_DEFN.E._properties).filter((p) => !p.name.startsWith('@')),
+        async (prop) => Property.create(prop, E),
     ));
 
-    await Promise.all(Array.from(['E', 'V', 'User'], cls => db.index.create({
+    await Promise.all(Array.from(['E', 'V', 'User'], (cls) => db.index.create({
         class: cls,
         metadata: { ignoreNullValues: false },
         name: `${cls}.activeId`,
@@ -182,8 +179,8 @@ const createSchema = async (db) => {
     );
 
     for (const classList of classesByLevel) {
-        logger.log('info', `creating the classes: ${Array.from(classList, cls => cls.name).join(', ')}`);
-        await Promise.all(Array.from(classList, async cls => ClassModel.create(cls, db))); // eslint-disable-line no-await-in-loop
+        logger.log('info', `creating the classes: ${Array.from(classList, (cls) => cls.name).join(', ')}`);
+        await Promise.all(Array.from(classList, async (cls) => ClassModel.create(cls, db))); // eslint-disable-line no-await-in-loop
     }
 
     // create the default user groups
@@ -191,9 +188,9 @@ const createSchema = async (db) => {
 
     logger.log('info', 'creating the default user groups');
     const defaultGroups = userGroups
-        .map(rec => SCHEMA_DEFN.UserGroup.formatRecord(rec, { addDefaults: true }));
+        .map((rec) => SCHEMA_DEFN.UserGroup.formatRecord(rec, { addDefaults: true }));
 
-    await Promise.all(Array.from(defaultGroups, async x => db.insert().into('UserGroup').set(x).one()));
+    await Promise.all(Array.from(defaultGroups, async (x) => db.insert().into('UserGroup').set(x).one()));
 
     logger.info('creating the default user agreement');
     await db.insert().into(SCHEMA_DEFN.LicenseAgreement.name).set({
@@ -213,7 +210,6 @@ const createSchema = async (db) => {
 
     logger.log('info', 'Schema is Complete');
 };
-
 
 /**
  * Loads the schema from the database and then adds additional checks. returns the object of models.
@@ -256,7 +252,6 @@ const loadSchema = async (db) => {
     logger.log('info', 'schema loading complete');
     return SCHEMA_DEFN;
 };
-
 
 module.exports = {
     DEFAULT_LICENSE_CONTENT,

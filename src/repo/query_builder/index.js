@@ -1,5 +1,3 @@
-
-
 const { schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
 
 const {
@@ -66,7 +64,7 @@ class WrapperQuery {
         if (!count) {
             if (orderBy) {
                 const direction = orderByDirection || 'ASC';
-                const ordering = orderBy.map(p => `${p} ${direction}`);
+                const ordering = orderBy.map((p) => `${p} ${direction}`);
                 statement = `${statement} ORDER BY ${ordering.join(', ')}`;
             }
             if (skip) {
@@ -117,7 +115,7 @@ class WrapperQuery {
         } else if (neighbors) {
             projection = nonSpecificProjection((model || schema.V), {
                 depth: neighbors,
-                edges: schemaDefn.getEdgeModels().filter(e => !e.isAbstract).map(e => e.name),
+                edges: schemaDefn.getEdgeModels().filter((e) => !e.isAbstract).map((e) => e.name),
                 history,
             });
         }
@@ -142,7 +140,7 @@ class WrapperQuery {
  * @param {object} query JSON query object
  *
  */
-const parse = query => WrapperQuery.parse(query);
+const parse = (query) => WrapperQuery.parse(query);
 
 /**
  * Given some input record, create a query to find it
@@ -164,7 +162,7 @@ const parseRecord = (model, record, { activeIndexOnly = false, ...opt } = {}) =>
 
     const activeIndexProps = model.getActiveProperties();
     const properties = Object.values(model.properties).filter(
-        prop => !activeIndexOnly || activeIndexProps.includes(prop.name),
+        (prop) => !activeIndexOnly || activeIndexProps.includes(prop.name),
     );
 
     for (const prop of properties.sort((a, b) => a.name.localeCompare(b.name))) {
@@ -191,7 +189,6 @@ const parseRecord = (model, record, { activeIndexOnly = false, ...opt } = {}) =>
     const result = parse(query);
     return result;
 };
-
 
 module.exports = {
     WrapperQuery, constants, parse, parseRecord,

@@ -6,17 +6,16 @@ const { util: { looksLikeRID }, error: { AttributeError } } = require('@bcgsc-po
 
 const {
     NoRecordFoundError,
-} = require('./../repo/error');
-const { logger } = require('./../repo/logging');
+} = require('../repo/error');
+const { logger } = require('../repo/logging');
 const {
     select, create, update, remove,
-} = require('./../repo/commands');
-const { checkClassPermissions } = require('./../middleware/auth');
-const { parse } = require('./../repo/query_builder');
+} = require('../repo/commands');
+const { checkClassPermissions } = require('../middleware/auth');
+const { parse } = require('../repo/query_builder');
 
 const { checkStandardOptions } = require('../repo/query_builder/util');
 const { OPERATORS } = require('../repo/query_builder/constants');
-
 
 const activeRidQuery = (model, rid, opt = {}) => {
     const query = parse({
@@ -28,7 +27,6 @@ const activeRidQuery = (model, rid, opt = {}) => {
     return query;
 };
 
-
 /**
  * Get a record by RID
  *
@@ -37,7 +35,8 @@ const activeRidQuery = (model, rid, opt = {}) => {
  */
 const getRoute = (app, model) => {
     logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}/:rid`);
-    app.router.get(`${model.routeName}/:rid`,
+    app.router.get(
+        `${model.routeName}/:rid`,
         async (req, res, next) => {
             const { neighbors = 0, ...extra } = req.query;
 
@@ -74,7 +73,8 @@ const getRoute = (app, model) => {
                 session.close();
                 return next(err);
             }
-        });
+        },
+    );
 };
 
 /**
@@ -85,7 +85,8 @@ const getRoute = (app, model) => {
  */
 const postRoute = (app, model) => {
     logger.log('verbose', `NEW ROUTE [POST] ${model.routeName}`);
-    app.router.post(model.routeName,
+    app.router.post(
+        model.routeName,
         async (req, res, next) => {
             if (!_.isEmpty(req.query)) {
                 return next(new AttributeError(
@@ -115,9 +116,9 @@ const postRoute = (app, model) => {
                 }
                 return next(err);
             }
-        });
+        },
+    );
 };
-
 
 /**
  * Route to update a record given its RID
@@ -128,7 +129,8 @@ const postRoute = (app, model) => {
 const updateRoute = (app, model) => {
     logger.log('verbose', `NEW ROUTE [UPDATE] ${model.routeName}`);
 
-    app.router.patch(`${model.routeName}/:rid`,
+    app.router.patch(
+        `${model.routeName}/:rid`,
         async (req, res, next) => {
             if (!looksLikeRID(req.params.rid, false)) {
                 return next(new AttributeError(
@@ -164,7 +166,8 @@ const updateRoute = (app, model) => {
                 session.close();
                 return next(err);
             }
-        });
+        },
+    );
 };
 
 /**
@@ -175,7 +178,8 @@ const updateRoute = (app, model) => {
  */
 const deleteRoute = (app, model) => {
     logger.log('verbose', `NEW ROUTE [DELETE] ${model.routeName}`);
-    app.router.delete(`${model.routeName}/:rid`,
+    app.router.delete(
+        `${model.routeName}/:rid`,
         async (req, res, next) => {
             let { rid } = req.params;
 
@@ -200,13 +204,11 @@ const deleteRoute = (app, model) => {
             }
 
             try {
-                const result = await remove(
-                    session, {
-                        model,
-                        query: activeRidQuery(model, rid),
-                        user: req.user,
-                    },
-                );
+                const result = await remove(session, {
+                    model,
+                    query: activeRidQuery(model, rid),
+                    user: req.user,
+                });
                 session.close();
                 return res.json(jc.decycle({ result }));
             } catch (err) {
@@ -214,9 +216,9 @@ const deleteRoute = (app, model) => {
                 logger.log('debug', err);
                 return next(err);
             }
-        });
+        },
+    );
 };
-
 
 /*
  * add basic CRUD methods for any standard db class
@@ -247,7 +249,6 @@ const addResourceRoutes = (app, model) => {
         updateRoute(app, model);
     }
 };
-
 
 module.exports = {
     addResourceRoutes, checkStandardOptions,

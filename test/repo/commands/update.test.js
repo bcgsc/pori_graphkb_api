@@ -1,4 +1,3 @@
-
 const {
     schema: {
         schema: {
@@ -13,9 +12,7 @@ const {
 } = require('../../../src/repo/error');
 const { generateDefaultGroups } = require('../../../src/repo/schema');
 
-
 const groups = generateDefaultGroups();
-
 
 describe('remove (delete edge)', () => {
     const db = {
@@ -37,7 +34,7 @@ describe('remove (delete edge)', () => {
                 changes: null,
                 model: SubClassOf,
                 original: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
-                user: { '@rid': '#45:1', groups: groups.filter(g => g.name === 'regular') },
+                user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'regular') },
             });
         } catch (err) {
             expect(err).toBeInstanceOf(PermissionError);

@@ -2,10 +2,10 @@ const jwt = require('jsonwebtoken');
 const jc = require('json-cycle');
 const HTTP_STATUS = require('http-status-codes');
 
-const { getUserByName } = require('./../repo/commands');
-const { incrementUserVisit } = require('./../repo');
-const { logger } = require('./../repo/logging');
-const { AuthenticationError, PermissionError, NoRecordFoundError } = require('./../repo/error');
+const { getUserByName } = require('../repo/commands');
+const { incrementUserVisit } = require('../repo');
+const { logger } = require('../repo/logging');
+const { AuthenticationError, PermissionError, NoRecordFoundError } = require('../repo/error');
 const { fetchToken: fetchKeyCloakToken } = require('./keycloak');
 
 const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
@@ -28,7 +28,6 @@ const generateToken = async (db, username, key, exp = null) => {
     }
     return jwt.sign({ exp, user }, key);
 };
-
 
 /**
  * Verify the token and ensure the user has the appropriate role to access GraphKB

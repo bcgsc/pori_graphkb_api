@@ -99,7 +99,6 @@ const GENERAL_QUERY_PARAMS = {
     },
 };
 
-
 const ONTOLOGY_QUERY_PARAMS = {
     subsets: {
         description: 'Check if an ontology term belongs to a given subset',
@@ -110,7 +109,6 @@ const ONTOLOGY_QUERY_PARAMS = {
         },
     },
 };
-
 
 const BASIC_HEADER_PARAMS = {
     Accept: {
@@ -144,6 +142,5 @@ const BASIC_HEADER_PARAMS = {
         },
     },
 };
-
 
 module.exports = { BASIC_HEADER_PARAMS, GENERAL_QUERY_PARAMS, ONTOLOGY_QUERY_PARAMS };

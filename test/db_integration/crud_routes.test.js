@@ -10,7 +10,7 @@ const { createUser } = require('../../src/repo/commands/create');
 const { generateToken } = require('../../src/routes/auth');
 const { createEmptyDb, tearDownDb, clearDB } = require('./util');
 
-const request = async opt => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
+const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 
 const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
@@ -359,11 +359,11 @@ describeWithAuth('api crud routes', () => {
                     method: 'POST',
                     uri: `${app.url}/query`,
                 });
-                readOnly = res.body.result.find(g => g.name === 'readonly');
-                adminGroup = res.body.result.find(g => g.name === 'admin');
+                readOnly = res.body.result.find((g) => g.name === 'readonly');
+                adminGroup = res.body.result.find((g) => g.name === 'admin');
 
                 if (!readOnly || !adminGroup) {
-                    console.error(res.body.result.map(r => r.name), readOnly);
+                    console.error(res.body.result.map((r) => r.name), readOnly);
                     throw new Error('failed to find the readonly and admin user groups');
                 }
                 user = (await request({
@@ -694,7 +694,6 @@ describeWithAuth('api crud routes', () => {
                 expect(res.body).toHaveProperty('enactedAt');
             });
         });
-
 
         describe('POST', () => {
             test('create a new license', async () => {

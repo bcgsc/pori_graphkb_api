@@ -1,12 +1,10 @@
-
 const jc = require('json-cycle');
 
 const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
-const { logger } = require('./../repo/logging');
+const { logger } = require('../repo/logging');
 const { parse } = require('../repo/query_builder');
 const { select } = require('../repo/commands');
 const { NoRecordFoundError } = require('../repo/error');
-
 
 /**
  * Route to query the db
@@ -15,7 +13,8 @@ const { NoRecordFoundError } = require('../repo/error');
  */
 const addQueryRoute = (app) => {
     logger.log('verbose', 'NEW ROUTE [POST] /query');
-    app.router.post('/query',
+    app.router.post(
+        '/query',
         async (req, res, next) => {
             const { body } = req;
 
@@ -58,8 +57,8 @@ const addQueryRoute = (app) => {
                 logger.log('debug', err);
                 return next(err);
             }
-        });
+        },
+    );
 };
-
 
 module.exports = { addQueryRoute };

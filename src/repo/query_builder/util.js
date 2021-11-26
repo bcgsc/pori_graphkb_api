@@ -39,7 +39,6 @@ const castBoolean = (value) => {
     throw new AttributeError(`Expected a boolean value but found ${castValue}`);
 };
 
-
 const getQueryableProps = (model, includeEmbedded = false) => {
     const allProps = {};
 
@@ -58,7 +57,6 @@ const getQueryableProps = (model, includeEmbedded = false) => {
     }
     return allProps;
 };
-
 
 /**
  * @param {object} opt the query options
@@ -86,9 +84,9 @@ const checkStandardOptions = (opt) => {
     }
     if (orderBy) {
         if (Array.isArray(orderBy)) {
-            options.orderBy = orderBy.map(prop => prop.trim());
+            options.orderBy = orderBy.map((prop) => prop.trim());
         } else {
-            options.orderBy = orderBy.split(',').map(prop => prop.trim());
+            options.orderBy = orderBy.split(',').map((prop) => prop.trim());
         }
     }
     if (orderByDirection) {
@@ -112,7 +110,6 @@ const checkStandardOptions = (opt) => {
     return { ...opt, ...options };
 };
 
-
 const displayQuery = ({ query: statement, params = {} }) => {
     let result = statement;
 
@@ -128,7 +125,6 @@ const displayQuery = ({ query: statement, params = {} }) => {
     }
     return result;
 };
-
 
 module.exports = {
     castBoolean,
