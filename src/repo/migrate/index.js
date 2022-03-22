@@ -7,7 +7,7 @@ const semver = require('semver');
 
 const {
     constants,
-    schema: { schema: SCHEMA_DEFN },
+    schema,
     util: { timeStampNow },
     sentenceTemplates: { chooseDefaultTemplate },
 } = require('@bcgsc-pori/graphkb-schema');
@@ -42,15 +42,15 @@ const requiresMigration = (currentVersion, targetVersion) => {
 const migrate16Xto17X = async (db) => {
     logger.info('Indexing Variant.type');
     await db.index.create(
-        SCHEMA_DEFN.Variant.indices.find((item) => item.name === 'Variant.type'),
+        schema.models.Variant.indices.find((item) => item.name === 'Variant.type'),
     );
     logger.info('Indexing Statement.relevance');
     await db.index.create(
-        SCHEMA_DEFN.Statement.indices.find((item) => item.name === 'Statement.relevance'),
+        schema.models.Statement.indices.find((item) => item.name === 'Statement.relevance'),
     );
     logger.info('Indexing Statement.appliesTo');
     await db.index.create(
-        SCHEMA_DEFN.Statement.indices.find((item) => item.name === 'Statement.appliesTo'),
+        schema.models.Statement.indices.find((item) => item.name === 'Statement.appliesTo'),
     );
 };
 
@@ -61,8 +61,8 @@ const migrate16Xto17X = async (db) => {
  */
 const migrate17Xto18X = async (db) => {
     logger.info('Add evidence level to Statement');
-    const { evidenceLevel } = SCHEMA_DEFN.Statement.properties;
-    const dbClass = await db.class.get(SCHEMA_DEFN.Statement.name);
+    const { evidenceLevel } = schema.models.Statement.properties;
+    const dbClass = await db.class.get(schema.models.Statement.name);
     await Property.create(evidenceLevel, dbClass);
 };
 
@@ -113,17 +113,17 @@ const migrate18Xto19X = async (db) => {
     }
 
     logger.info('Add actionType property to class TargetOf');
-    const { actionType } = SCHEMA_DEFN.TargetOf.properties;
-    const targetof = await db.class.get(SCHEMA_DEFN.TargetOf.name);
+    const { actionType } = schema.models.TargetOf.properties;
+    const targetof = await db.class.get(schema.models.TargetOf.name);
     await Property.create(actionType, targetof);
 
     logger.info('Create the CuratedContent class');
-    await ClassModel.create(SCHEMA_DEFN.CuratedContent, db);
-    await addClassToPermissionsSchema(db, SCHEMA_DEFN.CuratedContent);
+    await ClassModel.create(schema.models.CuratedContent, db);
+    await addClassToPermissionsSchema(db, schema.models.CuratedContent);
 
     logger.info('Add addition Source properties');
-    const source = await db.class.get(SCHEMA_DEFN.Source.name);
-    const { license, licenseType, citation } = SCHEMA_DEFN.Source.properties;
+    const source = await db.class.get(schema.models.Source.name);
+    const { license, licenseType, citation } = schema.models.Source.properties;
     await Promise.all([license, licenseType, citation].map((prop) => Property.create(prop, source)));
 };
 
@@ -141,8 +141,8 @@ const migrate2from0xto1x = async (db) => {
     await db.command('ALTER PROPERTY Statement.appliesTo LINKEDCLASS Biomarker').all();
 
     logger.info('create ClinicalTrial.startDate and ClinicalTrial.completionDate');
-    const { startDate, completionDate } = SCHEMA_DEFN.ClinicalTrial.properties;
-    const trial = await db.class.get(SCHEMA_DEFN.ClinicalTrial.name);
+    const { startDate, completionDate } = schema.models.ClinicalTrial.properties;
+    const trial = await db.class.get(schema.models.ClinicalTrial.name);
     await Property.create(startDate, trial);
     await Property.create(completionDate, trial);
 
@@ -163,7 +163,7 @@ const migrate2from1xto2x = async (db) => {
     await db.command('ALTER CLASS Ontology SUPERCLASS +Biomarker').all();
 
     logger.info('Create the new RnaPostion class');
-    await ClassModel.create(SCHEMA_DEFN.RnaPosition, db);
+    await ClassModel.create(schema.models.RnaPosition, db);
 };
 
 const migrate2from2xto3x = async () => {
@@ -174,25 +174,25 @@ const migrate2from2xto3x = async () => {
 
 const migrate2from3xto4x = async (db) => {
     logger.info('Adding properties {content, doi} to Publication class');
-    const { content, doi } = SCHEMA_DEFN.Publication.properties;
-    const publication = await db.class.get(SCHEMA_DEFN.Publication.name);
+    const { content, doi } = schema.models.Publication.properties;
+    const publication = await db.class.get(schema.models.Publication.name);
     await Property.create(content, publication);
     await Property.create(doi, publication);
 
     logger.info('Creating the Abstract class');
-    await ClassModel.create(SCHEMA_DEFN.Abstract, db);
+    await ClassModel.create(schema.models.Abstract, db);
     logger.info('Add Abstract to the Permissions class');
-    await addClassToPermissionsSchema(db, SCHEMA_DEFN.Abstract);
+    await addClassToPermissionsSchema(db, schema.models.Abstract);
 };
 
 const migrate2from4xto5x = async (db) => {
     logger.info('Indexing V.createdAt');
     await db.index.create(
-        SCHEMA_DEFN.V.indices.find((item) => item.name === 'V.createdAt'),
+        schema.models.V.indices.find((item) => item.name === 'V.createdAt'),
     );
     logger.info('Indexing E.createdAt');
     await db.index.create(
-        SCHEMA_DEFN.E.indices.find((item) => item.name === 'E.createdAt'),
+        schema.models.E.indices.find((item) => item.name === 'E.createdAt'),
     );
 };
 
@@ -200,8 +200,8 @@ const migrate2from5xto6x = async (db) => {
     logger.info('Adding properties {authors,citation,issue,volume,pages} to Publication class');
     const {
         authors, citation, issue, volume, pages,
-    } = SCHEMA_DEFN.Publication.properties;
-    const publication = await db.class.get(SCHEMA_DEFN.Publication.name);
+    } = schema.models.Publication.properties;
+    const publication = await db.class.get(schema.models.Publication.name);
 
     for (const prop of [authors, citation, issue, volume, pages]) {
         await Property.create(prop, publication);
@@ -215,8 +215,8 @@ const migrate2to3From6xto0x = async (db) => {
         ['supportedBy', 'evidence'],
     ];
 
-    const { properties } = SCHEMA_DEFN.Statement;
-    const statement = await db.class.get(SCHEMA_DEFN.Statement.name);
+    const { properties } = schema.models.Statement;
+    const statement = await db.class.get(schema.models.Statement.name);
 
     for (const [oldName, newName] of renames) {
         const prop = properties[newName];
@@ -249,17 +249,17 @@ const migrate2to3From6xto0x = async (db) => {
     }
 
     // remake any indices
-    await ClassModel.create(SCHEMA_DEFN.Statement, db, { graceful: true, indices: true, properties: false });
+    await ClassModel.create(schema.models.Statement, db, { graceful: true, indices: true, properties: false });
 };
 
 const migrate3From0xto1x = async (db) => {
     // remake any missing indices (were renamed here)
-    await ClassModel.create(SCHEMA_DEFN.Statement, db, { graceful: true, indices: true, properties: false });
+    await ClassModel.create(schema.models.Statement, db, { graceful: true, indices: true, properties: false });
 
     // add source.sort property
     logger.info('Adding Source.sort property');
-    const { sort } = SCHEMA_DEFN.Source.properties;
-    const source = await db.class.get(SCHEMA_DEFN.Source.name);
+    const { sort } = schema.models.Source.properties;
+    const source = await db.class.get(schema.models.Source.name);
     await Property.create(sort, source);
 };
 
@@ -270,8 +270,8 @@ const migrate3From1xto2x = async (db) => {
     // create temp property
     const tempProp = 'tempEvidenceLevels';
     logger.info(`Adding Statement.${tempProp} property`);
-    const { evidenceLevel } = SCHEMA_DEFN.Statement.properties;
-    const Statement = await db.class.get(SCHEMA_DEFN.Statement.name);
+    const { evidenceLevel } = schema.models.Statement.properties;
+    const Statement = await db.class.get(schema.models.Statement.name);
     await Property.create({ ...evidenceLevel, name: tempProp }, Statement);
 
     logger.info('Copying the data into the new property');
@@ -288,7 +288,7 @@ const migrate3From1xto2x = async (db) => {
     // re-build the indices
     logger.info('Indexing Statement.evidenceLevel');
     await db.index.create(
-        SCHEMA_DEFN.Statement.indices.find((item) => item.name === 'Statement.evidenceLevel'),
+        schema.models.Statement.indices.find((item) => item.name === 'Statement.evidenceLevel'),
     );
 };
 
@@ -308,8 +308,8 @@ const migrate3From2xto3x = async (db) => {
 
         if (!existing) {
             logger.info(`creating the user group (${group.name})`);
-            const content = SCHEMA_DEFN.UserGroup.formatRecord(group, { addDefaults: true });
-            await db.insert().into(SCHEMA_DEFN.UserGroup.name).set(content).one();
+            const content = schema.models.UserGroup.formatRecord(group, { addDefaults: true });
+            await db.insert().into(schema.models.UserGroup.name).set(content).one();
         } else {
             logger.info(`updating the group (${group.name}) permissions`);
             await db.update(existing['@rid']).set({ permissions: group.permissions }).one();
@@ -364,7 +364,7 @@ const migrate3From4xto5x = async (db) => {
     // modify the permissions on the existing groups
     logger.info('recreate fulltext index');
 
-    for (const index of SCHEMA_DEFN.Ontology.indices.filter((i) => i.type === 'FULLTEXT')) {
+    for (const index of schema.models.Ontology.indices.filter((i) => i.type === 'FULLTEXT')) {
         await db.command(`DROP INDEX ${index.name}`).all();
         await db.index.create(index);
     }
@@ -382,49 +382,49 @@ const migrate3From5xto6x = async (db) => {
 
 const migrate3xFrom6xto7x = async (db) => {
     logger.info('creating the new LicenseAgreement Table');
-    await ClassModel.create(SCHEMA_DEFN.LicenseAgreement, db);
-    await addClassToPermissionsSchema(db, SCHEMA_DEFN.LicenseAgreement);
+    await ClassModel.create(schema.models.LicenseAgreement, db);
+    await addClassToPermissionsSchema(db, schema.models.LicenseAgreement);
 
     // create the first agreement
-    await db.insert().into(SCHEMA_DEFN.LicenseAgreement.name).set({
+    await db.insert().into(schema.models.LicenseAgreement.name).set({
         content: DEFAULT_LICENSE_CONTENT,
         enactedAt: timeStampNow(),
     }).one();
 
     logger.info('Adding the signedLicenseAt property to User');
 
-    const { signedLicenseAt } = SCHEMA_DEFN.User.properties;
-    const dbClass = await db.class.get(SCHEMA_DEFN.User.name);
+    const { signedLicenseAt } = schema.models.User.properties;
+    const dbClass = await db.class.get(schema.models.User.name);
     await Property.create(signedLicenseAt, dbClass);
 };
 
 const migrate3xFrom7xto8x = async (db) => {
     logger.info('adding the email property to the user class');
-    const { email } = SCHEMA_DEFN.User.properties;
-    const dbClass = await db.class.get(SCHEMA_DEFN.User.name);
+    const { email } = schema.models.User.properties;
+    const dbClass = await db.class.get(schema.models.User.name);
     await Property.create(email, dbClass);
 };
 
 const migrate3xFrom8xto9x = async (db) => {
-    const dbClass = await db.class.get(SCHEMA_DEFN.CuratedContent.name);
+    const dbClass = await db.class.get(schema.models.CuratedContent.name);
 
     for (const propertyName of ['doi', 'content', 'citation', 'year']) {
-        logger.info(`adding the property ${SCHEMA_DEFN.CuratedContent.name}.${propertyName}`);
-        const { [propertyName]: prop } = SCHEMA_DEFN.CuratedContent.properties;
+        logger.info(`adding the property ${schema.models.CuratedContent.name}.${propertyName}`);
+        const { [propertyName]: prop } = schema.models.CuratedContent.properties;
         await Property.create(prop, dbClass);
     }
 };
 
 const migrate3xFrom9xto10x = async (db) => {
-    const trialsClass = await db.class.get(SCHEMA_DEFN.ClinicalTrial.name);
+    const trialsClass = await db.class.get(schema.models.ClinicalTrial.name);
 
-    logger.info(`adding the property ${SCHEMA_DEFN.ClinicalTrial.name}.recruitmentStatus`);
-    const { recruitmentStatus } = SCHEMA_DEFN.ClinicalTrial.properties;
+    logger.info(`adding the property ${schema.models.ClinicalTrial.name}.recruitmentStatus`);
+    const { recruitmentStatus } = schema.models.ClinicalTrial.properties;
     await Property.create(recruitmentStatus, trialsClass);
 
     // add the updatedAt and updatedBy fields to V
-    const vertexClass = await db.class.get(SCHEMA_DEFN.V.name);
-    const { updatedBy, updatedAt } = SCHEMA_DEFN.V.properties;
+    const vertexClass = await db.class.get(schema.models.V.name);
+    const { updatedBy, updatedAt } = schema.models.V.properties;
     logger.info('create the V.updatedBy property');
     await Property.create(updatedBy, vertexClass);
     logger.info('create the V.updatedAt property');
@@ -469,7 +469,7 @@ const migrate3xFrom9xto10x = async (db) => {
 
     logger.info('create the index on V.updatedAt');
     await db.index.create(
-        SCHEMA_DEFN.V.indices.find((item) => item.name === 'V.updatedAt'),
+        schema.models.V.indices.find((item) => item.name === 'V.updatedAt'),
     );
 };
 
@@ -482,7 +482,7 @@ const migrate3xFrom10xto11x = async (db) => {
     ]) {
         const dbClass = await db.class.get(className);
         logger.info(`adding the property ${className}.${propertyName}`);
-        const prop = SCHEMA_DEFN[className].properties[propertyName];
+        const prop = schema.models[className].properties[propertyName];
         await Property.create(prop, dbClass);
     }
 };
@@ -493,7 +493,7 @@ const migrate3xFrom11xto12x = async (db) => {
     ]) {
         const dbClass = await db.class.get(className);
         logger.info(`adding the property ${className}.${propertyName}`);
-        const prop = SCHEMA_DEFN[className].properties[propertyName];
+        const prop = schema.models[className].properties[propertyName];
         await Property.create(prop, dbClass);
     }
     // any records with a non-null dependency should have this flag set
@@ -503,7 +503,7 @@ const migrate3xFrom11xto12x = async (db) => {
 
 const migrate3xFrom12xto13x = async (db) => {
     logger.info('Create the new NonCdsPostion class');
-    await ClassModel.create(SCHEMA_DEFN.NonCdsPosition, db);
+    await ClassModel.create(schema.models.NonCdsPosition, db);
 };
 
 const migrate3xFrom13xto14x = async (db) => {
@@ -511,7 +511,7 @@ const migrate3xFrom13xto14x = async (db) => {
 
     for (const propertyName of ['firstLoginAt', 'lastLoginAt', 'loginCount']) {
         logger.info(`adding the property User.${propertyName}`);
-        const prop = SCHEMA_DEFN.User.properties[propertyName];
+        const prop = schema.models.User.properties[propertyName];
         await Property.create(prop, dbClass);
     }
 
