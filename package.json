@@ -11,7 +11,7 @@
     "email": "graphkb@bcgsc.ca"
   },
   "license": "GPL-3.0",
-  "description": "GraphKB (Knowledgebase) REST API server",
+  "description": "GraphKB (Knowledge Base) REST API server",
   "dependencies": {
     "@bcgsc-pori/graphkb-parser": "^2.0.0",
     "@bcgsc-pori/graphkb-schema": "^3.16.0",
