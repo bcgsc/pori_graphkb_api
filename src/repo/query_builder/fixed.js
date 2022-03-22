@@ -11,8 +11,8 @@ const {
     error: { AttributeError }, schema: { schema },
 } = require('@bcgsc-pori/graphkb-schema');
 const {
-    variant: { parse: parseVariant },
-    error: { ParsingError },
+    parseVariant,
+    ParsingError,
 } = require('@bcgsc-pori/graphkb-parser');
 const { quoteWrap } = require('../util');
 

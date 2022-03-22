@@ -10,7 +10,7 @@ const {
     sentenceTemplates: { chooseDefaultTemplate },
     util: { castToRID },
 } = require('@bcgsc-pori/graphkb-schema');
-const { variant: { VariantNotation } } = require('@bcgsc-pori/graphkb-parser');
+const { stringifyVariant } = require('@bcgsc-pori/graphkb-parser');
 
 const { logger } = require('../logging');
 const { parse } = require('../query_builder');
@@ -216,7 +216,7 @@ const fetchDisplayName = async (db, model, content) => {
                 reference2: reference2 && reference2.displayName,
                 type: content.hgvsType || type.shortName || type.displayName,
             };
-            const notation = VariantNotation.toString(obj);
+            const notation = stringifyVariant(obj);
             return notation;
         }
     } if (model.name === 'Statement') {
