@@ -3,121 +3,13 @@ import Ajv from 'ajv';
 import { logger } from '../repo/logging';
 
 import { requestWithRetry, parseXmlToJson } from './util';
+import spec from './clinicaltrialsgov.spec.json';
 
 const BASE_URL = 'https://clinicaltrials.gov/ct2/show';
 
 const ajv = new Ajv();
 
-const singleItemArray = (spec = { type: 'string' }) => ({
-    items: { ...spec }, maxItems: 1, minItems: 1, type: 'array',
-});
-
-const validateAPITrialRecord = ajv.compile({
-    properties: {
-        clinical_study: {
-            properties: {
-                completion_date: singleItemArray({
-                    properties: {
-                        _: { type: 'string' },
-                    },
-                    required: ['_'],
-                    type: 'object',
-                }),
-                condition: {
-                    items: { type: 'string' },
-                    type: 'array',
-                },
-                detailed_description: singleItemArray({
-                    properties: {
-                        textblock: singleItemArray({ type: 'string' }),
-                    },
-                    required: ['textblock'],
-                    type: 'object',
-                }),
-                id_info: singleItemArray({
-                    properties: { nct_id: singleItemArray({ pattern: '^NCT\\d+$' }) },
-                    required: ['nct_id'],
-                    type: 'object',
-                }),
-                intervention: {
-                    items: {
-                        properties: {
-                            intervention_name: singleItemArray(),
-                            intervention_type: singleItemArray(),
-                        },
-                        required: [
-                            'intervention_type',
-                            'intervention_name',
-                        ],
-                        type: 'object',
-                    },
-                    type: 'array',
-                },
-                last_update_posted: singleItemArray({
-                    properties: { _: { type: 'string' } },
-                    required: ['_'],
-                    type: 'object',
-                }),
-                location: {
-                    items: {
-                        properties: {
-                            facility: singleItemArray({
-                                properties: {
-                                    address: singleItemArray({
-                                        properties: {
-                                            city: singleItemArray(),
-                                            country: singleItemArray(),
-                                        },
-                                        required: ['city', 'country'],
-                                        type: 'object',
-                                    }),
-                                },
-                                required: ['address'],
-                                type: 'object',
-                            }),
-                        },
-                        required: ['facility'],
-                        type: 'object',
-                    },
-                    minItems: 1,
-                    type: 'array',
-                },
-                official_title: singleItemArray(),
-                phase: singleItemArray(),
-                required_header: singleItemArray({
-                    properties: { url: singleItemArray() },
-                    required: ['url'],
-                    type: 'object',
-                }),
-                start_date: singleItemArray({
-                    oneOf: [
-                        {
-                            properties: {
-                                _: { type: 'string' },
-                            },
-                            required: ['_'],
-                            type: 'object',
-                        },
-                        { type: 'string' },
-                    ],
-                }),
-            },
-            required: [
-                'id_info',
-                'official_title',
-                'phase',
-                'condition',
-                'intervention',
-                'last_update_posted',
-                'required_header',
-                'location',
-            ],
-            type: 'object',
-        },
-    },
-    required: ['clinical_study'],
-    type: 'object',
-});
+const validateAPITrialRecord = ajv.compile(spec);
 
 const standardizeDate = (dateString) => {
     const dateObj = new Date(Date.parse(dateString));

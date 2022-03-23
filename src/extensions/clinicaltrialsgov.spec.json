@@ -1,0 +1,246 @@
+{
+    "properties": {
+        "clinical_study": {
+            "properties": {
+                "completion_date": {
+                    "items": {
+                        "properties": {
+                            "_": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "_"
+                        ],
+                        "type": "object"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "condition": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "detailed_description": {
+                    "items": {
+                        "properties": {
+                            "textblock": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "maxItems": 1,
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "textblock"
+                        ],
+                        "type": "object"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "id_info": {
+                    "items": {
+                        "properties": {
+                            "nct_id": {
+                                "items": {
+                                    "pattern": "^NCT\\d+$"
+                                },
+                                "maxItems": 1,
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "nct_id"
+                        ],
+                        "type": "object"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "intervention": {
+                    "items": {
+                        "properties": {
+                            "intervention_name": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "maxItems": 1,
+                                "minItems": 1,
+                                "type": "array"
+                            },
+                            "intervention_type": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "maxItems": 1,
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "intervention_type",
+                            "intervention_name"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "last_update_posted": {
+                    "items": {
+                        "properties": {
+                            "_": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "_"
+                        ],
+                        "type": "object"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "location": {
+                    "items": {
+                        "properties": {
+                            "facility": {
+                                "items": {
+                                    "properties": {
+                                        "address": {
+                                            "items": {
+                                                "properties": {
+                                                    "city": {
+                                                        "items": {
+                                                            "type": "string"
+                                                        },
+                                                        "maxItems": 1,
+                                                        "minItems": 1,
+                                                        "type": "array"
+                                                    },
+                                                    "country": {
+                                                        "items": {
+                                                            "type": "string"
+                                                        },
+                                                        "maxItems": 1,
+                                                        "minItems": 1,
+                                                        "type": "array"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "city",
+                                                    "country"
+                                                ],
+                                                "type": "object"
+                                            },
+                                            "maxItems": 1,
+                                            "minItems": 1,
+                                            "type": "array"
+                                        }
+                                    },
+                                    "required": [
+                                        "address"
+                                    ],
+                                    "type": "object"
+                                },
+                                "maxItems": 1,
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "facility"
+                        ],
+                        "type": "object"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "official_title": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "phase": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "required_header": {
+                    "items": {
+                        "properties": {
+                            "url": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "maxItems": 1,
+                                "minItems": 1,
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "url"
+                        ],
+                        "type": "object"
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                },
+                "start_date": {
+                    "items": {
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "_": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "_"
+                                ],
+                                "type": "object"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "maxItems": 1,
+                    "minItems": 1,
+                    "type": "array"
+                }
+            },
+            "required": [
+                "id_info",
+                "official_title",
+                "phase",
+                "condition",
+                "intervention",
+                "last_update_posted",
+                "required_header",
+                "location"
+            ],
+            "type": "object"
+        }
+    },
+    "required": [
+        "clinical_study"
+    ],
+    "type": "object"
+}
