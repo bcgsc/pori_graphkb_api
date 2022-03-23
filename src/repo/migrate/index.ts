@@ -2,9 +2,8 @@
  * This module will contain migrations that are determined by the content of the SchemaHistory table
  */
 
-import { RID } from 'orientjs';
 import semver from 'semver';
-
+import orientjs from 'orientjs';
 const {
     constants,
     schema,
@@ -12,9 +11,9 @@ const {
     sentenceTemplates: { chooseDefaultTemplate },
 } = require('@bcgsc-pori/graphkb-schema');
 
-constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
+constants.RID = orientjs.RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 const { PERMISSIONS } = constants;
-
+import {FixedLengthArray} from '../../types';
 import { logger } from '../logging';
 import { Property, ClassModel } from '../model';
 import { generateDefaultGroups, DEFAULT_LICENSE_CONTENT } from '../schema';
@@ -39,7 +38,7 @@ const requiresMigration = (currentVersion, targetVersion) => {
  *
  * @param {orientjs.Db} db the database connection
  */
-const migrate16Xto17X = async (db) => {
+const migrate16Xto17X = async (db: orientjs.Db) => {
     logger.info('Indexing Variant.type');
     await db.index.create(
         schema.models.Variant.indices.find((item) => item.name === 'Variant.type'),
@@ -59,14 +58,14 @@ const migrate16Xto17X = async (db) => {
  *
  * @param {orientjs.Db} db the database connection
  */
-const migrate17Xto18X = async (db) => {
+const migrate17Xto18X = async (db: orientjs.Db) => {
     logger.info('Add evidence level to Statement');
     const { evidenceLevel } = schema.models.Statement.properties;
     const dbClass = await db.class.get(schema.models.Statement.name);
     await Property.create(evidenceLevel, dbClass);
 };
 
-const addClassToPermissionsSchema = async (db, model) => {
+const addClassToPermissionsSchema = async (db: orientjs.Db, model) => {
     await db.command(`CREATE PROPERTY Permissions.${model.name} INTEGER (NOTNULL TRUE, MIN 0, MAX 15)`).all();
     logger.info(`Update the existing usergroup permission schemes: add Permissions.${model.name}`);
     let regularPermission = PERMISSIONS.ALL;
@@ -87,7 +86,7 @@ const addClassToPermissionsSchema = async (db, model) => {
  *
  * @param {orientjs.Db} db the database connection
  */
-const migrate18Xto19X = async (db) => {
+const migrate18Xto19X = async (db: orientjs.Db) => {
     logger.info('Convert Evidence to an abstract class (slow, please wait)');
     await db.command('ALTER CLASS Evidence SUPERCLASS -Ontology').all();
     await db.command('DROP CLASS EvidenceGroup').all();
@@ -130,7 +129,7 @@ const migrate18Xto19X = async (db) => {
 /**
  * Migrate from 2.0.X to 2.1.0
  */
-const migrate2from0xto1x = async (db) => {
+const migrate2from0xto1x = async (db: orientjs.Db) => {
     logger.info('set Biomarker as a superclass of Vocabulary');
     await db.command('ALTER CLASS Vocabulary SUPERCLASS +Biomarker').all();
 
@@ -172,7 +171,7 @@ const migrate2from2xto3x = async () => {
     logger.info('No actions to complete');
 };
 
-const migrate2from3xto4x = async (db) => {
+const migrate2from3xto4x = async (db: orientjs.Db) => {
     logger.info('Adding properties {content, doi} to Publication class');
     const { content, doi } = schema.models.Publication.properties;
     const publication = await db.class.get(schema.models.Publication.name);
@@ -185,7 +184,7 @@ const migrate2from3xto4x = async (db) => {
     await addClassToPermissionsSchema(db, schema.models.Abstract);
 };
 
-const migrate2from4xto5x = async (db) => {
+const migrate2from4xto5x = async (db: orientjs.Db) => {
     logger.info('Indexing V.createdAt');
     await db.index.create(
         schema.models.V.indices.find((item) => item.name === 'V.createdAt'),
@@ -196,7 +195,7 @@ const migrate2from4xto5x = async (db) => {
     );
 };
 
-const migrate2from5xto6x = async (db) => {
+const migrate2from5xto6x = async (db: orientjs.Db) => {
     logger.info('Adding properties {authors,citation,issue,volume,pages} to Publication class');
     const {
         authors, citation, issue, volume, pages,
@@ -208,7 +207,7 @@ const migrate2from5xto6x = async (db) => {
     }
 };
 
-const migrate2to3From6xto0x = async (db) => {
+const migrate2to3From6xto0x = async (db: orientjs.Db) => {
     const renames = [
         ['appliesTo', 'subject'],
         ['impliedBy', 'conditions'],
@@ -252,7 +251,7 @@ const migrate2to3From6xto0x = async (db) => {
     await ClassModel.create(schema.models.Statement, db, { graceful: true, indices: true, properties: false });
 };
 
-const migrate3From0xto1x = async (db) => {
+const migrate3From0xto1x = async (db: orientjs.Db) => {
     // remake any missing indices (were renamed here)
     await ClassModel.create(schema.models.Statement, db, { graceful: true, indices: true, properties: false });
 
@@ -263,7 +262,7 @@ const migrate3From0xto1x = async (db) => {
     await Property.create(sort, source);
 };
 
-const migrate3From1xto2x = async (db) => {
+const migrate3From1xto2x = async (db: orientjs.Db) => {
     // convert evidence level to a linkset
     logger.info('Converting Statement.evidenceLevel to a linkset instead of a link');
 
@@ -292,7 +291,7 @@ const migrate3From1xto2x = async (db) => {
     );
 };
 
-const migrate3From2xto3x = async (db) => {
+const migrate3From2xto3x = async (db: orientjs.Db) => {
     // add the new user groups
     // modify the permissions on the existing groups
     logger.info('fetching the existing user groups');
@@ -317,7 +316,7 @@ const migrate3From2xto3x = async (db) => {
     }
 };
 
-const migrate3From3xto4x = async (db) => {
+const migrate3From3xto4x = async (db: orientjs.Db) => {
     // add the new user groups
     // modify the permissions on the existing groups
     logger.info('assigning new statement templates');
@@ -331,7 +330,7 @@ const migrate3From3xto4x = async (db) => {
         FROM Statement
         WHERE deletedAt IS NULL`).all();
 
-    const updatedTemplates = {};
+    const updatedTemplates: Record<string,orientjs.RID[]> = {};
 
     for (const statement of statements) {
         let newTemplate = statement.displayNameTemplate;
@@ -359,7 +358,7 @@ const migrate3From3xto4x = async (db) => {
     }
 };
 
-const migrate3From4xto5x = async (db) => {
+const migrate3From4xto5x = async (db: orientjs.Db) => {
     // add the new user groups
     // modify the permissions on the existing groups
     logger.info('recreate fulltext index');
@@ -370,7 +369,7 @@ const migrate3From4xto5x = async (db) => {
     }
 };
 
-const migrate3From5xto6x = async (db) => {
+const migrate3From5xto6x = async (db: orientjs.Db) => {
     // add the new user groups
     // modify the permissions on the existing groups
     logger.info('default all empty Ontology.name to value of Ontology.sourceId');
@@ -380,7 +379,7 @@ const migrate3From5xto6x = async (db) => {
     await db.command('ALTER PROPERTY Ontology.name NOTNULL true').all();
 };
 
-const migrate3xFrom6xto7x = async (db) => {
+const migrate3xFrom6xto7x = async (db: orientjs.Db) => {
     logger.info('creating the new LicenseAgreement Table');
     await ClassModel.create(schema.models.LicenseAgreement, db);
     await addClassToPermissionsSchema(db, schema.models.LicenseAgreement);
@@ -398,14 +397,14 @@ const migrate3xFrom6xto7x = async (db) => {
     await Property.create(signedLicenseAt, dbClass);
 };
 
-const migrate3xFrom7xto8x = async (db) => {
+const migrate3xFrom7xto8x = async (db: orientjs.Db) => {
     logger.info('adding the email property to the user class');
     const { email } = schema.models.User.properties;
     const dbClass = await db.class.get(schema.models.User.name);
     await Property.create(email, dbClass);
 };
 
-const migrate3xFrom8xto9x = async (db) => {
+const migrate3xFrom8xto9x = async (db: orientjs.Db) => {
     const dbClass = await db.class.get(schema.models.CuratedContent.name);
 
     for (const propertyName of ['doi', 'content', 'citation', 'year']) {
@@ -415,7 +414,7 @@ const migrate3xFrom8xto9x = async (db) => {
     }
 };
 
-const migrate3xFrom9xto10x = async (db) => {
+const migrate3xFrom9xto10x = async (db: orientjs.Db) => {
     const trialsClass = await db.class.get(schema.models.ClinicalTrial.name);
 
     logger.info(`adding the property ${schema.models.ClinicalTrial.name}.recruitmentStatus`);
@@ -473,7 +472,7 @@ const migrate3xFrom9xto10x = async (db) => {
     );
 };
 
-const migrate3xFrom10xto11x = async (db) => {
+const migrate3xFrom10xto11x = async (db: orientjs.Db) => {
     for (const [className, propertyName] of [
         ['Signature', 'aetiology'],
         ['Vocabulary', 'shortName'],
@@ -487,7 +486,7 @@ const migrate3xFrom10xto11x = async (db) => {
     }
 };
 
-const migrate3xFrom11xto12x = async (db) => {
+const migrate3xFrom11xto12x = async (db: orientjs.Db) => {
     for (const [className, propertyName] of [
         ['Ontology', 'alias'],
     ]) {
@@ -501,12 +500,12 @@ const migrate3xFrom11xto12x = async (db) => {
     await db.command('UPDATE Ontology SET alias = FALSE WHERE alias IS NULL').all();
 };
 
-const migrate3xFrom12xto13x = async (db) => {
+const migrate3xFrom12xto13x = async (db: orientjs.Db) => {
     logger.info('Create the new NonCdsPostion class');
     await ClassModel.create(schema.models.NonCdsPosition, db);
 };
 
-const migrate3xFrom13xto14x = async (db) => {
+const migrate3xFrom13xto14x = async (db: orientjs.Db) => {
     const dbClass = await db.class.get('User');
 
     for (const propertyName of ['firstLoginAt', 'lastLoginAt', 'loginCount']) {
@@ -539,7 +538,7 @@ const migrate3xFrom13xto14x = async (db) => {
     }
 };
 
-const migrate3xFrom14xto15x = async (db) => {
+const migrate3xFrom14xto15x = async (db: orientjs.Db) => {
     // remove the MIN constraint
     await db.command(
         'ALTER PROPERTY CdsPosition.pos MIN NULL',
@@ -603,7 +602,7 @@ const migrate3xFrom14xto15x = async (db) => {
     }
 };
 
-const logMigration = async (db, name, url, version) => {
+const logMigration = async (db: orientjs.Db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
         createdAt: timeStampNow(),
@@ -614,13 +613,15 @@ const logMigration = async (db, name, url, version) => {
     return version;
 };
 
+
+
 /**
  * Detects the current version of the db, the version of the node module and attempts
  * to migrate from one to the other
  *
  * @param {orientjs.Db} db the database connection
  */
-const migrate = async (db, opt = {}) => {
+const migrate = async (db: orientjs.Db, opt: {checkOnly?: boolean;} = {}) => {
     const { checkOnly = false } = opt;
     const currentVersion = await _version.getCurrentVersion(db);
     const { version: targetVersion, name, url } = _version.getLoadVersion();
@@ -634,7 +635,7 @@ const migrate = async (db, opt = {}) => {
 
     let migratedVersion = currentVersion;
 
-    const migrations = [
+    const migrations: FixedLengthArray<[string,string,(arg0: orientjs.Db) => Promise<void>]>[] = [
         ['1.6.2', '1.7.0', migrate16Xto17X],
         ['1.7.0', '1.8.0', migrate17Xto18X],
         ['1.8.0', '1.9.0', migrate18Xto19X],
@@ -660,7 +661,7 @@ const migrate = async (db, opt = {}) => {
         ['3.12.0', '3.13.0', migrate3xFrom12xto13x],
         ['3.13.0', '3.14.0', migrate3xFrom13xto14x],
         ['3.14.0', '3.15.0', migrate3xFrom14xto15x],
-        ['3.15.0', '3.16.0', async () => null], // no db migration required
+        ['3.15.0', '3.16.0', async () => {}], // no db migration required
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {

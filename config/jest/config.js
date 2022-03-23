@@ -4,14 +4,13 @@ const path = require('path');
 const BASE_DIR = path.resolve(__dirname, '../..');
 
 module.exports = {
-    rootDir: BASE_DIR,
     collectCoverage: true,
-    coverageDirectory: 'coverage',
     collectCoverageFrom: [
-        'src/**.js',
-        'src/**/*.js',
-        'src/**/**/*.js',
+        'src/**.ts',
+        'src/**/*.ts',
+        'src/**/**/*.ts',
     ],
+    coverageDirectory: 'coverage',
     coverageReporters: [
         'clover',
         'text',
@@ -19,6 +18,12 @@ module.exports = {
         'json-summary',
         'lcov',
     ],
+    moduleFileExtensions: [
+        'ts',
+        'js',
+        'json',
+    ],
+    preset: 'ts-jest',
     reporters: [
         'default',
         [
@@ -28,14 +33,11 @@ module.exports = {
             },
         ],
     ],
-    testRunner: 'jest-circus/runner',
-    testRegex: 'test/.*\\.test\\.js',
+    rootDir: BASE_DIR,
     testEnvironment: 'node',
     testPathIgnorePatterns: [
         '/node_modules/',
     ],
-    moduleFileExtensions: [
-        'js',
-        'json',
-    ],
+    testRegex: 'test/.*\\.test\\.ts',
+    testRunner: 'jest-circus/runner',
 };

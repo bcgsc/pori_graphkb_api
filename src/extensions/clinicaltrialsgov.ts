@@ -23,7 +23,7 @@ const standardizeDate = (dateString) => {
 };
 
 const processPhases = (phaseList) => {
-    const phases = [];
+    const phases: string[] = [];
 
     for (const raw of phaseList || []) {
         const cleanedPhaseList = raw.trim().toLowerCase().replace(/\bn\/a\b/, '').split(/[,/]/);
@@ -42,10 +42,29 @@ const processPhases = (phaseList) => {
     return phases.sort().join('/');
 };
 
+interface TrialLocation {
+    city: string;
+    country: string;
+}
+
+interface ParsedClinicalTrialRecord {
+    completionDate: string;
+    diseases: string[];
+    drugs: string[];
+    locations: TrialLocation[];
+    name: string;
+    sourceId:string;
+    sourceIdVersion: string;
+    startDate: string;
+    url: string;
+    description?: string;
+    phases?: string;
+}
+
 /**
  * Given some records from the API, convert its form to a standard represention
  */
-const parseRecord = (result) => {
+const parseRecord = (result): ParsedClinicalTrialRecord => {
     if (!validateAPITrialRecord(result)) {
         throw new Error(`Failed to parse from the extension api (${validateAPITrialRecord.errors[0].message})`);
     }
@@ -62,7 +81,7 @@ const parseRecord = (result) => {
         completionDate = standardizeDate(record.completion_date[0]._);
     } catch (err) {}
 
-    const content = {
+    const content: ParsedClinicalTrialRecord = {
         completionDate,
         diseases: record.condition,
         drugs: [],

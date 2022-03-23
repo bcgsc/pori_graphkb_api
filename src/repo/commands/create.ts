@@ -22,7 +22,7 @@ const createUser = async (db, opt) => {
     const {
         userName, groupNames,
     } = opt;
-    const userGroups = await db.select().from('UserGroup').all();
+    const userGroups: {name:string; '@rid': string}[] = await db.select().from('UserGroup').all();
     const groupIds = Array.from(userGroups.filter(
         (group) => groupNames.includes(group.name),
     ), (group) => group['@rid']);

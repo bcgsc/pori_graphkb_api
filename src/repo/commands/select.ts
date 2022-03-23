@@ -37,7 +37,7 @@ const groupableParams = Object.values(schema.V.queryProperties)
  * @param {Boolean} [opt.history=true] ignore deleted records
  * @param {Boolean} [opt.groupBy=''] linked property to group the results by (must be a class with the displayName property)
  */
-const selectCounts = async (db, opt = {}) => {
+const selectCounts = async (db, opt: {groupBy?: string; history?: boolean; classList?: string[]} = {}) => {
     const {
         groupBy = '',
         history = false,

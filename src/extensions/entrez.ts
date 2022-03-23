@@ -79,15 +79,29 @@ const parseGeneRecord = (record) => {
     };
 };
 
+interface ParsedPubmedRecord {
+    journalName?: string;
+    name?: string;
+    sourceId: number;
+    url: string;
+    issue?: string;
+    volume?: string;
+    pages?: string;
+    authors?: string;
+    doi?: string;
+    year?: number;
+    displayName: string;
+}
+
 /**
  * Given an record record retrieved from pubmed, parse it into its equivalent
  * GraphKB representation
  */
-const parsePubmedRecord = (record) => {
+const parsePubmedRecord = (record): ParsedPubmedRecord => {
     if (!publicationSpec(record)) {
         throw new Error(`Failed to parse from the extension api (${publicationSpec.errors[0].message})`);
     }
-    const parsed = {
+    const parsed: Omit<ParsedPubmedRecord, 'displayName'>  = {
         journalName: record.fulljournalname,
         name: record.sorttitle,
         sourceId: record.uid,
@@ -128,8 +142,7 @@ const parsePubmedRecord = (record) => {
             parsed.year = parseInt(match[1], 10);
         }
     }
-    parsed.displayName = `pmid:${parsed.sourceId}`;
-    return parsed;
+    return {...parsed, displayName: `pmid:${parsed.sourceId}` };
 };
 
 const fetchRecord = async (db, id) => {
