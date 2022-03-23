@@ -1,7 +1,7 @@
 const { types } = require('orientjs');
 
 const { schema } = require('@bcgsc-pori/graphkb-schema');
-const { ClassModel } = require('../../src/repo/model');
+const { ClassModel } = require('../../src/orm/model');
 
 const OJS_TYPES = {};
 

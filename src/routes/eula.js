@@ -5,8 +5,8 @@ const {
     constants: { PERMISSIONS },
 } = require('@bcgsc-pori/graphkb-schema');
 
-const { logger } = require('../repo/logging');
-const { RecordNotFoundError, PermissionError } = require('../repo/error');
+const { logger } = require('../orm/logging');
+const { RecordNotFoundError, PermissionError } = require('../orm/error');
 const { checkUserAccessFor } = require('../middleware/auth');
 
 const getCurrentLicense = async (db) => db.query(

@@ -7,7 +7,7 @@ const { error: { AttributeError: ValidationError } } = require('@bcgsc-pori/grap
 
 const { fetchRecord } = require('./entrez');
 const { fetchRecord: fetchClinicalTrial } = require('./clinicaltrialsgov');
-const { logger } = require('../repo/logging');
+const { logger } = require('../orm/logging');
 
 const addExtensionRoutes = (app) => {
     logger.log('verbose', 'NEW Extension [GET] /extensions/{db}/{id}');

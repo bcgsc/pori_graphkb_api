@@ -2,7 +2,7 @@ const { schema } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     parse, parseRecord,
-} = require('../../../src/repo/query_builder');
+} = require('../../../src/orm/query_builder');
 
 const { stripSQL } = require('./util');
 

@@ -3,7 +3,7 @@ const {
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { stripSQL } = require('./util');
-const { nonSpecificProjection, propsToProjection, parsePropertyList } = require('../../../src/repo/query_builder/projection');
+const { nonSpecificProjection, propsToProjection, parsePropertyList } = require('../../../src/orm/query_builder/projection');
 
 describe('nonSpecificProjection', () => {
     test('linkDepth 0', () => {

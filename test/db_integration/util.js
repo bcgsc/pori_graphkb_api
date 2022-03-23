@@ -2,8 +2,8 @@ const uuidV4 = require('uuid/v4');
 
 const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
 
-const { getUserByName, create, update } = require('../../src/repo/commands');
-const { connectDB } = require('../../src/repo');
+const { getUserByName, create, update } = require('../../src/orm/commands');
+const { connectDB } = require('../../src/orm');
 const { createConfig } = require('../../src');
 
 const clearDB = async ({ session, admin }) => {

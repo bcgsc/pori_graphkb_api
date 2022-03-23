@@ -1,6 +1,6 @@
 const form = require('form-urlencoded').default;
 const request = require('request-promise');
-const { logger } = require('../repo/logging');
+const { logger } = require('../orm/logging');
 
 /**
  * Given a username and password, authenticate against keycloak and return the token

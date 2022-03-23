@@ -11,12 +11,12 @@ const { getPortPromise } = require('portfinder');
 const morgan = require('morgan');
 const path = require('path');
 
-const { logger, morganFormatter } = require('./repo/logging');
+const { logger, morganFormatter } = require('./orm/logging');
 const {
     checkToken,
 } = require('./middleware/auth'); // WARNING: middleware fails if function is not imported by itself
-const { connectDB } = require('./repo');
-const { getLoadVersion } = require('./repo/migrate/version');
+const { connectDB } = require('./orm');
+const { getLoadVersion } = require('./orm/migrate/version');
 const { addExtensionRoutes } = require('./extensions');
 const { generateSwaggerSpec, registerSpecEndpoints } = require('./routes/openapi');
 const { addResourceRoutes } = require('./routes/resource');

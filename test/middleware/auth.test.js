@@ -9,7 +9,7 @@ const {
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { checkClassPermissions } = require('../../src/middleware/auth');
-const { generateDefaultGroups } = require('../../src/repo/schema');
+const { generateDefaultGroups } = require('../../src/orm/schema');
 
 describe('checkClassPermissions', () => {
     // get the usergroups from the db to start (default groups)

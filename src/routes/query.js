@@ -1,10 +1,10 @@
 const jc = require('json-cycle');
 
 const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
-const { logger } = require('../repo/logging');
-const { parse } = require('../repo/query_builder');
-const { select } = require('../repo/commands');
-const { NoRecordFoundError } = require('../repo/error');
+const { logger } = require('../orm/logging');
+const { parse } = require('../orm/query_builder');
+const { select } = require('../orm/commands');
+const { NoRecordFoundError } = require('../orm/error');
 
 /**
  * Route to query the db

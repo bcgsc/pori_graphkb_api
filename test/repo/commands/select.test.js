@@ -4,7 +4,7 @@ const {
     },
 } = require('@bcgsc-pori/graphkb-schema');
 
-const { fetchDisplayName } = require('../../../src/repo/commands/select');
+const { fetchDisplayName } = require('../../../src/orm/commands/select');
 
 describe('fetchDisplayName', () => {
     afterEach(() => {

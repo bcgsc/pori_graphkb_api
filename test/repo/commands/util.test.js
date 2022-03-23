@@ -1,6 +1,6 @@
 const {
     hasRecordAccess,
-} = require('../../../src/repo/commands/util');
+} = require('../../../src/orm/commands/util');
 
 describe('hasRecordAccess', () => {
     test('user with no groups', () => {

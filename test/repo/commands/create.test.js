@@ -6,11 +6,11 @@ const {
     },
 } = require('@bcgsc-pori/graphkb-schema');
 
-const { create } = require('../../../src/repo/commands/create');
+const { create } = require('../../../src/orm/commands/create');
 const {
     PermissionError, AttributeError,
-} = require('../../../src/repo/error');
-const { generateDefaultGroups } = require('../../../src/repo/schema');
+} = require('../../../src/orm/error');
+const { generateDefaultGroups } = require('../../../src/orm/schema');
 
 const groups = generateDefaultGroups();
 

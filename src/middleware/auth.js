@@ -9,8 +9,8 @@ const jwt = require('jsonwebtoken');
 
 const { constants: { PERMISSIONS } } = require('@bcgsc-pori/graphkb-schema');
 
-const { PermissionError } = require('../repo/error');
-const { logger } = require('../repo/logging');
+const { PermissionError } = require('../orm/error');
+const { logger } = require('../orm/logging');
 
 /*
  * checks that the kbToken is valid/active

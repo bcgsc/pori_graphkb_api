@@ -6,11 +6,11 @@ const { parseVariant, ParsingError } = require('@bcgsc-pori/graphkb-parser');
 
 const openapi = require('./openapi');
 const resource = require('./resource');
-const { logger } = require('../repo/logging');
+const { logger } = require('../orm/logging');
 const {
     checkStandardOptions,
-} = require('../repo/query_builder/util');
-const { selectCounts } = require('../repo/commands');
+} = require('../orm/query_builder/util');
+const { selectCounts } = require('../orm/commands');
 const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
 

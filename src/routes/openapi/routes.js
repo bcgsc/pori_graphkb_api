@@ -3,7 +3,7 @@
  * @module app/routes/openapi/routes
  */
 const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
-const { groupableParams } = require('../../repo/commands/select');
+const { groupableParams } = require('../../orm/commands/select');
 
 const POST_TOKEN = {
     parameters: [

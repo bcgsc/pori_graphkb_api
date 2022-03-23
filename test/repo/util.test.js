@@ -1,7 +1,7 @@
 const {
     groupRecordsBy,
     trimRecords,
-} = require('../../src/repo/util');
+} = require('../../src/orm/util');
 
 describe('groupRecordsBy', () => {
     test('groups single level', () => {

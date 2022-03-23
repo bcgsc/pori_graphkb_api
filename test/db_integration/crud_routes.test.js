@@ -6,7 +6,7 @@ const HTTP_STATUS = require('http-status-codes');
 const { util: { timeStampNow } } = require('@bcgsc-pori/graphkb-schema');
 
 const { AppServer } = require('../../src');
-const { createUser } = require('../../src/repo/commands/create');
+const { createUser } = require('../../src/orm/commands/create');
 const { generateToken } = require('../../src/routes/auth');
 const { createEmptyDb, tearDownDb, clearDB } = require('./util');
 

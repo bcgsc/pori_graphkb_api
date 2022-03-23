@@ -6,16 +6,16 @@ const { util: { looksLikeRID }, error: { AttributeError } } = require('@bcgsc-po
 
 const {
     NoRecordFoundError,
-} = require('../repo/error');
-const { logger } = require('../repo/logging');
+} = require('../orm/error');
+const { logger } = require('../orm/logging');
 const {
     select, create, update, remove,
-} = require('../repo/commands');
+} = require('../orm/commands');
 const { checkClassPermissions } = require('../middleware/auth');
-const { parse } = require('../repo/query_builder');
+const { parse } = require('../orm/query_builder');
 
-const { checkStandardOptions } = require('../repo/query_builder/util');
-const { OPERATORS } = require('../repo/query_builder/constants');
+const { checkStandardOptions } = require('../orm/query_builder/util');
+const { OPERATORS } = require('../orm/query_builder/constants');
 
 const activeRidQuery = (model, rid, opt = {}) => {
     const query = parse({

@@ -1,6 +1,6 @@
 const Ajv = require('ajv');
 
-const { logger } = require('../repo/logging');
+const { logger } = require('../orm/logging');
 
 const { requestWithRetry, parseXmlToJson } = require('./util');
 
