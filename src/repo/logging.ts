@@ -9,9 +9,7 @@ import split from 'split';
 
 const transports = [
     new winston.transports.Console({
-        colorize: true,
         level: process.env.GKB_LOG_LEVEL || 'debug',
-        timestamp: true,
     }),
 ];
 

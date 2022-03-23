@@ -22,7 +22,7 @@ import {
     RecordConflictError
 } from '../error';
 import {
-    wrapIfTypeError, hasRecordAccess,
+    wrapIfTypeError, hasRecordAccess, omitDBAttributes
 } from './util';
 import { select, fetchDisplayName } from './select';
 import { nestedProjection } from '../query_builder/projection';
@@ -502,7 +502,7 @@ const modify = async (db: orientjs.Db, opt) => {
  * @param {Object} opt.user the user updating the record
  * @param {ClassModel} opt.model
  */
-const update = async (db: orientjs.Db, opt) => {
+const update = async (db: orientjs.Db, opt: {changes?: Record<string,unknown> | null}) => {
     if (opt.changes === null || opt.changes === undefined) {
         throw new AttributeError('opt.changes is a required argument');
     }

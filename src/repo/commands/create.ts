@@ -1,13 +1,14 @@
+import gkbSchema  from '@bcgsc-pori/graphkb-schema';
 const {
     error: { AttributeError },
     schema,
     constants: { PERMISSIONS },
-} = require('@bcgsc-pori/graphkb-schema');
+} = gkbSchema;
 import { logger } from '../logging';
 import orientjs from 'orientjs';
 import { parseRecord } from '../query_builder';
 import { RecordConflictError, PermissionError } from '../error';
-const { select, getUserByName, fetchDisplayName } = require('./select');
+import { select, getUserByName, fetchDisplayName } from './select';
 import { wrapIfTypeError, omitDBAttributes } from './util';
 import { checkUserAccessFor } from '../../middleware/auth';
 

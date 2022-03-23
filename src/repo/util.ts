@@ -1,4 +1,5 @@
 import gkbSchema from  '@bcgsc-pori/graphkb-schema';
+import { GraphRecord } from '@bcgsc-pori/graphkb-schema/dist/types';
 const {
     error: { AttributeError },
     constants: { PERMISSIONS },
@@ -10,14 +11,14 @@ import { RecordID as RID } from 'orientjs';
 /**
  * Join a list of strings as you would for putting into a sentence
  *
- * @param {Array.<string>} list the list to join
- * @returns {string} the joined list
+ * @param list the list to join
+ * @returns the joined list
  *
  * @example
  * > naturalListJoin(['a', 'b', 'c'])
  * 'a, b, and c'
  */
-const naturalListJoin = (list) => {
+const naturalListJoin = (list: string[]): string => {
     if (list.length === 0) {
         return '';
     }
@@ -32,14 +33,14 @@ const naturalListJoin = (list) => {
 /**
  * wrap a string in single quotations
  *
- * @param {string} string the input string
+ * @param string the input string
  *
  * @example
  *  >>> quoteWrap('thing')
  *  "'thing'"
  *
  */
-const quoteWrap = (string) => `'${string}'`;
+const quoteWrap = (string: string) => `'${string}'`;
 
 /**
  * @param {Array.<Object>} records the records to be nested
@@ -52,7 +53,7 @@ const quoteWrap = (string) => `'${string}'`;
  * > groupRecordsBy([{name: 'bob', city: 'van'}, {name: 'alice', city: 'van'}, {name: 'blargh', city: 'monkey'}], ['city'], {value: 'name'})
  * {van: ['bob', 'alice'], monkey: ['blargh']}
  */
-const groupRecordsBy = (records, keysList, opt = {}) => {
+const groupRecordsBy = (records: GraphRecord[], keysList: string[], opt: {value?: string; aggregate?: boolean} = {}) => {
     const nestedProperty = opt.value || null;
     const aggregate = opt.aggregate === undefined
         ? true
@@ -101,7 +102,8 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
  * @param {boolean} [opt.history=false] include deleted records
  * @param {User} [opt.user=null] if the user object is given, will check record-level permissions and trim any non-permitted content
  */
-const trimRecords = async (recordList, { history = false, user = null } = {}) => {
+const trimRecords = async (recordList: GraphRecord[], opt: {history?: boolean; user?: GraphRecord | null; } = {}) => {
+    const { history = false, user = null } = opt;
     const queue = recordList.slice();
     const visited = new Set();
     const readableClasses = new Set();

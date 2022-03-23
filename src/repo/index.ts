@@ -103,7 +103,6 @@ const connectDB = async ({
                 GKB_DBS_PASS,
                 GKB_DBS_USER,
                 GKB_DB_NAME,
-                GKB_USER_CREATE,
             });
         } else if (GKB_NEW_DB) {
             // this check it mainly to stop us from accidentally connecting to a prod instance for testing

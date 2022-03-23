@@ -15,9 +15,8 @@ constants.RID = orientjs.RID; // IMPORTANT: Without this all castToRID will do i
 const { PERMISSIONS } = constants;
 import {FixedLengthArray} from '../../types';
 import { logger } from '../logging';
-import { Property, ClassModel } from '../model';
 import { generateDefaultGroups, DEFAULT_LICENSE_CONTENT } from '../schema';
-
+import {createPropertyInDb, createClassModelInDb} from './../model';
 import * as _version from './version';
 
 /**
