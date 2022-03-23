@@ -47,8 +47,8 @@ describe('migrate', () => {
             }),
         };
         import model from '../../src/repo/model';  // eslint-disable-line
-        propertyMock = model.Property.create;
-        modelMock = model.ClassModel.create;
+        propertyMock = model.createPropertyInDb;
+        modelMock = model.createClassModelInDb;
     });
 
     afterEach(() => {

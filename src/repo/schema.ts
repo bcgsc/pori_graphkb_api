@@ -11,9 +11,9 @@ const { constants, schema, util: { timeStampNow } } = kbSchema;
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
 import { logger } from './logging';
-import { ClassModel, Property } from './model';
 import { getLoadVersion } from './migrate/version';
 import { createUser } from './commands';
+import { createClassModelInDb, createPropertyInDb, compareToDbClass } from './model';
 
  const DEFAULT_LICENSE_CONTENT = [
     { content: 'Canada\'s Michael Smith Genome Sciences Centre retains ownership of all intellectual property rights of any kind related to the Platform and Service, including applicable copyrights, patents, trademarks, and other proprietary rights. Other trademarks, service marks, graphics and logos used in connection with the GraphKB platform and its services may be the trademarks of users and third parties. Canada\'s Michael Smith Genome Sciences Centre does not transfer to users any intellectual property. All rights, titles and interests in and to such property will remain solely with the original owner. Canada\'s Michael Smith Genome Sciences Centre reserve all rights that are not expressly granted under this Term of Use.', id: 'copyright', label: 'Copyright' },
@@ -103,24 +103,24 @@ const createSchemaHistory = async (db) => {
     await createSchemaHistory(db);
     // create the permissions class
     logger.log('info', 'create the Permissions class');
-    await ClassModel.create(schema.models.Permissions, db); // (name, extends, clusters, abstract)
+    await createClassModelInDb(schema.models.Permissions, db); // (name, extends, clusters, abstract)
     // create the user class
     logger.log('info', 'create the UserGroup class');
-    await ClassModel.create(schema.models.UserGroup, db, { indices: false, properties: false });
+    await createClassModelInDb(schema.models.UserGroup, db, { indices: false, properties: false });
     logger.log('info', 'create the User class');
-    await ClassModel.create(schema.models.User, db);
+    await createClassModelInDb(schema.models.User, db);
     logger.log('info', 'Add properties to the UserGroup class');
-    await ClassModel.create(schema.models.UserGroup, db, { indices: true, properties: true });
+    await createClassModelInDb(schema.models.UserGroup, db, { indices: true, properties: true });
     // modify the existing vertex and edge classes to add the minimum required attributes for tracking etc
     const V = await db.class.get('V');
     await Promise.all(Array.from(
         Object.values(schema.models.V._properties).filter((p) => !p.name.startsWith('@')),
-        async (prop) => Property.create(prop, V),
+        async (prop) => createPropertyInDb(prop, V),
     ));
     const E = await db.class.get('E');
     await Promise.all(Array.from(
         Object.values(schema.models.E._properties).filter((p) => !p.name.startsWith('@')),
-        async (prop) => Property.create(prop, E),
+        async (prop) => createPropertyInDb(prop, E),
     ));
 
     await Promise.all(Array.from(['E', 'V', 'User'], (cls) => db.index.create({
@@ -137,7 +137,7 @@ const createSchemaHistory = async (db) => {
     for (const classList of classesByLevel) {
         const toCreate = classList.filter((model) => !['Permissions', 'User', 'UserGroup', 'V', 'E'].includes(model.name));
         logger.log('info', `creating the classes: ${Array.from(toCreate, (cls) => cls.name).join(', ')}`);
-        await Promise.all(Array.from(toCreate, async (cls) => ClassModel.create(cls, db))); // eslint-disable-line no-await-in-loop
+        await Promise.all(Array.from(toCreate, async (cls) => createClassModelInDb(cls, db))); // eslint-disable-line no-await-in-loop
     }
 
     // create the default user groups
@@ -190,7 +190,7 @@ const createSchemaHistory = async (db) => {
         if (model === undefined) {
             throw new Error(`The class loaded from the database (${model.name}) is not defined in the SCHEMA_DEFN`);
         }
-        ClassModel.compareToDbClass(model, cls); // check that the DB matches the SCHEMA_DEFN
+        compareToDbClass(model, cls); // check that the DB matches the SCHEMA_DEFN
 
         if (cls.superClass && !model.inherits.includes(cls.superClass)) {
             throw new Error(`The class ${model.name} inherits according to the database (${cls.superClass}) does not match those defined by the schema definition: ${schema.models[model.name].inherits}`);
