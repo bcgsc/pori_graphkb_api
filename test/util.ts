@@ -1,5 +1,5 @@
 import uuidV4 from 'uuid/v4';
-
+import orientjs from 'orientjs';
 import { getUserByName } from '../src/repo/commands';
 import { connectDB } from '../src/repo';
 
@@ -17,7 +17,7 @@ const setUpEmptyDB = async (conf) => {
     };
 };
 
-const clearDB = async (db, admin) => {
+const clearDB = async (db: orientjs.Db, admin) => {
     // clear all V/E records
     await db.command('delete edge e').all();
     await db.command('delete vertex v').all();

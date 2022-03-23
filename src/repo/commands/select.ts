@@ -4,6 +4,7 @@
 /**
  * @ignore
  */
+import orientjs from 'orientjs';
 import gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     schema: { schema },
@@ -37,7 +38,7 @@ const groupableParams = Object.values(schema.V.queryProperties)
  * @param {Boolean} [opt.history=true] ignore deleted records
  * @param {Boolean} [opt.groupBy=''] linked property to group the results by (must be a class with the displayName property)
  */
-const selectCounts = async (db, opt: {groupBy?: string; history?: boolean; classList?: string[]} = {}) => {
+const selectCounts = async (db: orientjs.Db, opt: {groupBy?: string; history?: boolean; classList?: string[]} = {}) => {
     const {
         groupBy = '',
         history = false,
@@ -92,7 +93,7 @@ const selectCounts = async (db, opt: {groupBy?: string; history?: boolean; class
  * @param {orientjs.Db} db the orientjs database connection object
  * @param {string} username the name of the user to select
  */
-const getUserByName = async (db, username) => {
+const getUserByName = async (db: orientjs.Db, username) => {
     logger.debug(`getUserByName: ${username}`);
     // raw SQL to avoid having to load db models in the middleware
     let user;
@@ -133,7 +134,7 @@ const getUserByName = async (db, username) => {
  *
  * @returns {Array.<Object>} array of database records
  */
-const select = async (db, query, opt = {}) => {
+const select = async (db: orientjs.Db, query, opt = {}) => {
     // set the default options
     const { exactlyN = null, user } = opt;
     logger.log('debug', query.displayString());
@@ -186,7 +187,7 @@ const select = async (db, query, opt = {}) => {
 /**
  * Calculate the display name when it requires a db connection to resolve linked records
  */
-const fetchDisplayName = async (db, model, content) => {
+const fetchDisplayName = async (db: orientjs.Db, model, content) => {
     if (model.inherits.includes('Variant')) {
         const links = [content.type, content.reference1];
 

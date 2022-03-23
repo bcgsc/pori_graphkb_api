@@ -1,21 +1,21 @@
 /**
- * Repsonsible for defining and loading the database schema.
+ * Responsible for defining and loading the database schema.
  */
 /**
  * @ignore
  */
 
-import { RID } from 'orientjs';
+import orientjs from 'orientjs';
 import kbSchema from '@bcgsc-pori/graphkb-schema';
 const { constants, schema, util: { timeStampNow } } = kbSchema;
-constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
+constants.RID = orientjs.RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
 import { logger } from './logging';
 import { getLoadVersion } from './migrate/version';
 import { createUser } from './commands';
 import { createClassModelInDb, createPropertyInDb, compareToDbClass } from './model';
 
- const DEFAULT_LICENSE_CONTENT = [
+const DEFAULT_LICENSE_CONTENT = [
     { content: 'Canada\'s Michael Smith Genome Sciences Centre retains ownership of all intellectual property rights of any kind related to the Platform and Service, including applicable copyrights, patents, trademarks, and other proprietary rights. Other trademarks, service marks, graphics and logos used in connection with the GraphKB platform and its services may be the trademarks of users and third parties. Canada\'s Michael Smith Genome Sciences Centre does not transfer to users any intellectual property. All rights, titles and interests in and to such property will remain solely with the original owner. Canada\'s Michael Smith Genome Sciences Centre reserve all rights that are not expressly granted under this Term of Use.', id: 'copyright', label: 'Copyright' },
     { content: 'Your access to GraphKB on this platform is provided under, and subject to specific license agreements. Except as specifically permitted, no portion of this web site may be distributed or reproduced by any means, or in any form, without the explicit written permission of Canada\'s Michael Smith Genome Sciences Centre. In particular, you agree not to reproduce, retransmit, distribute, disseminate, sell, publish, broadcast, or circulate the information owned by Canada\'s Michael Smith Genome Sciences Centre, or received from any other party or individual through the GraphKB platform to anyone, including but not limited to others in your organization. To obtain a license for use of GraphKB other than as expressly granted in these terms of use, including for commercial purposes, please contact graphkb@bcgsc.ca', id: 'useof', label: 'Use of GraphKB' },
     { content: 'Canada\'s Michael Smith Genome Sciences Centre and its affiliates do not assert any proprietary rights, or make any recommendations or endorsements about third-party products and services. References to third-party services and products are provided by GraphKB "AS IS", without warranty of any kind, either express or implied. Some GraphKB data may be subject to the copyright of third parties; you should consult these entities for any additional terms of use. \n\nSome GraphKB content may provide links to other Internet sites for the convenience of users. Canada\'s Michael Smith Genome Sciences Centre and its affiliates are not responsible for the availability or content of these external sites, nor does it endorse, warrant, or guarantee the products, services, or information described or offered at these other Internet sites. Users cannot assume that the external sites will abide by the same Privacy Policy to which Canada\'s Michael Smith Genome Sciences Centre and its affiliates adhere. It is the responsibility of the user to examine the copyright and licensing restrictions of linked pages and to secure all necessary permissions.', id: 'thirdparty', label: 'Third-Party Platforms, Products, and Services' },
@@ -27,9 +27,9 @@ import { createClassModelInDb, createPropertyInDb, compareToDbClass } from './mo
 /**
  * Uses a table to track the last version of the schema for this db
  *
- * @param {orientjs.Db} db the orientjs database connection object
+ * @param db the orientjs database connection object
  */
-const createSchemaHistory = async (db) => {
+const createSchemaHistory = async (db: orientjs.Db) => {
     logger.log('info', 'creating the schema metadata table');
     const tableName = 'SchemaHistory';
     const cls = await db.class.create(tableName, null, null, false);
@@ -71,7 +71,7 @@ const createSchemaHistory = async (db) => {
     return cls;
 };
 
- const generateDefaultGroups = () => {
+const generateDefaultGroups = () => {
     // create the default user groups
     const userGroups = {
         admin: {}, manager: {}, readonly: {}, regular: {},
@@ -94,11 +94,11 @@ const createSchemaHistory = async (db) => {
 };
 
 /**
- * Defines and uilds the schema in the database
+ * Defines and builds the schema in the database
  *
- * @param {orientjs.Db} db the orientjs database connection object
+ * @param db the orientjs database connection object
  */
- const createSchema = async (db) => {
+const createSchema = async (db: orientjs.Db) => {
     // create the schema_history model
     await createSchemaHistory(db);
     // create the permissions class
@@ -174,7 +174,7 @@ const createSchemaHistory = async (db) => {
  *
  * @param {orientjs.Db} db the orientjs database connection
  */
- const loadSchema = async (db) => {
+const loadSchema = async (db: orientjs.Db) => {
     // adds checks etc to the schema loaded from the database
     const classes = await db.class.list();
 
@@ -188,7 +188,7 @@ const createSchemaHistory = async (db) => {
         const model = schema.models[cls.name];
 
         if (model === undefined) {
-            throw new Error(`The class loaded from the database (${model.name}) is not defined in the SCHEMA_DEFN`);
+            throw new Error(`The class loaded from the database (${cls.name}) is not defined in the SCHEMA_DEFN`);
         }
         compareToDbClass(model, cls); // check that the DB matches the SCHEMA_DEFN
 
@@ -214,5 +214,4 @@ export {
     createSchema,
     generateDefaultGroups,
     loadSchema,
-
 };

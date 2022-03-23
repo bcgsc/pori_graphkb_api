@@ -5,7 +5,7 @@
  * @ignore
  */
 import _ from 'lodash';
-
+import orientjs from 'orientjs';
 import gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     util: { castToRID, timeStampNow },
@@ -39,7 +39,7 @@ import { checkUserAccessFor } from '../../middleware/auth';
  * @param {Object} opt.original the original edge record to be updated
  * @param {Object} opt.user the user performing the record update
  */
-const updateStatementTx = async (db, opt) => {
+const updateStatementTx = async (db: orientjs.Db, opt) => {
     const { original, changes } = opt;
     const userRID = castToRID(opt.user);
     const { Statement: model } = schemaDefn.schema;
@@ -105,7 +105,7 @@ const updateStatementTx = async (db, opt) => {
  * @param {Object} opt.original the original edge record to be updated
  * @param {Object} opt.user the user performing the record update
  */
-const updateNodeTx = async (db, opt) => {
+const updateNodeTx = async (db: orientjs.Db, opt) => {
     const { original, changes, model } = opt;
 
     if (model.name === 'Statement') {
@@ -185,7 +185,7 @@ const updateNodeTx = async (db, opt) => {
  * @param {Object} opt.original the original edge record to be updated
  * @param {Object} opt.user the user performing the record update
  */
-const modifyEdgeTx = async (db, opt) => {
+const modifyEdgeTx = async (db: orientjs.Db, opt) => {
     const { original, changes, user } = opt;
     const userRID = castToRID(user);
     const [src, tgt] = await db.record.get([original.out, original.in]);
@@ -265,7 +265,7 @@ const modifyEdgeTx = async (db, opt) => {
  * @param {orientjs.Db} db the database connection object
  * @param {Object} opt options
  */
-const deleteNodeTx = async (db, opt) => {
+const deleteNodeTx = async (db: orientjs.Db, opt) => {
     const { original } = opt;
     const userRID = castToRID(opt.user);
     const commit = db
@@ -335,7 +335,7 @@ const deleteNodeTx = async (db, opt) => {
  * @param {ClassModel} model the model of the current record
  * @param {string} ridToDelete the recordId being deleted
  */
-const deletionLinkChecks = async (db, model, ridToDelete) => {
+const deletionLinkChecks = async (db: orientjs.Db, model, ridToDelete) => {
     if (model.name === 'Vocabulary') {
         // check variants
         let [{ count }] = await select(db, parse({
@@ -412,7 +412,7 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
  */
-const modify = async (db, opt) => {
+const modify = async (db: orientjs.Db, opt) => {
     const {
         model, user, query, paranoid = true,
     } = opt;
@@ -502,7 +502,7 @@ const modify = async (db, opt) => {
  * @param {Object} opt.user the user updating the record
  * @param {ClassModel} opt.model
  */
-const update = async (db, opt) => {
+const update = async (db: orientjs.Db, opt) => {
     if (opt.changes === null || opt.changes === undefined) {
         throw new AttributeError('opt.changes is a required argument');
     }
@@ -518,7 +518,7 @@ const update = async (db, opt) => {
  * @param {Object} opt.user the user updating the record
  * @param {ClassModel} opt.model the class model
  */
-const remove = async (db, opt) => modify(db, { ...opt, changes: null });
+const remove = async (db: orientjs.Db, opt) => modify(db, { ...opt, changes: null });
 
 export {
     modifyEdgeTx,

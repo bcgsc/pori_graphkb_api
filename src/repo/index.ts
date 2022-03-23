@@ -1,4 +1,4 @@
-import { OrientDBClient } from 'orientjs';
+import orientjs from 'orientjs';
 
  import gkbSchema from '@bcgsc-pori/graphkb-schema';
  const { util: { timeStampNow }, schema } = gkbSchema;
@@ -83,7 +83,7 @@ const connectDB = async ({
     GKB_NEW_DB = false, // MUST create new db
 }) => {
     // set up the database server
-    const server = await OrientDBClient.connect({
+    const server = await orientjs.OrientDBClient.connect({
         host: GKB_DB_HOST,
         port: GKB_DB_PORT,
     });
@@ -171,7 +171,7 @@ const connectDB = async ({
 /**
  * Add a login to the users record
  */
-const incrementUserVisit = async (db, username) => {
+const incrementUserVisit = async (db: orientjs.Db, username) => {
     const userRecord = await getUserByName(db, username);
     const changes = { firstLoginAt: timeStampNow(), lastLoginAt: timeStampNow(), loginCount: 1 };
 

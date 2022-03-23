@@ -1,6 +1,7 @@
 /**
  * Tests for building read only queries including their routing
  */
+import orientjs from 'orientjs';
 import requestPromise from 'request-promise';
 import HTTP_STATUS from 'http-status-codes';
 import gkbSchema from '@bcgsc-pori/graphkb-schema';
@@ -87,7 +88,7 @@ const variantSetup = async ({ adminUserToken, app }) => {
 };
 
 describeWithAuth('api crud routes', () => {
-    let db,
+    let db: orientjs.Db,
         app,
         adminUserToken,
         session;

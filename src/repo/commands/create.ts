@@ -4,6 +4,7 @@ const {
     constants: { PERMISSIONS },
 } = require('@bcgsc-pori/graphkb-schema');
 import { logger } from '../logging';
+import orientjs from 'orientjs';
 import { parseRecord } from '../query_builder';
 import { RecordConflictError, PermissionError } from '../error';
 const { select, getUserByName, fetchDisplayName } = require('./select');
@@ -18,7 +19,7 @@ import { checkUserAccessFor } from '../../middleware/auth';
  * @param {string} opt.userName the name of the new user
  * @param {Array.<string>} opt.groupNames the list of group names for which to add the new user to
  */
-const createUser = async (db, opt) => {
+const createUser = async (db: orientjs.Db, opt) => {
     const {
         userName, groupNames,
     } = opt;
@@ -54,7 +55,7 @@ const createUser = async (db, opt) => {
  * @param {ClassModel} opt.model the model for the table/class to insert the new record into
  * @param {Object} opt.user the user creating the new record
  */
-const createEdge = async (db, opt) => {
+const createEdge = async (db: orientjs.Db, opt) => {
     const { content, model, user } = opt;
     content.createdBy = user['@rid'];
     const {
@@ -93,7 +94,7 @@ const createEdge = async (db, opt) => {
  * @param {Object} opt.user the user creating the new record
  * @param {Object.<string,ClassModel>} [schema] only required for creating statements
  */
-const create = async (db, opt) => {
+const create = async (db: orientjs.Db, opt) => {
     const {
         content, model, user,
     } = opt;

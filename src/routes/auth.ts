@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import jc from 'json-cycle';
 import HTTP_STATUS from 'http-status-codes';
-
+import orientjs from 'orientjs';
 import { getUserByName } from '../repo/commands';
 import { incrementUserVisit } from '../repo';
 import { logger } from '../repo/logging';
@@ -20,7 +20,7 @@ const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
  *
  * @returns {string} the token
  */
-const generateToken = async (db, username, key, exp = null) => {
+const generateToken = async (db: orientjs.Db, username, key, exp = null) => {
     const user = jc.decycle(await getUserByName(db, username));
 
     if (exp === null) {

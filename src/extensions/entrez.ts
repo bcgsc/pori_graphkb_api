@@ -145,7 +145,7 @@ const parsePubmedRecord = (record): ParsedPubmedRecord => {
     return {...parsed, displayName: `pmid:${parsed.sourceId}` };
 };
 
-const fetchRecord = async (db, id) => {
+const fetchRecord = async (db: string, id) => {
     const { result: { [id]: result } } = await requestWithRetry({
         headers: { Accept: 'application/json' },
         json: true,
