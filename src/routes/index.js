@@ -2,7 +2,7 @@ const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 
 const { error: { AttributeError }, schema: { schema }, schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
-const { variant: { parse: variantParser }, error: { ParsingError } } = require('@bcgsc-pori/graphkb-parser');
+const { parseVariant, ParsingError } = require('@bcgsc-pori/graphkb-parser');
 
 const openapi = require('./openapi');
 const resource = require('./resource');
@@ -61,7 +61,7 @@ const addParserRoute = (app) => {
         }
 
         try {
-            const parsed = variantParser(content, requireFeatures);
+            const parsed = parseVariant(content, requireFeatures);
             return res.status(HTTP_STATUS.OK).json({ result: parsed });
         } catch (err) {
             if (err instanceof ParsingError) {

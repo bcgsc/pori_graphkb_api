@@ -1,7 +1,7 @@
 const HTTP_STATUS = require('http-status-codes');
 const {
     util: { timeStampNow },
-    schema: { schema: SCHEMA_DEFN },
+    schema,
     constants: { PERMISSIONS },
 } = require('@bcgsc-pori/graphkb-schema');
 
@@ -10,7 +10,7 @@ const { RecordNotFoundError, PermissionError } = require('../repo/error');
 const { checkUserAccessFor } = require('../middleware/auth');
 
 const getCurrentLicense = async (db) => db.query(
-    `SELECT * FROM ${SCHEMA_DEFN.LicenseAgreement.name} ORDER BY enactedAt DESC LIMIT 1`,
+    `SELECT * FROM ${schema.models.LicenseAgreement.name} ORDER BY enactedAt DESC LIMIT 1`,
 ).one();
 
 /**
@@ -77,7 +77,7 @@ const addEulaRoutes = (app) => {
             const { body: content, user } = req;
 
             // check for the required access
-            if (!checkUserAccessFor(user, SCHEMA_DEFN.LicenseAgreement.name, PERMISSIONS.CREATE)) {
+            if (!checkUserAccessFor(user, schema.models.LicenseAgreement.name, PERMISSIONS.CREATE)) {
                 return next(new PermissionError('Insufficient permissions to upload a license agreement'));
             }
             let session;
@@ -89,7 +89,7 @@ const addEulaRoutes = (app) => {
             }
 
             try {
-                const result = await session.insert().into(SCHEMA_DEFN.LicenseAgreement.name).set({
+                const result = await session.insert().into(schema.models.LicenseAgreement.name).set({
                     content,
                     enactedAt: timeStampNow(),
                 }).one();

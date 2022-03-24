@@ -1,13 +1,7 @@
 const { types } = require('orientjs');
 
-const {
-    splitSchemaClassLevels,
-    SCHEMA_DEFN,
-} = require('../../src/repo/schema');
-const {
-    ClassModel,
-    Property,
-} = require('../../src/repo/model');
+const { schema } = require('@bcgsc-pori/graphkb-schema');
+const { ClassModel } = require('../../src/repo/model');
 
 const OJS_TYPES = {};
 
@@ -16,32 +10,11 @@ for (const num of Object.keys(types)) {
     OJS_TYPES[name] = num;
 }
 
-describe('splitSchemaClassLevels', () => {
-    test('splits dependency chain', () => {
-        const schema = {
-            grandparent: new ClassModel({ name: 'grandparent' }),
-            other: new ClassModel({ name: 'other' }),
-        };
-        schema.parent = new ClassModel({
-            inherits: [schema.grandparent],
-            name: 'parent',
-            properties: { prop1: new Property({ linkedClass: schema.other, name: 'prop1' }) },
-        });
-        schema.child = new ClassModel({
-            inherits: [schema.grandparent],
-            properties: { child: new Property({ linkedClass: schema.parent, name: 'child' }) },
-        });
-        schema.grandparent._subclasses = [schema.parent, schema.child];
-        const levels = splitSchemaClassLevels(schema);
-        expect(levels).toHaveProperty('length', 3);
-    });
-});
-
 describe('SCHEMA', () => {
     describe('PositionalVariant.formatRecord', () => {
         test('error on missing reference1', () => {
             expect(() => {
-                SCHEMA_DEFN.PositionalVariant.formatRecord({
+                schema.models.PositionalVariant.formatRecord({
                     break1Start: { '@class': 'ProteinPosition', pos: 1 },
                     createdBy: '#44:1',
                     reference2: '#33:1',
@@ -53,7 +26,7 @@ describe('SCHEMA', () => {
 
         test('error on missing break1Start', () => {
             expect(() => {
-                const formatted = SCHEMA_DEFN.PositionalVariant.formatRecord({
+                const formatted = schema.models.PositionalVariant.formatRecord({
                     break2Start: { '@class': 'ProteinPosition', pos: 1, refAA: 'A' },
                     createdBy: '#44:1',
                     reference1: '#33:1',
@@ -66,7 +39,7 @@ describe('SCHEMA', () => {
 
         test('error on position without @class attribute', () => {
             expect(() => {
-                const formatted = SCHEMA_DEFN.PositionalVariant.formatRecord({
+                const formatted = schema.models.PositionalVariant.formatRecord({
                     break1Start: { pos: 1, refAA: 'A' },
                     createdBy: '#44:1',
                     reference1: '#33:1',
@@ -79,7 +52,7 @@ describe('SCHEMA', () => {
 
         test('error on break2End without break2Start', () => {
             expect(() => {
-                const formatted = SCHEMA_DEFN.PositionalVariant.formatRecord({
+                const formatted = schema.models.PositionalVariant.formatRecord({
                     break1Start: { '@class': 'ProteinPosition', pos: 1, refAA: 'A' },
                     break2End: { '@class': 'ProteinPosition', pos: 10, refAA: 'B' },
                     createdBy: '#44:1',
@@ -92,7 +65,7 @@ describe('SCHEMA', () => {
         });
 
         test('auto generates the breakRepr', () => {
-            const formatted = SCHEMA_DEFN.PositionalVariant.formatRecord({
+            const formatted = schema.models.PositionalVariant.formatRecord({
                 break1Start: { '@class': 'ProteinPosition', pos: 1, refAA: 'A' },
                 break2End: { '@class': 'ExonicPosition', pos: 3 },
                 break2Start: { '@class': 'ExonicPosition', pos: 1 },
@@ -106,7 +79,7 @@ describe('SCHEMA', () => {
         });
 
         test('ignores the input breakrepr if given', () => {
-            const formatted = SCHEMA_DEFN.PositionalVariant.formatRecord({
+            const formatted = schema.models.PositionalVariant.formatRecord({
                 break1Repr: 'bad',
                 break1Start: { '@class': 'ProteinPosition', pos: 1, refAA: 'A' },
                 createdBy: '#44:1',
@@ -124,7 +97,7 @@ describe('ClassModel', () => {
         const model = new ClassModel({
             inherits: [{ name: 'Ontology' }],
             name: 'Pathway',
-            properties: { prop1: new Property({ name: 'prop1', type: 'string' }) },
+            properties: [{ name: 'prop1', type: 'string' }],
         });
 
         test('error on abstract mismatch', () => {
@@ -209,12 +182,12 @@ describe('ClassModel', () => {
     describe('queryProperties', () => {
         const child = new ClassModel({
             name: 'child',
-            properties: { childProp: { name: 'childProp' } },
+            properties: [{ name: 'childProp' }],
         });
-        const parent = new ClassModel({ name: 'parent', properties: {}, subclasses: [child] });
+        const parent = new ClassModel({ name: 'parent', properties: [], subclasses: [child] });
         const grandparent = new ClassModel({
             name: 'grandparent',
-            properties: { grandProp: { name: 'grandProp' } },
+            properties: [{ name: 'grandProp' }],
             subclasses: [parent],
         });
 
@@ -233,18 +206,18 @@ describe('ClassModel', () => {
     describe('inheritance', () => {
         const person = new ClassModel({
             name: 'person',
-            properties: {
-                gender: { default: 'not specified', name: 'gender' },
-                name: { mandatory: true, name: 'name' },
-            },
+            properties: [
+                { default: 'not specified', name: 'gender' },
+                { mandatory: true, name: 'name' },
+            ],
         });
         const child = new ClassModel({
             inherits: [person],
             name: 'child',
-            properties: {
-                age: { name: 'age' },
-                mom: { cast: (x) => x.toLowerCase(), mandatory: true, name: 'mom' },
-            },
+            properties: [
+                { name: 'age' },
+                { cast: (x) => x.toLowerCase(), mandatory: true, name: 'mom' },
+            ],
             sourceModel: true,
         });
 
@@ -275,18 +248,18 @@ describe('ClassModel', () => {
         beforeEach(() => {
             model = new ClassModel({
                 name: 'example',
-                properties: {
-                    opt1: new Property({ name: 'opt1' }),
-                    opt2: new Property({
+                properties: [
+                    { name: 'opt1' },
+                    {
                         choices: [2, 3], default: 2, name: 'opt2', nullable: true, type: 'integer',
-                    }),
-                    req1: new Property({
+                    },
+                    {
                         mandatory: true, name: 'req1', nonEmpty: true, type: 'string',
-                    }),
-                    req2: new Property({
+                    },
+                    {
                         default: 1, mandatory: true, name: 'req2', type: 'integer',
-                    }),
-                },
+                    },
+                ],
             });
         });
 
@@ -330,13 +303,13 @@ describe('ClassModel', () => {
         test('cast embedded types', () => {
             model = new ClassModel({
                 name: 'example',
-                properties: {
-                    thing: new Property({
+                properties: [
+                    {
                         cast: (x) => x.toLowerCase().trim(),
                         name: 'thing',
                         type: 'embeddedset',
-                    }),
-                },
+                    },
+                ],
             });
             const record = model.formatRecord({
                 thing: ['aThinNG', 'another THING'],
@@ -348,13 +321,13 @@ describe('ClassModel', () => {
         test('cast inheritied embedded types', () => {
             model = new ClassModel({
                 name: 'example',
-                properties: {
-                    thing: new Property({
+                properties: [
+                    {
                         cast: (x) => x.toLowerCase().trim(),
                         name: 'thing',
                         type: 'embeddedset',
-                    }),
-                },
+                    },
+                ],
             });
             const childModel = new ClassModel({
                 inherits: [model],

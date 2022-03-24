@@ -1,6 +1,6 @@
 const {
     error: { AttributeError },
-    schema: { schema: SCHEMA_DEFN },
+    schema,
     constants: { PERMISSIONS },
 } = require('@bcgsc-pori/graphkb-schema');
 const { logger } = require('../logging');
@@ -28,12 +28,12 @@ const createUser = async (db, opt) => {
     const groupIds = Array.from(userGroups.filter(
         (group) => groupNames.includes(group.name),
     ), (group) => group['@rid']);
-    const record = SCHEMA_DEFN.User.formatRecord({
+    const record = schema.models.User.formatRecord({
         groups: groupIds,
         name: userName,
         signedLicenseAt: opt.signedLicenseAt || null,
     }, { addDefaults: true, dropExtra: false });
-    await db.insert().into(SCHEMA_DEFN.User.name)
+    await db.insert().into(schema.models.User.name)
         .set(record)
         .one();
 
