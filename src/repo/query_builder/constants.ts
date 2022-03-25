@@ -55,11 +55,11 @@ const OPERATORS = {
     LT: '<',
     LTE: '<=',
     OR: 'OR',
-};
+} as const;
 
-const DIRECTIONS = ['out', 'in', 'both'];
+const DIRECTIONS = ['out', 'in', 'both'] as const;
 
-const TREE_EDGES = ['SubClassOf', 'ElementOf'];
+const TREE_EDGES = ['SubClassOf', 'ElementOf'] as const;
 
 const SIMILARITY_EDGES = [
     'AliasOf',
@@ -67,7 +67,7 @@ const SIMILARITY_EDGES = [
     'DeprecatedBy',
     'GeneralizationOf',
     'Infers',
-];
+] as const;
 
 const DEFAULT_NEIGHBORS = 3;
 const MIN_WORD_SIZE = 3;

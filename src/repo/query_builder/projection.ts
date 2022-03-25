@@ -1,5 +1,5 @@
 import { merge } from 'lodash';
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     error: { AttributeError },
     schema: schemaDefn,
@@ -37,7 +37,7 @@ const nestedProjection = (initialDepth, excludeHistory = true) => {
  * @param {string} direction the edge direction
  * @param {*} opt pass-through optins to hand off to projectionFromProperties
  */
-const projectEdge = (model, direction, opt) => {
+const projectEdge = (model: gkbSchema.ClassModel, direction: string, opt) => {
     const target = direction === 'out'
         ? 'in'
         : 'out';
@@ -70,14 +70,22 @@ const projectEdge = (model, direction, opt) => {
  * @param {Array.<string>} exclude list of properties to exclude in expanded records
  * @param {Array.<string>} terminal list of properties that should not have their edges/links expanded
  */
-const projectionFromProperties = (queryProperties, {
-    isEdge = false,
-    depth = 1,
-    edges = null,
-    history = false,
-    exclude = ['groupRestrictions', 'permissions', 'groups', 'permissions'],
-    terminal = ['createdBy', 'updatedBy', 'deletedBy'],
-} = {}) => {
+const projectionFromProperties = (queryProperties, opt: Partial<{
+    isEdge: boolean;
+    depth: number;
+    edges: string[] | null;
+    history: boolean;
+    exclude: string[];
+    terminal: string[];
+}> = {}) => {
+    const {
+        isEdge = false,
+        depth = 1,
+        edges = null,
+        history = false,
+        exclude = ['groupRestrictions', 'permissions', 'groups', 'permissions'],
+        terminal = ['createdBy', 'updatedBy', 'deletedBy'],
+    } = opt;
     const properties = ['@class', '@rid', '*'];
 
     for (const prop of queryProperties.sort((p1, p2) => p1.name.localeCompare(p2.name))) {
@@ -209,7 +217,7 @@ const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
     const projection = parsePropertyList(model, properties, allowDirectEmbedded);
 
     const convertToString = (obj) => {
-        const keyList = [];
+        const keyList: string[] = [];
 
         for (const key of Object.keys(obj).sort()) {
             if (Object.keys(obj[key]).length) {

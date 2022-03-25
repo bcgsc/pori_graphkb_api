@@ -1,15 +1,21 @@
-import { RecordID as RID } from 'orientjs';
-
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
-const { error: { AttributeError }, schema: { schema }, util: { castToRID } } = gkbSchema;
-
+import {
+    displayQuery,
+} from './util';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
+const { error: { AttributeError } } = gkbSchema;
+import {isObj, isSubquery, QueryElement, QueryBase, isControlledValue, BuiltQuery} from '../../types';
 import { OPERATORS, PARAM_PREFIX } from './constants';
-import { FixedSubquery } from './fixed';
-import { getQueryableProps } from './util';
 
 const NUMBER_ONLY_OPERATORS = [OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE];
 
-class Comparison {
+class Comparison implements QueryElement {
+    name: string;
+    prop: gkbSchema.Property;
+    value: unknown;
+    operator: string;
+    negate: boolean;
+    isLength: boolean;
+
     /**
      * @param {PropertyModel} prop the attribute being compared to
      * @param value the value to be compared to
@@ -17,18 +23,18 @@ class Comparison {
      * @param {bool} negate if true then surround the comparison with a negation
      */
     constructor({
-        name, prop, value, operator, negate = false, isLength = false,
+        name, prop, value, operator, negate, isLength,
     }) {
         this.name = name;
         this.prop = prop;
         this.value = value;
-        this.operator = operator;
-        this.negate = negate;
-        this.isLength = isLength;
+        this.operator = operator || OPERATORS.EQ;
+        this.negate = Boolean(negate);
+        this.isLength = Boolean(isLength);
     }
 
     get valueIsIterable() {
-        return this.value && (Array.isArray(this.value) || this.value.isSubquery);
+        return this.value && (Array.isArray(this.value) || (isObj(this.value) && this.value.isSubquery));
     }
 
     /**
@@ -51,11 +57,11 @@ class Comparison {
             return value;
         };
 
-        if (this.length && [...NUMBER_ONLY_OPERATORS, OPERATORS.EQ, OPERATORS.NE].includes(this.operator)) {
+        if (this.isLength && isControlledValue(this.operator, [...NUMBER_ONLY_OPERATORS, OPERATORS.EQ])) {
             throw new AttributeError('The length comparison can only be used with number values');
         }
 
-        if (NUMBER_ONLY_OPERATORS.includes(this.operator)) {
+        if (isControlledValue(this.operator, NUMBER_ONLY_OPERATORS)) {
             if (prop.iterable || this.valueIsIterable) {
                 throw new AttributeError(
                     `Non-equality operator (${
@@ -121,88 +127,6 @@ class Comparison {
     }
 
     /**
-     * @param {ClassModel} model the starting model
-     * @param {object} opt the JSON representation to be parsed
-     *
-     * @returns {Comparison} the parsed object
-     */
-    static parse(model, {
-        operator: inputOperator, negate = false, ...rest
-    }) {
-        if (Object.keys(rest).length === 0) {
-            throw new AttributeError('Missing the property name for the comparison');
-        }
-        let [name] = Object.keys(rest);
-        const isLength = name.endsWith('.length');
-
-        if (isLength) {
-            name = name.slice(0, name.length - '.length'.length);
-        }
-        let value = rest[name];
-
-        const properties = getQueryableProps(model);
-        const prop = name === '@this'
-            ? { choices: Object.values(schema).map((m) => m.name) }
-            : properties[name];
-
-        if (!prop) {
-            throw new AttributeError(`The property (${name}) does not exist on the model (${model.name})`);
-        }
-
-        if (typeof value === 'object'
-            && value !== null
-            && !(value instanceof Array)
-            && !(value instanceof RID)
-        ) {
-            if (value.queryType || value.filters) {
-                value = Subquery.parse(value);
-            }
-        }
-
-        let defaultOperator = OPERATORS.EQ;
-
-        if (inputOperator === undefined) {
-            if (prop.iterable) {
-                if (Array.isArray(value)) {
-                    defaultOperator = OPERATORS.EQ;
-                } else if (value && value.isSubquery) {
-                    defaultOperator = OPERATORS.CONTAINSANY;
-                } else {
-                    defaultOperator = OPERATORS.CONTAINS;
-                }
-            } else if (value && (Array.isArray(value) || value.isSubquery)) {
-                defaultOperator = OPERATORS.IN;
-            }
-        }
-        const operator = inputOperator || defaultOperator;
-
-        if (!Object.values(OPERATORS).includes(operator) || operator === OPERATORS.OR || operator === OPERATORS.AND) {
-            throw new AttributeError(
-                `Invalid operator (${
-                    operator
-                }). Must be one of (${
-                    Object.values(OPERATORS).join(', ')
-                })`,
-            );
-        }
-
-        if (name === '@this' && operator !== OPERATORS.INSTANCEOF) {
-            throw new AttributeError(`Only the INSTANCEOF operator is valid to use with @this (${operator})`);
-        }
-
-        const result = new this({
-            isLength,
-            name,
-            negate,
-            operator,
-            prop,
-            value,
-        });
-        result.validate();
-        return result;
-    }
-
-    /**
      * @param {int} [paramIndex=0] the number to append to parameter names
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
@@ -212,7 +136,7 @@ class Comparison {
             query,
             paramIndex = initialParamIndex;
 
-        if (this.value && this.value.isSubquery) {
+        if (isSubquery(this.value)) {
             const subquery = this.value.toString(paramIndex);
             query = `${attr} ${this.operator} (${subquery.query})`;
             ({ params } = subquery);
@@ -230,7 +154,9 @@ class Comparison {
                     Array.from(Object.keys(params), (p) => `:${p}`).join(', ')
                 }] AND ${attr}.size() = :${pname})`;
 
-                params[pname] = this.value.length;
+                params[pname] = Array.isArray(this.value)
+                    ? this.value.length
+                    : this.value.size;
             } else {
                 query = `${attr} ${this.operator} [${
                     Array.from(Object.keys(params), (p) => `:${p}`).join(', ')
@@ -260,49 +186,15 @@ class Comparison {
     }
 }
 
-class Clause {
-    constructor(model, operator, filters) {
+class Clause implements QueryElement {
+    readonly model: string;
+    readonly operator: 'AND' | 'OR';
+    filters: Array<Clause | Comparison>;
+
+    constructor(model: string, operator: 'AND' | 'OR', filters: Array<Clause | Comparison>) {
         this.model = model;
         this.operator = operator;
         this.filters = filters;
-    }
-
-    static parse(model, content) {
-        if (Object.keys(content).length !== 1) {
-            throw new AttributeError(`Filter clauses must be an object with a single AND or OR key. Found multiple keys (${Object.keys(content)})`);
-        }
-        const [operator] = Object.keys(content);
-
-        if (!['AND', 'OR'].includes(operator)) {
-            throw new AttributeError(`Filter clauses must be an object with a single AND or OR key. Found ${operator}`);
-        }
-        if (!Array.isArray(content[operator])) {
-            throw new AttributeError('Expected filter clause value to be an array');
-        }
-
-        // clause may contain other clauses or direct comparisons
-        const parsedFilters = [];
-
-        for (const clause of content[operator]) {
-            let parsed;
-
-            try {
-                parsed = this.parse(model, clause);
-            } catch (err) {
-                if (clause.OR || clause.AND) {
-                    throw err;
-                }
-                // direct property instead of a nested clause
-                parsed = Comparison.parse(model, clause);
-            }
-            parsedFilters.push(parsed);
-        }
-
-        if (parsedFilters.length === 0) {
-            throw new AttributeError('Clause must contain filters. Cannot be an empty array');
-        }
-
-        return new this(model, operator, parsedFilters);
     }
 
     /**
@@ -310,7 +202,7 @@ class Clause {
      */
     toString(initialParamIndex = 0, prefix = '') {
         const params = {};
-        const components = [];
+        const components: string[] = [];
         let paramIndex = initialParamIndex;
 
         for (const comp of this.filters) {
@@ -329,12 +221,19 @@ class Clause {
     }
 }
 
-class Subquery {
+class Subquery extends QueryBase {
+    readonly target: unknown;
+    readonly history: boolean;
+    readonly filters: Clause | null;
+    readonly isSubquery: true;
+    readonly queryType?: undefined;
+
     constructor({
         target, history, filters = null,
-    }) {
+    }: {target: unknown; history?: unknown; filters?: Clause | null}) {
+        super();
         this.target = target;
-        this.history = history;
+        this.history = Boolean(history);
         this.filters = filters;
         this.isSubquery = true;
     }
@@ -353,7 +252,7 @@ class Subquery {
 
         if (Array.isArray(target)) {
             targetString = `[${target.map((rid) => rid.toString()).join(', ')}]`;
-        } else if (target.isSubquery) {
+        } else if (isSubquery(target)) {
             const { query: subQuery, params: subParams } = target.toString(paramIndex, prefix);
             paramIndex += Object.keys(subParams).length;
             targetString = `(${subQuery})`;
@@ -364,7 +263,7 @@ class Subquery {
         if (filters && Object.keys(filters).length) {
             const { query: clause, params: filterParams } = filters.toString(paramIndex, prefix);
 
-            if (filters.isSubquery) {
+            if (isSubquery(filters)) {
                 statement = `${statement} WHERE (${clause})`;
             } else {
                 statement = `${statement} WHERE ${clause}`;
@@ -377,98 +276,87 @@ class Subquery {
 
         return { params, query: statement };
     }
+}
 
-    static parse({
-        target: rawTarget,
-        history = false,
-        filters: rawFilters = null,
-        queryType,
-        model: inputModel,
-        ...rest
+class WrapperQuery extends QueryBase {
+    isSubquery: false;
+    readonly limit?: number;
+    readonly skip?: number;
+    readonly projection?: string;
+    query: QueryBase;
+    target: unknown;
+    readonly orderBy?: string[];
+    readonly orderByDirection?: 'ASC' | 'DESC';
+    readonly count: boolean;
+    readonly history: boolean;
+    queryType?: undefined;
+
+    constructor({
+        target, limit, skip, projection, query, orderByDirection, orderBy, count = false, history = false,
     }) {
-        let target = rawTarget,
-            filters = null;
+        super();
+        this.target = target;
+        this.limit = limit;
+        this.skip = skip;
+        this.projection = projection;
+        this.query = query;
+        this.orderBy = orderBy;
+        this.orderByDirection = orderByDirection;
+        this.count = count;
+        this.history = history;
+        this.isSubquery = false;
+    }
 
-        if (Array.isArray(rawTarget)) {
-            if (!rawTarget.length) {
-                throw new AttributeError('target cannot be an empty array');
+    expectedCount() {
+        if (!this.count && this.query.expectedCount() && !this.skip) {
+            let count = this.query.expectedCount();
+
+            if (this.limit !== null && this.limit !== undefined && count !== null) {
+                count = Math.min(this.limit, count);
             }
-            target = rawTarget.map(castToRID);
-        } else if (typeof target !== 'string') {
-            // fixed query. pre-parse the target and filters
-            if (typeof rawTarget !== 'string') {
-                target = this.parse(rawTarget);
+            return count;
+        }
+        return null;
+    }
+
+    toString() {
+        const {
+            skip, limit, projection, count, orderByDirection, orderBy,
+        } = this;
+        const { query, params } = this.query.toString(0);
+
+        if (!count && !orderBy && !skip && limit === undefined) {
+            // don't need to wrap since there are no modificiations
+            return { params, query };
+        }
+
+        let statement = query;
+
+        if (count) {
+            statement = `SELECT count(*) AS count FROM (${query})`;
+        } else if (projection !== '*') {
+            statement = `SELECT ${projection} FROM (${query})`;
+        }
+
+        if (!count) {
+            if (orderBy) {
+                const direction = orderByDirection || 'ASC';
+                const ordering = orderBy.map((p) => `${p} ${direction}`);
+                statement = `${statement} ORDER BY ${ordering.join(', ')}`;
             }
-        }
-        if (Object.keys(rest).length && !queryType) {
-            throw new AttributeError(`Unrecognized query arguments: ${Object.keys(rest).join(',')}`);
-        }
-
-        if (rawFilters) {
-            filters = rawFilters;
-
-            if (Array.isArray(filters)) {
-                filters = { AND: filters };
-            } else if (!filters.AND && !filters.OR) {
-                filters = { AND: [{ ...filters }] };
+            if (skip) {
+                statement = `${statement} SKIP ${skip}`;
             }
-        }
-
-        let model = schema[target.isSubquery
-            ? null
-            : target
-        ];
-
-        if (target.isSubquery && target.target && schema[target.target]) {
-            model = schema[target.target];
-        }
-
-        if (!model && (!target || !target.isSubquery) && !Array.isArray(target)) {
-            throw new AttributeError(`Invalid target class (${target})`);
-        }
-
-        if (model && model.isEdge && queryType !== 'edge' && filters && typeof target === 'string') {
-            // stop the user from making very inefficient queries
-            if (filters.AND.some((cond) => cond.out)) {
-                target = this.parse({
-                    direction: 'out',
-                    queryType: 'edge',
-                    target: model.name,
-                    vertexFilter: filters.AND.find((cond) => cond.out).out,
-                });
-            } else if (filters.AND.some((cond) => cond.in)) {
-                target = this.parse({
-                    direction: 'in',
-                    queryType: 'edge',
-                    target: model.name,
-                    vertexFilter: filters.AND.find((cond) => cond.in).in,
-                });
+            if (limit !== undefined && limit !== null) {
+                statement = `${statement} LIMIT ${limit}`;
             }
         }
+        return { params, query: statement };
+    }
 
-        let defaultModel = schema[inputModel] || schema.V;
-
-        if (target && target.queryType === 'edge') {
-            defaultModel = schema.E;
-        }
-        if (filters) {
-            filters = Clause.parse(model || defaultModel, filters);
-        }
-
-        if (queryType) {
-            if (!filters) {
-                return FixedSubquery.parse({
-                    ...rest, history, queryType, target,
-                }, this.parse.bind(this)); // has to be passed to avoid circular dependency
-            }
-            return FixedSubquery.parse({
-                ...rest, filters, history, queryType, target,
-            }, this.parse.bind(this)); // has to be passed to avoid circular dependency
-        }
-        return new this({
-            filters, history, target,
-        });
+    displayString() {
+        return displayQuery(this.toString());
     }
 }
 
-export { Subquery };
+export { Subquery, WrapperQuery, Clause, Comparison };

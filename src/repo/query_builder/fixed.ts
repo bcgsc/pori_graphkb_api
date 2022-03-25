@@ -1,24 +1,24 @@
 /**
  * Create neighborhood queries where some conditions are loosely matched and then expanded to
- * surrounding verticies
+ * surrounding vertices
  */
-/**
- * @constant
- * @ignore
- */
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     util: { castToRID, looksLikeRID },
-    error: { AttributeError }, schema: { schema },
+    error: { AttributeError }, schema,
 } = gkbSchema;
-import { parseVariant,
-    ParsingError } from '@bcgsc-pori/graphkb-parser';
+import {
+    parseVariant,
+    ParsingError
+} from '@bcgsc-pori/graphkb-parser';
 import { quoteWrap } from '../util';
 
 import { MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE, SIMILARITY_EDGES, TREE_EDGES } from './constants';
 import { castRangeInt } from './util';
+import { BuiltQuery, isSubquery, QueryBase } from '../../types';
+import { GraphRecordId } from '@bcgsc-pori/graphkb-schema/dist/constants';
 
-const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
+const disambiguationClause = (cond: string, edges: string[] = [...SIMILARITY_EDGES]) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
 
 /**
  * @param {Object} opt options
@@ -28,7 +28,16 @@ const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(
  * @param {Array.<string>} opt.edges list of edge class names to follow in creating the neighborhood
  * @param {string} opt.direction the direction to follow (in/out)
  */
-const treeQuery = (opt) => {
+const treeQuery = (opt: {
+    filters: QueryBase;
+    depth?: number;
+    edges?: string[];
+    paramIndex?: number;
+    direction: 'in' | 'out' | 'both',
+    target: string | string[] | QueryBase;
+    history?: boolean;
+    disambiguate?: boolean;
+}): BuiltQuery => {
     const {
         filters, target: rawTarget, paramIndex = 0, direction, history = false, disambiguate = true,
     } = opt;
@@ -40,12 +49,12 @@ const treeQuery = (opt) => {
 
     if (Array.isArray(rawTarget)) {
         target = `[${rawTarget.map(castToRID).map((rid) => rid.toString()).join(', ')}]`;
-    } else if (schema[target] === undefined) {
-        throw new AttributeError(`Invalid target class (${target})`);
-    } else {
+    } else if (isSubquery(target)) {
         const { query, params: whereParams } = filters.toString(paramIndex);
         target = `(SELECT * FROM ${target} WHERE ${query})`;
         params = whereParams;
+    } else if (target !== 'string' || !schema.has(target)) {
+        throw new AttributeError(`Invalid target class (${target})`);
     }
 
     if (!['out', 'in'].includes(direction)) {
@@ -53,7 +62,7 @@ const treeQuery = (opt) => {
     }
 
     if (disambiguate) {
-        target = `(${disambiguationClause(target, SIMILARITY_EDGES)})`;
+        target = `(${disambiguationClause(target, [...SIMILARITY_EDGES])})`;
     }
 
     const edgeList = Array.from(edges, quoteWrap).join(', ');
@@ -75,7 +84,7 @@ const treeQuery = (opt) => {
  */
 const neighborhood = ({
     filters, target, paramIndex = 0, edges = [], depthIn,
-}) => {
+}): BuiltQuery => {
     // check the edges are valid edge names
     for (const edge of edges) {
         if (!schema.get(edge)) {
@@ -83,7 +92,7 @@ const neighborhood = ({
         }
     }
 
-    if (schema[target] === undefined) {
+    if (!schema.has(target)) {
         throw new AttributeError(`Invalid target class (${target})`);
     }
     const depth = castRangeInt(depthIn || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);
@@ -98,15 +107,30 @@ RETURN DISTINCT $pathElements)`;
 
 const recordsAsTarget = (...target) => `[${target.map((p) => castToRID(p).toString()).join(', ')}]`;
 
-const similarTo = ({
-    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = TREE_EDGES, matchType, ...rest
-} = {}) => {
+const similarTo = (opt: {
+    target: string[] | GraphRecordId[] | QueryBase;
+    prefix?: string;
+    history?: boolean;
+    paramIndex?: number;
+    edges?: string[];
+    treeEdges: string[];
+    matchType?: string;
+}): BuiltQuery => {
     // TODO: Move back to using substitution params pending: https://github.com/orientechnologies/orientjs/issues/376
+    const {
+        target,
+        prefix = '',
+        history = false,
+        paramIndex = 0,
+        edges = [...SIMILARITY_EDGES],
+        treeEdges = [...TREE_EDGES],
+        matchType, ...rest
+    } = opt;
     let initialQuery,
         params = {};
 
     for (const edge of [...treeEdges, ...edges]) {
-        if (!schema[edge]) {
+        if (!schema.has(edge)) {
             throw new AttributeError(`unrecognized edge class (${edge})`);
         }
     }
@@ -148,13 +172,13 @@ const similarTo = ({
     let query = `SELECT expand(rid) FROM (SELECT distinct(@rid) as rid FROM (${innerQuery}))`;
 
     if (matchType) {
-        if (!schema[matchType]) {
+        if (!schema.has(matchType)) {
             throw new AttributeError(`Did not recognize type matchType (${matchType})`);
         }
         if (!history) {
-            query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL AND @this INSTANCEOF ${schema[matchType].name}`;
+            query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL AND @this INSTANCEOF ${schema.get(matchType).name}`;
         } else {
-            query = `SELECT * FROM (${query}) WHERE @this INSTANCEOF ${schema[matchType].name}`;
+            query = `SELECT * FROM (${query}) WHERE @this INSTANCEOF ${schema.get(matchType).name}`;
         }
     } else if (!history) {
         query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL`;
@@ -172,7 +196,7 @@ const similarTo = ({
  * @param {Number} opt.paramIndex the starting index to use in naming parameter aliases
  * @param {Array.<string>} opt.edges list of edge class names to follow in creating the neighborhood
  */
-const ancestors = (opt) => {
+const ancestors = (opt): BuiltQuery => {
     opt.direction = 'in';
     return treeQuery(opt);
 };
@@ -187,7 +211,7 @@ const ancestors = (opt) => {
  * @param {Number} opt.paramIndex the starting index to use in naming parameter aliases
  * @param {Array.<string>} opt.edges list of edge class names to follow in creating the neighborhood
  */
-const descendants = (opt) => {
+const descendants = (opt): BuiltQuery => {
     opt.direction = 'out';
     return treeQuery(opt);
 };
@@ -205,32 +229,29 @@ const buildLooseSearch = (cls, name) => ({
     },
 });
 
-const buildHgvsQuery = (hgvsInput) => {
+const buildHgvsQuery = (hgvsInput: string) => {
     const parsed = parseVariant(hgvsInput);
-    const payload = {
-        filters: {
-            AND: [
-                {
-                    reference1: buildLooseSearch('Feature', parsed.reference1),
-                },
-                {
-                    type: buildLooseSearch('Vocabulary', parsed.type),
-                },
-            ],
-        },
-        target: 'PositionalVariant',
+    const filters: { AND: unknown[] } = {
+        AND: [
+            {
+                reference1: buildLooseSearch('Feature', parsed.reference1),
+            },
+            {
+                type: buildLooseSearch('Vocabulary', parsed.type),
+            },
+        ],
     };
 
     if (parsed.reference2) {
-        payload.filters.AND.push(buildLooseSearch(parsed.reference2));
+        filters.AND.push(buildLooseSearch('Feature', parsed.reference2));
     } else {
-        payload.filters.AND.push({ reference2: null });
+        filters.AND.push({ reference2: null });
     }
 
     // sequence property filters
     for (const name of ['refSeq', 'untemplatedSeq', 'untemplatedSeqSize']) {
         if (parsed[name] !== undefined) {
-            const filters = {
+            const propFilters = {
                 OR: [
                     { [name]: parsed[name] },
                     { [name]: null },
@@ -238,9 +259,9 @@ const buildHgvsQuery = (hgvsInput) => {
             };
 
             if (name !== 'untemplatedSeqSize') {
-                filters.OR.push({ [name]: 'x'.repeat(parsed[name].length) });
+                propFilters.OR.push({ [name]: 'x'.repeat(parsed[name].length) });
             }
-            payload.filters.AND.push(filters);
+            filters.AND.push(filters);
         }
     }
 
@@ -252,13 +273,13 @@ const buildHgvsQuery = (hgvsInput) => {
         if (!parsed[start]) {
             continue;
         }
-        payload.filters.AND.push({
+        filters.AND.push({
             [`${start}.@class`]: parsed[start].toJSON()['@class'],
         });
 
         if (parsed[start].pos !== undefined) { // ignore cytoband positions for now
             if (parsed[end]) {
-                payload.filters.AND.push({
+                filters.AND.push({
                     OR: [
                         {
                             AND: [ // range vs single
@@ -276,7 +297,7 @@ const buildHgvsQuery = (hgvsInput) => {
                     ],
                 });
             } else {
-                payload.filters.AND.push({
+                filters.AND.push({
                     OR: [
                         {
                             AND: [ // single vs single
@@ -296,7 +317,10 @@ const buildHgvsQuery = (hgvsInput) => {
         }
     }
 
-    return payload;
+    return {
+        filters,
+        target: 'PositionalVariant',
+    };
 };
 
 const singleKeywordSearch = ({
@@ -306,8 +330,15 @@ const singleKeywordSearch = ({
     operator = OPERATORS.CONTAINSTEXT,
     targetQuery,
     ...opt
+}: {
+    target: string;
+    param: string;
+    prefix?: string;
+    operator?: string;
+    targetQuery?: string | null;
+    [key: string]: unknown;
 }) => {
-    const model = schema[target];
+    const model = schema.models[target];
 
     if (model.name === 'EvidenceLevel') {
         return `SELECT *
@@ -400,7 +431,7 @@ const edgeQuery = ({
     if (!['out', 'in', 'both'].includes(direction)) {
         throw new AttributeError(`direction (${direction}) must be one of: in, out, both`);
     }
-    if (!schema[target] || !schema[target].isEdge) {
+    if (!schema.has(target) || !schema.get(target).isEdge) {
         throw new AttributeError(`target (${target}) must be an edge class`);
     }
 
@@ -410,7 +441,7 @@ const edgeQuery = ({
             params: {},
             query: `SELECT expand(${direction}E('${target}')) FROM [${rid}]`,
         };
-    } catch (err) {}
+    } catch (err) { }
 
     if (Array.isArray(vertexFilter)) {
         try {
@@ -419,7 +450,7 @@ const edgeQuery = ({
                 params: {},
                 query: `SELECT expand(${direction}E('${target}')) FROM [${rid.join(', ')}]`,
             };
-        } catch (err) {}
+        } catch (err) { }
     }
     // subquery
     const subquery = subQueryParser(vertexFilter).toString(paramIndex, prefix);
@@ -455,7 +486,7 @@ const keywordSearch = ({
     }
 
     // remove any duplicate words
-    const wordList = operator === OPERATORS.CONTAINSTEXT
+    const wordList: string[] = operator === OPERATORS.CONTAINSTEXT
         ? keyword.split(/\s+/).map((word) => word.trim().toLowerCase())
         : [keyword.trim().toLowerCase()];
 
@@ -507,7 +538,12 @@ const keywordSearch = ({
     return { params, query: `SELECT DISTINCT * FROM (${query}) WHERE deletedAt IS NULL` };
 };
 
-class FixedSubquery {
+class FixedSubquery implements QueryBase {
+    queryType: string;
+    queryBuilder: (arg0: Record<string, unknown>) => { query: string; params: Record<string, unknown> };
+    opt: Record<string, unknown>;
+    isSubquery: true;
+
     constructor(queryType, queryBuilder, opt = {}) {
         this.queryType = queryType;
         this.queryBuilder = queryBuilder;
@@ -523,23 +559,6 @@ class FixedSubquery {
         });
         return query;
     }
-
-    static parse({ queryType, ...opt }, subQueryParser) {
-        if (queryType === 'ancestors') {
-            return new this(queryType, ancestors, opt);
-        } if (queryType === 'descendants') {
-            return new this(queryType, descendants, opt);
-        } if (queryType === 'neighborhood') {
-            return new this(queryType, neighborhood, opt);
-        } if (queryType === 'similarTo') {
-            return new this(queryType, similarTo, opt);
-        } if (queryType === 'keyword') {
-            return new this(queryType, keywordSearch, { ...opt, subQueryParser });
-        } if (queryType === 'edge') {
-            return new this(queryType, edgeQuery, { ...opt, subQueryParser });
-        }
-        throw new AttributeError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
-    }
 }
 
-export{ FixedSubquery };
+export { FixedSubquery, ancestors, descendants, neighborhood, similarTo, keywordSearch, edgeQuery };

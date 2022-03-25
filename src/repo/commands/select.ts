@@ -5,7 +5,7 @@
  * @ignore
  */
 import orientjs from 'orientjs';
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     schema: { schema },
     error: { AttributeError },
@@ -15,12 +15,15 @@ const {
 import { stringifyVariant } from '@bcgsc-pori/graphkb-parser';
 
 import { logger } from '../logging';
-import { parse } from '../query_builder';
+import { parse, displayQuery } from '../query_builder';
 
 import { MultipleRecordsFoundError,
     NoRecordFoundError } from '../error';
 import { trimRecords } from '../util';
 import { wrapIfTypeError } from './util';
+import { GraphRecord } from '@bcgsc-pori/graphkb-schema/dist/types';
+import { BuiltQuery, QueryBase } from '../../types';
+import { WrapperQuery } from '../query_builder/fragment';
 
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
@@ -134,15 +137,19 @@ const getUserByName = async (db: orientjs.Db, username) => {
  *
  * @returns {Array.<Object>} array of database records
  */
-const select = async (db: orientjs.Db, query, opt = {}) => {
+const select = async (
+    db: orientjs.Db,
+    query: QueryBase | BuiltQuery & {history?: boolean},
+    opt: {exactlyN?: number | null, user?: {groups: Record<string,number>[]} } = {},
+) => {
     // set the default options
     const { exactlyN = null, user } = opt;
-    logger.log('debug', query.displayString());
 
     // send the query statement to the database
-    const { params, query: statement } = query.toString
+    const { params, query: statement } = query instanceof QueryBase
         ? query.toString()
         : query;
+    logger.log('debug', displayQuery({query: statement, params}));
 
     const queryOpt = {
         params,
@@ -153,7 +160,7 @@ const select = async (db: orientjs.Db, query, opt = {}) => {
 
     try {
         recordList = await db.query(`${statement}`, queryOpt).all();
-    } catch (err) {
+    } catch (err: any) {
         logger.log('debug', `Error in executing the query statement (${statement})`);
         logger.log('debug', err);
         const error = wrapIfTypeError({ ...err, sql: statement });
@@ -163,18 +170,18 @@ const select = async (db: orientjs.Db, query, opt = {}) => {
 
     logger.log('debug', `selected ${recordList.length} records`);
 
-    recordList = await trimRecords(recordList, { db, history: query.history, user });
+    recordList = await trimRecords(recordList, { history: query.history, user });
 
     if (exactlyN !== null) {
         if (recordList.length < exactlyN) {
             throw new NoRecordFoundError({
                 message: `query expected ${exactlyN} records but only found ${recordList.length}`,
-                sql: query.displayString(),
+                sql: displayQuery({query: statement, params}),
             });
         } else if (exactlyN !== recordList.length) {
             throw new MultipleRecordsFoundError({
                 message: `query returned unexpected number of results. Found ${recordList.length} results but expected ${exactlyN} results`,
-                sql: query.displayString(),
+                sql: displayQuery({query: statement, params}),
             });
         } else {
             return recordList;

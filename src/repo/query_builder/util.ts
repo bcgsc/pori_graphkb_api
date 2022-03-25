@@ -1,10 +1,12 @@
-import { RecordID as RID } from 'orientjs';
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import orientjs from 'orientjs';
+import { ClassModel, Property } from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     error: { AttributeError },
     util: { castInteger },
 } = gkbSchema;
 import { MAX_LIMIT, MAX_NEIGHBORS } from './constants';
+import { BuiltQuery, isControlledValue, OrientRecordId } from '../../types';
 
 /**
  * Format a value as an Integer. Throw an error if it is not an integer or does not
@@ -40,7 +42,7 @@ const castBoolean = (value) => {
     throw new AttributeError(`Expected a boolean value but found ${castValue}`);
 };
 
-const getQueryableProps = (model, includeEmbedded = false) => {
+const getQueryableProps = (model: ClassModel, includeEmbedded = false): Record<string, Property> => {
     const allProps = {};
 
     for (const prop of Object.values(model.queryProperties)) {
@@ -49,7 +51,7 @@ const getQueryableProps = (model, includeEmbedded = false) => {
                 allProps[prop.name] = prop;
             }
 
-            for (const [subKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass))) {
+            for (const [subKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass as ClassModel))) {  // TODO: change types in schema to only need to use classes
                 allProps[`${prop.name}.${subKey}`] = subprop;
             }
         } else {
@@ -72,7 +74,16 @@ const checkStandardOptions = (opt) => {
         limit, neighbors, skip, orderBy, orderByDirection, count, returnProperties, history,
     } = opt;
 
-    const options = {};
+    const options: Partial<{
+        limit: number;
+        skip: number;
+        neighbors: number;
+        orderBy: string[];
+        orderByDirection: 'ASC'|'DESC';
+        returnProperties: string[];
+        history: boolean;
+        count: boolean;
+    }> = {};
 
     if (limit !== undefined && limit !== null) {
         options.limit = castRangeInt(limit, 1, MAX_LIMIT);
@@ -81,7 +92,7 @@ const checkStandardOptions = (opt) => {
         options.neighbors = castRangeInt(neighbors, 0, MAX_NEIGHBORS);
     }
     if (skip !== undefined) {
-        options.skip = castRangeInt(skip, 0);
+        options.skip = castRangeInt(skip, 0, null);
     }
     if (orderBy) {
         if (Array.isArray(orderBy)) {
@@ -91,9 +102,11 @@ const checkStandardOptions = (opt) => {
         }
     }
     if (orderByDirection) {
-        options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
+        const direction = `${orderByDirection}`.trim().toUpperCase();
 
-        if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
+        if (isControlledValue(direction, ['ASC', 'DESC'])) {
+            options.orderByDirection = direction as 'ASC' | 'DESC';
+        } else {
             throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
         }
     }
@@ -111,7 +124,7 @@ const checkStandardOptions = (opt) => {
     return { ...opt, ...options };
 };
 
-const displayQuery = ({ query: statement, params = {} }) => {
+const displayQuery = ({ query: statement, params = {} }: BuiltQuery): string => {
     let result = statement;
 
     for (const key of Object.keys(params)) {
@@ -119,8 +132,8 @@ const displayQuery = ({ query: statement, params = {} }) => {
 
         if (typeof value === 'string') {
             value = `'${value}'`;
-        } else if (value instanceof RID) {
-            value = `#${value.cluster}:${value.position}`;
+        } else if (value instanceof orientjs.RecordId) {
+            value = `#${(value as OrientRecordId).cluster}:${(value as OrientRecordId).position}`;
         }
         result = result.replace(new RegExp(`:${key}\\b`, 'g'), `${value}`);
     }
