@@ -6,6 +6,7 @@ import Ajv from 'ajv';
 const { error: { AttributeError: ValidationError } } = require('@bcgsc-pori/graphkb-schema');
 
 import { requestWithRetry } from './util';
+import {stringifyAgvErrors} from '../util';
 
 const ajv = new Ajv();
 const PUBMED_LINK_URL = 'https://pubmed.ncbi.nlm.nih.gov';
@@ -67,7 +68,7 @@ const geneSpec = ajv.compile({
  */
 const parseGeneRecord = (record) => {
     if (!geneSpec(record)) {
-        throw new Error(`Failed to parse from the extension api (${geneSpec.errors[0].message})`);
+        throw new Error(`Failed to parse from the extension api (${stringifyAgvErrors(geneSpec)})`);
     }
     return {
         biotype: 'gene',
@@ -99,7 +100,7 @@ interface ParsedPubmedRecord {
  */
 const parsePubmedRecord = (record): ParsedPubmedRecord => {
     if (!publicationSpec(record)) {
-        throw new Error(`Failed to parse from the extension api (${publicationSpec.errors[0].message})`);
+        throw new Error(`Failed to parse from the extension api (${stringifyAgvErrors(publicationSpec)})`);
     }
     const parsed: Omit<ParsedPubmedRecord, 'displayName'>  = {
         journalName: record.fulljournalname,

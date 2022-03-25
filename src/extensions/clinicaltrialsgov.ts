@@ -66,7 +66,7 @@ interface ParsedClinicalTrialRecord {
  */
 const parseRecord = (result): ParsedClinicalTrialRecord => {
     if (!validateAPITrialRecord(result)) {
-        throw new Error(`Failed to parse from the extension api (${validateAPITrialRecord.errors[0].message})`);
+        throw new Error(`Failed to parse from the extension api (${stringifyAgvErrors(validateAPITrialRecord)})`);
     }
     const { clinical_study: record } = result;
 
