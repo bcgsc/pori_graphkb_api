@@ -1,21 +1,16 @@
 /**
  * Tests for building read only queries at the db level
  */
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const { schema: { schema } } = gkbSchema;
 
 import { select,
     selectCounts,
     fetchDisplayName,
-    getUserByName } from '../../src/repo/commands';import { select,
-    selectCounts,
-    fetchDisplayName,
-    getUserByName } from '../../src/repo/commands';oimport { select,
-    selectCounts,
-    fetchDisplayName,
     getUserByName } from '../../src/repo/commands';
+import {
     parse,
-} = require('../../src/repo/query_builder');
+} from '../../src/repo/query_builder';
 
 import { createSeededDb, tearDownDb } from './util';
 

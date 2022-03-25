@@ -1,6 +1,6 @@
 import HTTP_STATUS from 'http-status-codes';
 
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     schema: {
         schema: {
@@ -14,7 +14,7 @@ import { generateDefaultGroups } from '../../src/repo/schema';
 
 describe('checkClassPermissions', () => {
     // get the usergroups from the db to start (default groups)
-    const groups = {};
+    const groups: Record<string,{name: string; permissions: unknown}> = {};
 
     for (const group of generateDefaultGroups()) {
         groups[group.name] = group;

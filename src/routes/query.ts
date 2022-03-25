@@ -1,6 +1,6 @@
 import jc from 'json-cycle';
 
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const { error: { AttributeError } } = gkbSchema;
 import { logger } from '../repo/logging';
 import { parse } from '../repo/query_builder';

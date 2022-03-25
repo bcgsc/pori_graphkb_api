@@ -7,7 +7,8 @@
 import HTTP_STATUS from 'http-status-codes';
 import jwt from 'jsonwebtoken';
 
-const { constants: { PERMISSIONS } } = require('@bcgsc-pori/graphkb-schema');
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
+const { constants: { PERMISSIONS } } = gkbSchema;
 
 import { PermissionError } from '../repo/error';
 import { logger } from '../repo/logging';

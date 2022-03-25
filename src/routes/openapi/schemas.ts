@@ -1,44 +1,46 @@
 /**
  * reuseable schema objects (components/schemas)
  */
+
+import { isControlledValue } from "../../types";
+import { OpenApiSchema } from "./types";
+
 /**
  * @constant
  * @ignore
  */
-const { schema } = require('@bcgsc-pori/graphkb-schema');
+import { schema } from '@bcgsc-pori/graphkb-schema';
 
-const {
-    constants: {
+import {
         OPERATORS, DIRECTIONS, SIMILARITY_EDGES, TREE_EDGES,
-    },
-} = require('../../repo/query_builder');
-const {
+} from '../../repo/query_builder/constants';
+import {
     MAX_QUERY_LIMIT, MAX_JUMPS,
-} = require('./constants');
+}  from './constants';
 
 const PREFIX = '#/components/schemas';
 const NODE_MODEL_NAMES = schema.getModels().filter((m) => !m.isEdge).map((m) => m.name);
 const EDGE_MODEL_NAMES = schema.getModels().filter((m) => m.isEdge && !m.isAbstract).map((m) => m.name);
 
-const dependency = {
+const dependency: OpenApiSchema = {
     $ref: `${PREFIX}/RecordLink`,
     description: 'For an ontology term, a dependency is defined if the information defining the term was collected as a side-effect of creating another term.',
     nullable: true,
 };
 
-const deprecated = {
+const deprecated: OpenApiSchema = {
     default: false,
     description: 'For an ontology term, indicates that according to the source, the current term is deprecated',
     nullable: false,
     type: 'boolean',
 };
 
-const source = {
+const source: OpenApiSchema = {
     $ref: `${PREFIX}/SourceLink`,
     description: 'The link to the source which is responsible for contributing this ontology term',
 };
 
-const SourceLink = {
+const SourceLink: OpenApiSchema = {
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -51,11 +53,11 @@ const SourceLink = {
     description: 'A direct link to source record. Can be the record ID of the linked source record in the form of a string or the record itself',
 };
 
-const EdgeList = {
+const EdgeList: OpenApiSchema = {
     description: 'A mapping of record IDs to objects representing additional edge attributes',
 };
 
-const RecordLink = {
+const RecordLink: OpenApiSchema = {
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -69,7 +71,7 @@ const RecordLink = {
     description: 'A direct link to another record. Can be the record ID of the linked record in the form of a string or the record itself',
 };
 
-const UserLink = {
+const UserLink: OpenApiSchema = {
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -81,7 +83,7 @@ const UserLink = {
     description: 'A direct link to user record. Can be the record ID of the linked user record in the form of a string or the record itself',
 };
 
-const OntologyLink = {
+const OntologyLink: OpenApiSchema = {
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -93,7 +95,7 @@ const OntologyLink = {
     description: 'A direct link to ontology term record. Can be the record ID of the linked ontology record in the form of a string or the record itself',
 };
 
-const VocabularyLink = {
+const VocabularyLink: OpenApiSchema = {
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -105,7 +107,7 @@ const VocabularyLink = {
     description: 'A direct link to vocabulary term record. Can be the record ID of the linked vocabulary record in the form of a string or the record itself',
 };
 
-const FeatureLink = {
+const FeatureLink: OpenApiSchema = {
     anyOf: [
         {
             $ref: `${PREFIX}/RecordId`,
@@ -117,13 +119,13 @@ const FeatureLink = {
     description: 'A direct link to feature record. Can be the record ID of the linked feature record in the form of a string or the record itself',
 };
 
-const RecordList = {
+const RecordList: OpenApiSchema = {
     description: 'A list of record IDs',
     items: { $ref: `${PREFIX}/RecordLink` },
     type: 'array',
 };
 
-const Error = {
+const Error: OpenApiSchema = {
     properties: {
         message: { description: 'The error message', type: 'string' },
         name: { description: 'The name of the type of error', type: 'string' },
@@ -136,7 +138,7 @@ const Error = {
     type: 'object',
 };
 
-const SubQuery = {
+const SubQuery: OpenApiSchema = {
     description: 'Query based on the conditions in the filters clause',
     properties: {
         filters: {
@@ -158,7 +160,7 @@ const SubQuery = {
     type: 'object',
 };
 
-const FixedSubQuery = {
+const FixedSubQuery: OpenApiSchema = {
     anyOf: [
         { $ref: `${PREFIX}/KeywordQuery` },
         { $ref: `${PREFIX}/NeighborhoodQuery` },
@@ -168,7 +170,7 @@ const FixedSubQuery = {
     description: 'Fixed subquery',
 };
 
-const KeywordQuery = {
+const KeywordQuery: OpenApiSchema = {
     description: 'Search by keyword',
     properties: {
         keyword: { type: 'string' },
@@ -179,7 +181,7 @@ const KeywordQuery = {
     type: 'object',
 };
 
-const SimilarityQuery = {
+const SimilarityQuery: OpenApiSchema = {
     description: 'Expand some query or list of records based on following edges indicating equivalence or similarity',
     properties: {
         edges: {
@@ -216,7 +218,7 @@ const SimilarityQuery = {
     type: 'object',
 };
 
-const TreeQuery = {
+const TreeQuery: OpenApiSchema = {
     description: 'Query for a given vertex and then follow edges for a given direction as long as possible',
     properties: {
         disambiguate: {
@@ -253,7 +255,7 @@ const TreeQuery = {
     type: 'object',
 };
 
-const NeighborhoodQuery = {
+const NeighborhoodQuery: OpenApiSchema = {
     description: 'Query for a vertex and then grab surrounding vertices up to a given depth',
     properties: {
         depth: {
@@ -287,7 +289,7 @@ const NeighborhoodQuery = {
     type: 'object',
 };
 
-const Query = {
+const Query: OpenApiSchema = {
     anyOf: [
         { $ref: `${PREFIX}/SubQuery` },
         { $ref: `${PREFIX}/FixedSubQuery` },
@@ -302,7 +304,7 @@ const Query = {
     },
 };
 
-const Clause = {
+const Clause: OpenApiSchema = {
     oneOf: [
         {
             properties: {
@@ -337,7 +339,7 @@ const Clause = {
     ],
 };
 
-const Comparison = {
+const Comparison: OpenApiSchema = {
     additionalProperties: {
         oneOf: [
             { items: { $ref: `${PREFIX}/RecordId` }, type: 'array' },
@@ -350,12 +352,37 @@ const Comparison = {
     minProperties: 1,
     properties: {
         negate: { default: false, description: 'Negation of this comparison', type: 'boolean' },
-        operator: { enum: Object.values(OPERATORS).filter((op) => !['AND', 'OR'].includes(op)), type: 'string' },
+        operator: { enum: Object.values(OPERATORS).filter((op) => isControlledValue(op, ['AND', 'OR'])), type: 'string' },
     },
     type: 'object',
 };
 
-export default {
+const count: OpenApiSchema = { default: 'false', description: 'return a count of the resulting records instead of the records themselves', type: 'boolean' };
+const history: OpenApiSchema = { default: false, type: 'boolean' };
+
+const limit: OpenApiSchema ={
+    description: 'maximum number of records to return', maximum: MAX_QUERY_LIMIT, minimum: 1, type: 'integer',
+};
+const neighbors: OpenApiSchema ={
+    description: 'For the final query result, fetch records up to this many links away (warning: may significantly increase query time)',
+    maximum: MAX_JUMPS,
+    minimum: 0,
+    type: 'integer',
+};
+const orderBy: OpenApiSchema = { description: 'CSV delimited list of property names (traversals) to sort the results by', type: 'string' };
+const orderByDirection: OpenApiSchema = { description: 'When orderBy is given, this is used to determine the ordering direction', enum: ['ASC', 'DESC'], type: 'string' };
+const returnProperties: OpenApiSchema = {
+    description: 'array of property names to return (defaults to all). Note that the properties which can be returned must match the target model being returned',
+    items: { type: 'string' },
+    type: 'array',
+
+};
+
+const skip: OpenApiSchema = {
+    description: 'The number of records to skip. Used in combination with limit for paginating queries.', minimum: 0, nullable: true, type: 'integer',
+};
+
+export {
     Clause,
     Comparison,
     EdgeList,
@@ -374,30 +401,15 @@ export default {
     TreeQuery,
     UserLink,
     VocabularyLink,
-    count: { default: 'false', description: 'return a count of the resulting records instead of the records themselves', type: 'boolean' },
+    count,
     dependency,
     deprecated,
-    history: { default: false, type: 'boolean' },
-    limit: {
-        description: 'maximum number of records to return', max: MAX_QUERY_LIMIT, min: 1, type: 'integer',
-    },
-    neighbors: {
-        description: 'For the final query result, fetch records up to this many links away (warning: may significantly increase query time)',
-        max: MAX_JUMPS,
-        min: 0,
-        type: 'integer',
-    },
-    orderBy: { description: 'CSV delimited list of property names (traversals) to sort the results by', type: 'string' },
-    orderByDirection: { description: 'When orderBy is given, this is used to determine the ordering direction', enum: ['ASC', 'DESC'], type: 'string' },
-    returnProperties: {
-        description: 'array of property names to return (defaults to all). Note that the properties which can be returned must match the target model being returned',
-        items: { type: 'string' },
-        type: 'array',
-
-    },
-
-    skip: {
-        description: 'The number of records to skip. Used in combination with limit for paginating queries.', min: 0, nullable: true, type: 'integer',
-    },
+    history,
+    limit,
+    neighbors,
+    orderBy,
+    orderByDirection,
+    returnProperties,
+    skip,
     source,
 };

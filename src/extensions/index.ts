@@ -3,7 +3,8 @@
  */
 import HTTP_STATUS_CODES from 'http-status-codes';
 
-const { error: { AttributeError: ValidationError } } = require('@bcgsc-pori/graphkb-schema');
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
+const { error: { AttributeError: ValidationError } } = gkbSchema;
 
 import { fetchRecord } from './entrez';
 import { fetchRecord as fetchClinicalTrial } from './clinicaltrialsgov';

@@ -1,4 +1,4 @@
-import gkbSchema from  '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 import { GraphRecord } from '@bcgsc-pori/graphkb-schema/dist/types';
 const {
     error: { AttributeError },
@@ -72,7 +72,7 @@ const groupRecordsBy = (records: GraphRecord[], keysList: string[], opt: {value?
             }
             level = level[key];
         }
-        const lastKey = record[keysList.slice(-1)];
+        const lastKey = record[keysList[keysList.length - 1]];
 
         if (aggregate) {
             if (level[lastKey] === undefined) {
@@ -102,7 +102,7 @@ const groupRecordsBy = (records: GraphRecord[], keysList: string[], opt: {value?
  * @param {boolean} [opt.history=false] include deleted records
  * @param {User} [opt.user=null] if the user object is given, will check record-level permissions and trim any non-permitted content
  */
-const trimRecords = async (recordList: GraphRecord[], opt: {history?: boolean; user?: GraphRecord | null; } = {}) => {
+const trimRecords = async (recordList: GraphRecord[], opt: {history?: boolean; user?: {groups: Record<string,number>[]}; } = {}) => {
     const { history = false, user = null } = opt;
     const queue = recordList.slice();
     const visited = new Set();
@@ -147,7 +147,7 @@ const trimRecords = async (recordList: GraphRecord[], opt: {history?: boolean; u
     };
 
     while (queue.length > 0) {
-        const curr = queue.shift(); // remove the first element from the list
+        const curr = queue.shift() as typeof queue[number]; // remove the first element from the list
         const currRID = curr['@rid']
             ? castToRID(curr['@rid'])
             : null;
@@ -185,7 +185,7 @@ const trimRecords = async (recordList: GraphRecord[], opt: {history?: boolean; u
                 } else {
                 // check here for updated edges that have not been removed
                 // https://github.com/orientechnologies/orientjs/issues/32
-                    const arr = [];
+                    const arr: GraphRecord[] = [];
 
                     for (const edge of value) {
                         const edgeCheck = edge;
@@ -195,9 +195,10 @@ const trimRecords = async (recordList: GraphRecord[], opt: {history?: boolean; u
                             continue;
                         }
                         if (edgeCheck.out
-                        && edgeCheck.in
-                        && castToRID(edgeCheck.out).toString() !== currRID.toString()
-                        && castToRID(edgeCheck.in).toString() !== currRID.toString()
+                            && edgeCheck.in
+                            && currRID
+                            && castToRID(edgeCheck.out).toString() !== currRID.toString()
+                            && castToRID(edgeCheck.in).toString() !== currRID.toString()
                         ) {
                             continue;
                         } else if (!accessOk(edge)) {
@@ -214,7 +215,7 @@ const trimRecords = async (recordList: GraphRecord[], opt: {history?: boolean; u
         }
     }
     // remove the top level elements last
-    const result = [];
+    const result: GraphRecord = [];
 
     for (const record of recordList) {
         if (accessOk(record)) {

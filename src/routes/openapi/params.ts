@@ -1,13 +1,17 @@
 /**
  * Parameter definitions (components/params) for use in generating the swagger specification
  */
+
+
 /**
  * @constant
  * @ignore
  */
-const { MAX_JUMPS, MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } = require('./constants');
+import { MAX_JUMPS, MAX_QUERY_LIMIT, DEFAULT_QUERY_LIMIT } from './constants';
+import { OpenApiHeaderParam, OpenApiQueryParam } from "./types";
 
-const GENERAL_QUERY_PARAMS = {
+
+const GENERAL_QUERY_PARAMS: Record<string, OpenApiQueryParam> = {
     count: {
         description: 'Return a count of the records for this query instead of the query itself',
         in: 'query',
@@ -99,7 +103,7 @@ const GENERAL_QUERY_PARAMS = {
     },
 };
 
-const ONTOLOGY_QUERY_PARAMS = {
+const ONTOLOGY_QUERY_PARAMS: Record<string, OpenApiQueryParam> = {
     subsets: {
         description: 'Check if an ontology term belongs to a given subset',
         in: 'query',
@@ -110,7 +114,7 @@ const ONTOLOGY_QUERY_PARAMS = {
     },
 };
 
-const BASIC_HEADER_PARAMS = {
+const BASIC_HEADER_PARAMS: Record<string, OpenApiHeaderParam> = {
     Accept: {
         description: 'The content type you expect to recieve. Currently only supports application/json',
         in: 'header',

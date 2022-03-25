@@ -3,7 +3,8 @@
  */
 import Ajv from 'ajv';
 
-const { error: { AttributeError: ValidationError } } = require('@bcgsc-pori/graphkb-schema');
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
+const { error: { AttributeError: ValidationError } } = gkbSchema;
 
 import { requestWithRetry } from './util';
 import {stringifyAgvErrors} from '../util';

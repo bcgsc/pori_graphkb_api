@@ -10,6 +10,8 @@ import HTTP_STATUS from 'http-status-codes';
 import { getPortPromise } from 'portfinder';
 import morgan from 'morgan';
 import path from 'path';
+import orientjs from 'orientjs';
+import {schema} from '@bcgsc-pori/graphkb-schema';
 
 import { logger, morganFormatter } from './repo/logging';
 import {
@@ -26,9 +28,14 @@ import {
     addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute,
 } from './routes';
 import config from './config';
+import {AppServerType, ConfigType} from './types';
+import { OpenApiSpec } from './routes/openapi/types';
 
 // https://github.com/nodejs/node-v0.x-archive/issues/9075
+// supports diff node versions if present, will not have correct types
+// @ts-ignore
 http.globalAgent.keepAlive = true;
+// @ts-ignore
 http.globalAgent.options.keepAlive = true;
 
 const BOOLEAN_FLAGS = [
@@ -38,11 +45,11 @@ const BOOLEAN_FLAGS = [
     'GKB_DB_MIGRATE',
 ];
 
-const createConfig = (overrides = {}) => {
+const createConfig = (overrides: Partial<ConfigType> = {}): ConfigType => {
     const ENV = {
         GKB_HOST: process.env.HOSTNAME || '0.0.0.0',
         ...config.common,
-        ...config[process.env.NODE_ENV] || {},
+        ...config[process.env.NODE_ENV as string] || {},
     };
 
     for (const [key, value] of Object.entries(process.env)) {
@@ -67,7 +74,18 @@ const createConfig = (overrides = {}) => {
     return ENV;
 };
 
-class AppServer {
+class AppServer implements AppServerType {
+    app: express.Express;
+    db: orientjs.Server | null;
+    server: http.Server | null;
+    conf: ConfigType;
+    router: express.Router;
+    prefix: string;
+    host: string;
+    port: number | string;
+    pool?: orientjs.Db;
+    spec?: OpenApiSpec;
+
     /**
      * @property {express} app the express app instance
      * @property {?http.Server} server server the http server running the API
@@ -98,9 +116,14 @@ class AppServer {
         }));
 
         this.db = null;
-        this.schema = null;
         this.server = null;
-        this.conf = conf;
+
+        // read the key file(s) if it wasn't already set
+        this.conf = {
+            ...conf,
+            GKB_KEY: conf.GKB_KEY || fs.readFileSync(conf.GKB_KEY_FILE).toString(),
+            GKB_KEYCLOAK_KEY: conf.GKB_KEYCLOAK_KEY || fs.readFileSync(conf.GKB_KEYCLOAK_KEY_FILE).toString(),
+        };
 
         // app server info
         this.host = conf.GKB_HOST;
@@ -132,7 +155,6 @@ class AppServer {
         logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
         const { pool, schema } = await connectDB({ ...this.conf, ...opt });
         this.pool = pool;
-        this.schema = schema;
     }
 
     /**
@@ -144,18 +166,15 @@ class AppServer {
             await this.connectToDb();
         }
         const {
-            GKB_KEY_FILE,
             GKB_DB_NAME,
-            GKB_DISABLE_AUTH,
-            GKB_KEYCLOAK_KEY_FILE,
         } = this.conf;
 
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(this.schema, { host: this.host, port: this.port });
+        this.spec = generateSwaggerSpec(schema, { host: this.host, port: this.port });
         registerSpecEndpoints(this.router, this.spec);
 
         this.router.get('/schema', async (req, res) => {
-            res.status(HTTP_STATUS.OK).json({ schema: jc.decycle(this.schema) });
+            res.status(HTTP_STATUS.OK).json({ schema: jc.decycle(schema.models) });
         });
         this.router.get('/version', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({
@@ -166,16 +185,6 @@ class AppServer {
         });
         addParserRoute(this); // doesn't require any data access so no auth required
 
-        // read the key file if it wasn't already set
-        if (!this.conf.GKB_KEY) {
-            logger.log('info', `reading the private key file: ${GKB_KEY_FILE}`);
-            this.conf.GKB_KEY = fs.readFileSync(GKB_KEY_FILE);
-        }
-        // if external auth is enabled, read the keycloak public key file for verifying the tokens
-        if (!GKB_DISABLE_AUTH && GKB_KEYCLOAK_KEY_FILE && !this.conf.GKB_KEYCLOAK_KEY) {
-            logger.log('info', `reading the keycloak public key file: ${GKB_KEYCLOAK_KEY_FILE}`);
-            this.conf.GKB_KEYCLOAK_KEY = fs.readFileSync(GKB_KEYCLOAK_KEY_FILE);
-        }
         // add the addPostToken
         addPostToken(this);
 
@@ -187,7 +196,7 @@ class AppServer {
         addStatsRoute(this);
 
         // simple routes
-        for (const model of Object.values(this.schema)) {
+        for (const model of Object.values(schema.models)) {
             if (model.name !== 'LicenseAgreement') {
                 addResourceRoutes(this, model);
             }
@@ -210,6 +219,7 @@ class AppServer {
             logger.log('info', 'finding an available port');
             this.port = await getPortPromise();
         }
+        // @ts-ignore incorrect external type
         this.server = http.createServer(this.app).listen(this.port, this.host);
         logger.log('info', `started application server (${this.host}:${this.port})`);
     }

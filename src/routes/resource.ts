@@ -2,7 +2,7 @@ import HTTP_STATUS from 'http-status-codes';
 import jc from 'json-cycle';
 import _ from 'lodash';
 
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import gkbSchema, { ClassModel } from '@bcgsc-pori/graphkb-schema';
 const { util: { looksLikeRID }, error: { AttributeError } } = gkbSchema;
 
 import { NoRecordFoundError } from '../repo/error';
@@ -30,7 +30,7 @@ const activeRidQuery = (model, rid, opt = {}) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-const getRoute = (app, model) => {
+const getRoute = (app, model: ClassModel) => {
     logger.log('verbose', `NEW ROUTE [GET] ${model.routeName}/:rid`);
     app.router.get(
         `${model.routeName}/:rid`,
@@ -44,7 +44,7 @@ const getRoute = (app, model) => {
 
             try {
                 query = activeRidQuery(model, req.params.rid, { neighbors });
-            } catch (err) {
+            } catch (err: any) {
                 if (err instanceof AttributeError) {
                     return next(err);
                 }
@@ -80,7 +80,7 @@ const getRoute = (app, model) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-const postRoute = (app, model) => {
+const postRoute = (app, model: ClassModel) => {
     logger.log('verbose', `NEW ROUTE [POST] ${model.routeName}`);
     app.router.post(
         model.routeName,
@@ -104,7 +104,7 @@ const postRoute = (app, model) => {
                 });
                 session.close();
                 return res.status(HTTP_STATUS.CREATED).json(jc.decycle({ result }));
-            } catch (err) {
+            } catch (err: any) {
                 session.close();
                 logger.log('debug', err.toString());
 
@@ -123,7 +123,7 @@ const postRoute = (app, model) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-const updateRoute = (app, model) => {
+const updateRoute = (app, model: ClassModel) => {
     logger.log('verbose', `NEW ROUTE [UPDATE] ${model.routeName}`);
 
     app.router.patch(
@@ -173,7 +173,7 @@ const updateRoute = (app, model) => {
  * @param {GraphKBRequest} req
  * @param {ClassModel} req.model the resolved model for this route
  */
-const deleteRoute = (app, model) => {
+const deleteRoute = (app, model: ClassModel) => {
     logger.log('verbose', `NEW ROUTE [DELETE] ${model.routeName}`);
     app.router.delete(
         `${model.routeName}/:rid`,
@@ -225,7 +225,7 @@ const deleteRoute = (app, model) => {
  * example:
  *      router.route('/feature') = resource({model: <ClassModel>, db: <OrientDB conn>, reqQueryParams: ['source', 'name', 'biotype']});
  */
-const addResourceRoutes = (app, model) => {
+const addResourceRoutes = (app, model: ClassModel) => {
     // attach the db model required for checking class permissions
     app.router.use(model.routeName, (req, res, next) => {
         req.model = model;

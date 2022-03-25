@@ -1,6 +1,7 @@
-const form = require('form-urlencoded').default;
+import form from 'form-urlencoded';
 import request from 'request-promise';
 import { logger } from '../repo/logging';
+import { ConfigType } from '../types';
 
 /**
  * Given a username and password, authenticate against keycloak and return the token
@@ -25,9 +26,9 @@ import { logger } from '../repo/logging';
  *      session_state: '1ecbceaf-bf4f-4fd8-96e7-...'
  * }
  */
-const fetchKeyCloakToken = async (username, password, {
+const fetchKeyCloakToken = async (username: string, password: string, {
     GKB_KEYCLOAK_URI, GKB_KEYCLOAK_CLIENT_ID, GKB_KEYCLOAK_CLIENT_SECRET,
-}) => {
+}: Pick<ConfigType, 'GKB_KEYCLOAK_URI' | 'GKB_KEYCLOAK_CLIENT_ID' | 'GKB_KEYCLOAK_CLIENT_SECRET'>) => {
     logger.log('debug', `[POST] ${GKB_KEYCLOAK_URI}`);
     const resp = JSON.parse(await request({
         body: form({

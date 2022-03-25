@@ -1,11 +1,9 @@
 /**
  * Reuseable response (components/responses) definitions for generating the swagger specification
  */
-/**
- * @constant
- * @ignore
- */
-const Forbidden = {
+import { OpenApiResponse } from "./types";
+
+const Forbidden: OpenApiResponse = {
     content: {
         'application/json': {
             schema: {
@@ -16,7 +14,7 @@ const Forbidden = {
     },
     description: 'The current user does not have the required permissions to access this content',
 };
-const NotAuthorized = {
+const NotAuthorized: OpenApiResponse = {
     content: {
         'application/json': {
             schema: {
@@ -26,7 +24,7 @@ const NotAuthorized = {
     },
     description: 'Authorization failed or insufficient permissions were found',
 };
-const RecordConflictError = {
+const RecordConflictError: OpenApiResponse = {
     content: {
         'application/json': {
             schema: {
@@ -37,7 +35,7 @@ const RecordConflictError = {
     },
     description: 'The record cannot be created, the record already exists',
 };
-const BadInput = {
+const BadInput: OpenApiResponse = {
     content: {
         'application/json': {
             schema: {
@@ -49,7 +47,7 @@ const BadInput = {
     description: 'Bad request contains invalid input',
 };
 
-const RecordNotFound = {
+const RecordNotFound: OpenApiResponse = {
     content: {
         'application/json': {
             schema: {

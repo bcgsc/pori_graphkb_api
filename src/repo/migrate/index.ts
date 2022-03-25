@@ -4,12 +4,13 @@
 
 import semver from 'semver';
 import orientjs from 'orientjs';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     constants,
     schema,
     util: { timeStampNow },
     sentenceTemplates: { chooseDefaultTemplate },
-} = require('@bcgsc-pori/graphkb-schema');
+} = gkbSchema;
 
 constants.RID = orientjs.RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 const { PERMISSIONS } = constants;

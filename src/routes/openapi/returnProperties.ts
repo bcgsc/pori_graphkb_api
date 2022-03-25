@@ -7,7 +7,7 @@ const NODE_MODEL_NAMES = schema.getModels().filter((m) => !m.isEdge).map((m) => 
  * will list all of the possible return properties that can be requested
  */
 const generatePropertiesMd = () => {
-    const content = [];
+    const content: string[] = [];
     const headingLevel = '###';
 
     const exclude = [

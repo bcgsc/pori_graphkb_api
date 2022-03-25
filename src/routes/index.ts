@@ -1,7 +1,7 @@
 import HTTP_STATUS from 'http-status-codes';
 import jc from 'json-cycle';
 
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const { error: { AttributeError }, schema: { schema }, schema: schemaDefn } = gkbSchema;
 import { parseVariant, ParsingError } from '@bcgsc-pori/graphkb-parser';
 

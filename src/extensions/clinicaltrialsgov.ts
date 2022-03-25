@@ -3,6 +3,7 @@ import Ajv from 'ajv';
 import { logger } from '../repo/logging';
 
 import { requestWithRetry, parseXmlToJson } from './util';
+import {stringifyAgvErrors} from '../util';
 import spec from './clinicaltrialsgov.spec.json';
 
 const BASE_URL = 'https://clinicaltrials.gov/ct2/show';

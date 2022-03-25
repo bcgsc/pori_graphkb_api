@@ -1,5 +1,5 @@
 import HTTP_STATUS from 'http-status-codes';
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     util: { timeStampNow },
     schema,

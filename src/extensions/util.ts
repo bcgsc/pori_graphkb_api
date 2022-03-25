@@ -10,7 +10,7 @@ const requestWithRetry = async (requestOpt, { waitSeconds = 2, retries = 1 } = {
     try {
         const result = await request(requestOpt);
         return result;
-    } catch (err) {
+    } catch (err: any) {
         if (err.statusCode === HTTP_STATUS_CODES.TOO_MANY_REQUESTS && retries > 0) {
             await sleep(waitSeconds);
             return requestWithRetry(requestOpt, { retries: retries - 1, waitSeconds });

@@ -5,22 +5,23 @@ import orientjs from 'orientjs';
 import { getUserByName } from '../repo/commands';
 import { incrementUserVisit } from '../repo';
 import { logger } from '../repo/logging';
-const { AuthenticationError, PermissionError, NoRecordFoundError } = require('../repo/error');
+import { AuthenticationError, PermissionError, NoRecordFoundError } from '../repo/error';
 import { fetchToken as fetchKeyCloakToken } from './keycloak';
+import { AppServerType } from '../types';
 
 const TOKEN_TIMEOUT = 60 * 60 * 8; // default timeout is 8 hours
 
 /**
  * Look up a username in the database and generate a token for this user
  *
- * @param {orientjs.Db} db the database connection object
- * @param {string} username
- * @param {string} key the private key file contents
+ * @param db the database connection object
+ * @param username
+ * @param key the private key file contents
  * @param exp the expiry time/date
  *
- * @returns {string} the token
+ * @returns the token
  */
-const generateToken = async (db: orientjs.Db, username, key, exp = null) => {
+const generateToken = async (db: orientjs.Db, username: string, key: string | Buffer, exp: number | null = null): Promise<string> => {
     const user = jc.decycle(await getUserByName(db, username));
 
     if (exp === null) {
@@ -32,13 +33,13 @@ const generateToken = async (db: orientjs.Db, username, key, exp = null) => {
 /**
  * Verify the token and ensure the user has the appropriate role to access GraphKB
  *
- * @param {string} token the token to be parsed
- * @param {string} key the public key file contents to use to verify the token
- * @param {string} role the role that should be encoded into the token to allow access
+ * @param token the token to be parsed
+ * @param key the public key file contents to use to verify the token
+ * @param role the role that should be encoded into the token to allow access
  *
  * @returns {object} the parsed content of the key cloak token
  */
-const validateKeyCloakToken = (token, key, role) => {
+const validateKeyCloakToken = (token: string, key: string | Buffer, role: string) => {
     let parsed;
 
     try {
@@ -63,7 +64,7 @@ const validateKeyCloakToken = (token, key, role) => {
  *
  * @param {AppServer} app the GraphKB app server
  */
-const addPostToken = (app) => {
+const addPostToken = (app: AppServerType) => {
     const {
         GKB_DISABLE_AUTH, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE, GKB_KEY,
     } = app.conf;

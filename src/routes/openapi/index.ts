@@ -1,17 +1,13 @@
 /**
  * Generates the openAPI specification for the Graph KB
  */
-
-/**
- * @constant
- * @ignore
- */
 import _ from 'lodash';
 import fs from 'fs';
 import HTTP_STATUS from 'http-status-codes';
 import swaggerUi from 'swagger-ui-express';
 
-import { POST_TOKEN,
+import {
+    POST_TOKEN,
     POST_PARSE,
     GET_SCHEMA,
     GET_VERSION,
@@ -19,16 +15,20 @@ import { POST_TOKEN,
     GET_STATS,
     POST_SIGN_LICENSE,
     POST_LICENSE,
-    GET_LICENSE } from './routes';
+    GET_LICENSE
+} from './routes';
 import * as responses from './responses';
-import schemas from './schemas';
-const { GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS } = require('./params');
+import * as schemas from './schemas';
+import { GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS } from './params';
 import { ABOUT_FILE, QUERY_ABOUT } from './constants';
 import { generatePropertiesMd } from './returnProperties';
+import { OpenApiPath, OpenApiReference, OpenApiSchema, OpenApiSpec } from './types';
+import { SchemaDefinitionType } from '@bcgsc-pori/graphkb-schema/dist/types';
+import { ClassModel } from '@bcgsc-pori/graphkb-schema';
 
 const SCHEMA_PREFIX = '#/components/schemas';
 
-const STUB = {
+const STUB: Omit<OpenApiSpec, 'servers'> = {
     components: {
         parameters: {
             in: {
@@ -88,7 +88,11 @@ const STUB = {
             get: {
                 responses: {
                     200: {
-                        schema: { type: 'object' },
+                        content: {
+                            'application/json': {
+                                schema: { type: 'object' },
+                            }
+                        }
                     },
                 },
                 summary: 'Returns the JSON format of this specification',
@@ -115,8 +119,8 @@ const STUB = {
  *
  * @returns {object} the swagger parameter schema description
  */
-const linkOrModel = (model, nullable = false) => {
-    const param = {
+const linkOrModel = (model: string, nullable: boolean = false) => {
+    const param: Record<string, unknown> = {
         anyOf: [
             {
                 $ref: `${SCHEMA_PREFIX}/@rid`,
@@ -139,49 +143,40 @@ const linkOrModel = (model, nullable = false) => {
  * @param {ClassModel} model the model to build the route for
  * @returns {Object} json representing the openapi spec defn
  */
-const describePost = (model) => {
-    const links = {};
+const describePost = (model: ClassModel) => {
+    const links: { [key: string]: { description: string; operationId: string; parameters: Record<string, string> } } = {};
 
     if (model.routes.GET) {
         links.getById = {
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [GET \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/get_${
-                model.routeName.slice(1)
-            }__rid_) requests`,
+            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [GET \`${model.routeName
+                }/{rid}\`](.#/${model.name
+                }/get_${model.routeName.slice(1)
+                }__rid_) requests`,
             operationId: `get_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
         };
     }
     if (model.routes.PATCH) {
         links.patchById = {
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [PATCH \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/patch_${
-                model.routeName.slice(1)
-            }__rid_) requests`,
+            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [PATCH \`${model.routeName
+                }/{rid}\`](.#/${model.name
+                }/patch_${model.routeName.slice(1)
+                }__rid_) requests`,
             operationId: `patch_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
         };
     }
     if (model.routes.DELETE) {
         links.deleteById = {
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [DELETE \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/delete_${
-                model.routeName.slice(1)
-            }__rid_) requests`,
+            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [DELETE \`${model.routeName
+                }/{rid}\`](.#/${model.name
+                }/delete_${model.routeName.slice(1)
+                }__rid_) requests`,
             operationId: `delete_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
         };
     }
-    const post = {
+    const post: OpenApiPath = {
         parameters: Array.from(Object.values(BASIC_HEADER_PARAMS), (p) => ({ $ref: `#/components/parameters/${p.name}` })),
         requestBody: {
             content: { 'application/json': { schema: { $ref: `${SCHEMA_PREFIX}/${model.name}` } } },
@@ -221,7 +216,7 @@ const describePost = (model) => {
  * @returns {Object} json representing the openapi spec defn
  */
 const describeOperationByID = (model, operation = 'delete') => {
-    const description = {
+    const description: OpenApiPath = {
         parameters: _.concat(
             Array.from(Object.values(BASIC_HEADER_PARAMS), (p) => ({ $ref: `#/components/parameters/${p.name}` })),
             [{
@@ -261,7 +256,7 @@ const describeOperationByID = (model, operation = 'delete') => {
         description.responses[409] = { $ref: '#/components/responses/RecordConflictError' };
     }
     if (operation === 'get') {
-        description.parameters.push({ $ref: '#/components/parameters/neighbors' });
+        description.parameters?.push({ $ref: '#/components/parameters/neighbors' });
     }
     return description;
 };
@@ -293,11 +288,11 @@ const tagsSorter = (tag1, tag2) => {
  *
  * @returns {Object} the JSON object representing the swagger API specification
  */
-const generateSwaggerSpec = (schema, metadata) => {
-    const docs = { ...STUB };
-    docs.servers = [{
-        url: `http://${metadata.host}:${metadata.port}/api`,
-    }];
+const generateSwaggerSpec = (schema: SchemaDefinitionType, metadata: { host: string; port: string | number }) => {
+    const docs: OpenApiSpec = {
+        ...STUB, servers: [{ url: `http://${metadata.host}:${metadata.port}/api` }]
+    };
+
     docs.components.parameters = Object.assign(
         docs.components.parameters,
         GENERAL_QUERY_PARAMS,
@@ -313,22 +308,25 @@ const generateSwaggerSpec = (schema, metadata) => {
     ]).join('\n\n');
     docs.info.description = about;
 
-    // simple routes
-    for (const model of Object.values(schema)) {
+    // initialize routes
+    for (const model of Object.values(schema.models)) {
         if (model.description) {
             docs.tags.push({ description: model.description, name: model.name });
         }
         // create the model in the schemas section
-        docs.components.schemas[model.name] = {
+        const componentSchema: Omit<OpenApiSchema, 'properties'> & {
+            properties: Record<string, OpenApiSchema | OpenApiReference>
+        } = {
             properties: {},
             type: 'object',
         };
+        docs.components.schemas[model.name] = componentSchema;
 
         if (Object.values(model.routes).some((x) => x) && docs.paths[model.routeName] === undefined) {
             docs.paths[model.routeName] = docs.paths[model.routeName] || {};
         }
         if (model.routes.POST && !docs.paths[model.routeName].post) {
-            docs.paths[model.routeName].post = describePost(model);
+            docs.paths[model.routeName].post = describePost(model as ClassModel);  // TODO: fix Schema types to merge ClassModel and ModelType
         }
         if (model.routes.GET || model.routes.PATCH || model.routes.DELETE) {
             if (!docs.paths[`${model.routeName}/{rid}`]) {
@@ -347,7 +345,7 @@ const generateSwaggerSpec = (schema, metadata) => {
         if (model.isAbstract) {
             // should inherit from its concrete subclasses instead
             const anyOf = model.subclasses.map((m) => ({ $ref: `#/components/schemas/${m.name}` }));
-            docs.components.schemas[model.name].anyOf = anyOf;
+            componentSchema.anyOf = anyOf;
             continue;
         }
 
@@ -358,45 +356,48 @@ const generateSwaggerSpec = (schema, metadata) => {
             if (prop.generated) {
                 continue;
             }
+            const requiredProperties: string[] = [];
 
             if (prop.mandatory && prop.default === undefined && prop.generateDefault === undefined) {
-                if (docs.components.schemas[model.name].required === undefined) {
-                    docs.components.schemas[model.name].required = [];
+                if (componentSchema.required === undefined) {
+                    componentSchema.required = [];
                 }
-                docs.components.schemas[model.name].required.push(prop.name);
+                requiredProperties.push(prop.name);
             }
-            if (docs.components.schemas[prop.name] && model.name !== 'Permissions') {
-                docs.components.schemas[model.name].properties[prop.name] = { $ref: `#/components/schemas/${prop.name}` };
-                continue;
-            }
-            let propDefn = {};
-            docs.components.schemas[model.name].properties[prop.name] = propDefn;
+            componentSchema.required = requiredProperties;
 
-            if (isList) {
-                propDefn.type = 'array';
-                propDefn.items = { maxItems: prop.maxItems, minItems: prop.minItems };
-                propDefn = propDefn.items;
-            }
-            if (prop.name === 'subsets') {
-                propDefn.type = 'string';
-            } else if (prop.linkedClass) {
-                if (prop.type.includes('embedded')) {
-                    propDefn.$ref = `#/components/schemas/${prop.linkedClass.name}`;
-                } else if (docs.components.schemas[`${prop.linkedClass.name}Link`]) {
-                    propDefn.$ref = `#/components/schemas/${prop.linkedClass.name}Link`;
-                } else {
-                    Object.assign(propDefn, linkOrModel(prop.linkedClass.name));
-                }
-            } else if (prop.type.includes('link')) {
-                propDefn.$ref = `${SCHEMA_PREFIX}/RecordLink`;
-                propDefn.description = docs.components.schemas.RecordLink.description;
+            if (model.name !== 'Permissions') {
+                componentSchema.properties[prop.name] = { $ref: `#/components/schemas/${prop.name}` };
             } else {
-                propDefn.type = prop.type === 'long'
-                    ? 'integer'
-                    : prop.type;
-            }
-            if (prop.choices) {
-                propDefn.enum = prop.choices;
+                let propDefn: Partial<OpenApiSchema> = {};
+                componentSchema.properties[prop.name] = propDefn;
+
+                if (isList) {
+                    propDefn.type = 'array';
+                    propDefn.items = { maxItems: prop.maxItems, minItems: prop.minItems };
+                    propDefn = propDefn.items;
+                }
+                if (prop.name === 'subsets' || prop.type == 'string') {
+                    propDefn.type = 'string';
+                } else if (prop.linkedClass) {
+                    if (prop.type.includes('embedded')) {
+                        propDefn.$ref = `#/components/schemas/${prop.linkedClass.name}`;
+                    } else if (docs.components.schemas[`${prop.linkedClass.name}Link`]) {
+                        propDefn.$ref = `#/components/schemas/${prop.linkedClass.name}Link`;
+                    } else {
+                        Object.assign(propDefn, linkOrModel(prop.linkedClass.name));
+                    }
+                } else if (prop.type.includes('link')) {
+                    propDefn.$ref = `${SCHEMA_PREFIX}/RecordLink`;
+                    propDefn.description = docs.components.schemas.RecordLink.description;
+                } else {
+                    propDefn.type = prop.type === 'long'
+                        ? 'integer'
+                        : 'object';
+                }
+                if (prop.choices) {
+                    propDefn.enum = prop.choices;
+                }
             }
         }
     }
@@ -407,7 +408,7 @@ const generateSwaggerSpec = (schema, metadata) => {
             if (!defn.parameters) {
                 continue;
             }
-            defn.parameters.sort((p1, p2) => {
+            defn.parameters.sort((p1: any, p2: any) => {
                 if (p1.$ref) {
                     let pname = p1.$ref.split('/');
                     pname = pname[pname.length - 1];

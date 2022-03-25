@@ -2,11 +2,11 @@
  * Route definition components (components/routes) that cannot be auto generated only from the schema
  * @module app/routes/openapi/routes
  */
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
-const { schema: { schema } } = gkbSchema;
+import { schema } from '@bcgsc-pori/graphkb-schema';
 import { groupableParams } from '../../repo/commands/select';
+import { OpenApiPath } from './types';
 
-const POST_TOKEN = {
+const POST_TOKEN: OpenApiPath = {
     parameters: [
         { $ref: '#/components/parameters/Content-Type' },
         { $ref: '#/components/parameters/Accept' },
@@ -81,7 +81,7 @@ const POST_TOKEN = {
     tags: ['General', 'Permissions'],
 };
 
-const POST_PARSE = {
+const POST_PARSE: OpenApiPath = {
     requestBody: {
         content: {
             'application/json': {
@@ -112,7 +112,7 @@ const POST_PARSE = {
     tags: ['General'],
 };
 
-const GET_SCHEMA = {
+const GET_SCHEMA: OpenApiPath = {
     parameters: [
         { $ref: '#/components/parameters/Accept' },
     ],
@@ -126,7 +126,7 @@ const GET_SCHEMA = {
     tags: ['Metadata'],
 };
 
-const GET_VERSION = {
+const GET_VERSION: OpenApiPath = {
     parameters: [
         { $ref: '#/components/parameters/Accept' },
     ],
@@ -150,7 +150,7 @@ const GET_VERSION = {
     tags: ['Metadata'],
 };
 
-const GET_STATS = {
+const GET_STATS: OpenApiPath = {
     parameters: [
         { $ref: '#/components/parameters/Accept' },
         { $ref: '#/components/parameters/Authorization' },
@@ -169,7 +169,7 @@ const GET_STATS = {
             name: 'classList',
             schema: {
                 example: 'Statement',
-                pattern: `^(${Object.values(schema).filter((model) => !model.isAbstract).map((model) => model.name).join('|')})+$`,
+                pattern: `^(${Object.values(schema.models).filter((model) => !model.isAbstract).map((model) => model.name).join('|')})+$`,
                 type: 'string',
             },
         },
@@ -236,7 +236,7 @@ const GET_STATS = {
     tags: ['Metadata'],
 };
 
-const QUERY = {
+const QUERY: OpenApiPath = {
     requestBody: {
         content: {
             'application/json': {
@@ -319,14 +319,16 @@ const QUERY = {
         200: {
             content: {
                 'application/json': {
-                    properties: {
-                        result: {
-                            items: { $ref: '#/components/schemas/V' },
-                            type: 'array',
+                    schema: {
+                        properties: {
+                            result: {
+                                items: { $ref: '#/components/schemas/V' },
+                                type: 'array',
+                            },
                         },
-                    },
-                    required: ['result'],
-                    type: 'object',
+                        required: ['result'],
+                        type: 'object',
+                    }
                 },
             },
         },
@@ -335,13 +337,15 @@ const QUERY = {
     tags: ['General'],
 };
 
-const POST_SIGN_LICENSE = {
+const POST_SIGN_LICENSE: OpenApiPath = {
     responses: {
         200: {
             content: {
                 'application/json': {
-                    $ref: '#/components/schemas/User',
-                },
+                    schema: {
+                        $ref: '#/components/schemas/User',
+                    },
+                }
             },
         },
     },
@@ -349,7 +353,7 @@ const POST_SIGN_LICENSE = {
     tags: ['Permissions'],
 };
 
-const GET_LICENSE = {
+const GET_LICENSE: OpenApiPath = {
     requestBody: {
         content: {
             'application/json': {
@@ -364,8 +368,10 @@ const GET_LICENSE = {
         200: {
             content: {
                 'application/json': {
-                    $ref: '#/components/schemas/LicenseAgreement',
-                },
+                    schema: {
+                        $ref: '#/components/schemas/LicenseAgreement',
+                    },
+                }
             },
         },
     },
@@ -373,14 +379,16 @@ const GET_LICENSE = {
     tags: ['Permissions'],
 };
 
-const POST_LICENSE = {
+const POST_LICENSE: OpenApiPath = {
     responses: {
         200: {
             content: {
                 'application/json': {
-                    $ref: '#/components/schemas/LicenseAgreement',
+                    schema: {
+                        $ref: '#/components/schemas/LicenseAgreement',
+                    },
                 },
-            },
+            }
         },
     },
     summary: 'Get the current license user agreement',

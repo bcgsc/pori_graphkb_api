@@ -1,13 +1,14 @@
 import orientjs from 'orientjs';
 
- import gkbSchema from '@bcgsc-pori/graphkb-schema';
- const { util: { timeStampNow }, schema } = gkbSchema;
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
+const { util: { timeStampNow }, schema } = gkbSchema;
 import { logger } from './logging';
 import { loadSchema, createSchema } from './schema';
 import { migrate } from './migrate';
-const { createUser, update, getUserByName } = require('./commands');
+import { createUser, update, getUserByName } from './commands';
 import { RecordConflictError } from './error';
 import { parseRecord } from './query_builder';
+import { ConfigType } from '../types';
 
 /**
  * Create the database and schema
@@ -81,9 +82,9 @@ const connectDB = async ({
     GKB_USER_CREATE,
     GKB_DB_POOL,
     GKB_NEW_DB = false, // MUST create new db
-}) => {
+}: Partial<ConfigType> & {GKB_NEW_DB?: boolean; }) => {
     // set up the database server
-    const server = await orientjs.OrientDBClient.connect({
+    const server: orientjs.Server = await orientjs.OrientDBClient.connect({
         host: GKB_DB_HOST,
         port: GKB_DB_PORT,
     });
@@ -111,7 +112,7 @@ const connectDB = async ({
     }
 
     logger.log('info', `connecting to the database (${GKB_DB_NAME}) as ${GKB_DB_USER}`);
-    let pool,
+    let pool: orientjs.Db,
         session;
 
     try {

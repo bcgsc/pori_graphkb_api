@@ -6,7 +6,7 @@
  */
 import _ from 'lodash';
 import orientjs from 'orientjs';
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const {
     util: { castToRID, timeStampNow },
     error: { AttributeError },
@@ -485,7 +485,7 @@ const modify = async (db: orientjs.Db, opt) => {
                 throw new Error('Failed to modify');
             }
             return result;
-        } catch (err) {
+        } catch (err: any) {
             err.sql = commit.buildStatement();
             throw wrapIfTypeError(err);
         }
@@ -502,7 +502,7 @@ const modify = async (db: orientjs.Db, opt) => {
  * @param {Object} opt.user the user updating the record
  * @param {ClassModel} opt.model
  */
-const update = async (db: orientjs.Db, opt: {changes?: Record<string,unknown> | null}) => {
+const update = async (db: orientjs.Db, opt: {changes?: Record<string,unknown> | null, [key: string]: unknown}) => {
     if (opt.changes === null || opt.changes === undefined) {
         throw new AttributeError('opt.changes is a required argument');
     }

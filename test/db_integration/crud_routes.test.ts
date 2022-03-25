@@ -4,13 +4,13 @@
 import orientjs from 'orientjs';
 import requestPromise from 'request-promise';
 import HTTP_STATUS from 'http-status-codes';
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const { util: { timeStampNow } } = gkbSchema;
 
 import { AppServer } from '../../src';
 import { createUser } from '../../src/repo/commands/create';
 import { generateToken } from '../../src/routes/auth';
-const { createEmptyDb, tearDownDb, clearDB } = require('./util');
+import { createEmptyDb, tearDownDb, clearDB } from './util';
 
 const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 

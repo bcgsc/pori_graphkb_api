@@ -1,12 +1,13 @@
 import _ from 'lodash';
 
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const { util: { castToRID } } = gkbSchema;
 
 import { NoRecordFoundError,
     RecordConflictError,
     DatabaseConnectionError,
     DatabaseRequestError } from '../error';
+import { GraphRecord } from '@bcgsc-pori/graphkb-schema/dist/types';
 
 /**
  * Check if the error is a particular type (expected from orientdb) and return an instance of the
@@ -44,7 +45,7 @@ const wrapIfTypeError = (err) => {
     return err;
 };
 
-const omitDBAttributes = (rec) => _.omit(rec, Object.keys(rec).filter(
+const omitDBAttributes = (rec: GraphRecord): Partial<GraphRecord> => _.omit(rec, Object.keys(rec).filter(
     (k) => k.startsWith('@')
         || k.startsWith('out_')
         || k.startsWith('in_')

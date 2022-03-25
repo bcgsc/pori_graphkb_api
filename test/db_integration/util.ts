@@ -1,9 +1,9 @@
 import uuidV4 from 'uuid/v4';
 
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const { schema: { schema } } = gkbSchema;
 
-const { getUserByName, create, update } = require('../../src/repo/commands');
+import { getUserByName, create, update } from '../../src/repo/commands';
 import { connectDB } from '../../src/repo';
 import { createConfig } from '../../src';
 

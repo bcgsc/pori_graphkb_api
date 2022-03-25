@@ -1,20 +1,14 @@
-import gkbSchema from '@bcgsc-pori/graphkb-schema';
+import * as gkbSchema from '@bcgsc-pori/graphkb-schema';
 const { schema: { schema }, util: { castToRID } } = gkbSchema;
 
 import { create,
     update,
     remove,
-    select } from '../../src/repo/commands';import { create,
-    update,
-    remove,
-    select } from '../../src/repo/commands';rimport { create,
-    update,
-    remove,
     select } from '../../src/repo/commands';
-    parseRecord,
-} = require('../../src/repo/query_builder');
+import {parseRecord} from '../../src/repo/query_builder';
+import { RecordConflictError, AttributeError, NotImplementedError } from '../../src/repo/error';
 
-const { clearDB, createEmptyDb, tearDownDb } = require('./util');
+import { clearDB, createEmptyDb, tearDownDb } from './util';
 
 const TEST_TIMEOUT_MS = 100000;
 jest.setTimeout(TEST_TIMEOUT_MS);
