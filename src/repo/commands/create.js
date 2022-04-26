@@ -1,7 +1,7 @@
 const {
-    error: { AttributeError },
+    ValidationError,
     schema,
-    constants: { PERMISSIONS },
+    PERMISSIONS,
 } = require('@bcgsc-pori/graphkb-schema');
 const { logger } = require('../logging');
 const { parseRecord } = require('../query_builder');
@@ -20,18 +20,15 @@ const { checkUserAccessFor } = require('../../middleware/auth');
  * @param {string} opt.userName the name of the new user
  * @param {Array.<string>} opt.groupNames the list of group names for which to add the new user to
  */
-const createUser = async (db, opt) => {
-    const {
-        userName, groupNames,
-    } = opt;
+const createUser = async (db, { userName, groupNames, signedLicenseAt }) => {
     const userGroups = await db.select().from('UserGroup').all();
     const groupIds = Array.from(userGroups.filter(
         (group) => groupNames.includes(group.name),
     ), (group) => group['@rid']);
-    const record = schema.models.User.formatRecord({
+    const record = schema.formatRecord('User', {
         groups: groupIds,
         name: userName,
-        signedLicenseAt: opt.signedLicenseAt || null,
+        signedLicenseAt: signedLicenseAt || null,
     }, { addDefaults: true, dropExtra: false });
     await db.insert().into(schema.models.User.name)
         .set(record)
@@ -49,23 +46,20 @@ const createUser = async (db, opt) => {
  * create new edge record in the database
  *
  * @param {orientjs.Db} db the orientjs database connection
- * @param {Object} opt options
- * @param {Object} opt.content the contents of the new record
- * @param {string} opt.content.out the @rid of the source node
- * @param {string} opt.content.in the @rid of the target node
- * @param {ClassModel} opt.model the model for the table/class to insert the new record into
- * @param {Object} opt.user the user creating the new record
+ * @param {modelName} modelName the model for the table/class to insert the new record into
+ * @param {object} content the edge to be created
+ * @param {Object} user the user creating the new record
  */
-const createEdge = async (db, opt) => {
-    const { content, model, user } = opt;
-    content.createdBy = user['@rid'];
+const createEdge = async (db, { modelName, content: contentIn, user }) => {
+    const content = { ...contentIn, createdBy: user['@rid'] };
+    const model = schema.get(modelName);
     const {
         out: from, in: to, '@class': className, ...record
-    } = model.formatRecord(content, { addDefaults: true, dropExtra: false });
+    } = schema.formatRecord(modelName, content, { addDefaults: true, dropExtra: false });
 
     // already checked not null in the format method
     if (from.toString() === to.toString()) {
-        throw new AttributeError('an edge cannot be used to relate a node/vertex to itself');
+        throw new ValidationError('an edge cannot be used to relate a node/vertex to itself');
     }
 
     // check that the user has permissions to update at least one of the from/to vertices
@@ -89,26 +83,23 @@ const createEdge = async (db, opt) => {
  * create new record in the database
  *
  * @param {orientjs.Db} db the orientjs database connection
- * @param {Object} opt options
- * @param {Object} opt.content the contents of the new record
- * @param {ClassModel} opt.model the model for the table/class to insert the new record into
- * @param {Object} opt.user the user creating the new record
- * @param {Object.<string,ClassModel>} [schema] only required for creating statements
+ * @param {string} modelName the model for the table/class to insert the new record into
+ * @param {Object} content the contents of the new record
+ * @param {Object} user the user creating the new record
  */
-const create = async (db, opt) => {
-    const {
-        content, model, user,
-    } = opt;
+const create = async (db, { modelName, content, user }) => {
+    const model = schema.get(modelName);
 
     if (model.isEdge) {
-        return createEdge(db, opt);
+        return createEdge(db, { content, modelName, user });
     }
     const newRecordContent = { ...content, createdBy: user['@rid'] };
 
-    if (model.inherits.includes('V')) {
+    if (schema.ancestors(model.name).includes('V')) {
         newRecordContent.updatedBy = user['@rid'];
     }
-    const record = model.formatRecord(
+    const record = schema.formatRecord(
+        model.name,
         newRecordContent,
         { addDefaults: true, dropExtra: false },
     );
@@ -117,14 +108,14 @@ const create = async (db, opt) => {
         if (!record.conditions.map((c) => c.toString()).includes(record.subject.toString())) {
             record.conditions.push(record.subject);
             // TODO: handle this on the front-end instead of the API
-            // throw new AttributeError('Statement subject must also be present in the record conditions');
+            // throw new ValidationError('Statement subject must also be present in the record conditions');
         }
     }
 
-    if (model.getActiveProperties()) {
+    if (schema.activeProperties(model.name)) {
         // try select before create if active properties are defined (as they may not be db enforceable)
         try {
-            const query = parseRecord(model, record, { activeIndexOnly: true });
+            const query = parseRecord(model.name, record, { activeIndexOnly: true });
 
             const records = await select(db, query);
 
@@ -138,12 +129,14 @@ const create = async (db, opt) => {
     }
 
     try {
-        if (!content.displayName && model.properties.displayName) {
+        const modelProperties = schema.getProperties(model.name);
+
+        if (!content.displayName && modelProperties.displayName) {
             // displayName exists but has not been filled
-            record.displayName = await fetchDisplayName(db, model, record);
-        } else if (!content.displayNameTemplate && model.properties.displayNameTemplate) {
+            record.displayName = await fetchDisplayName(db, model.name, record);
+        } else if (!content.displayNameTemplate && modelProperties.displayNameTemplate) {
             // displayName exists but has not been filled
-            record.displayNameTemplate = await fetchDisplayName(db, model, record);
+            record.displayNameTemplate = await fetchDisplayName(db, model.name, record);
         }
         const result = await db.insert().into(model.name).set(omitDBAttributes(record)).one();
 

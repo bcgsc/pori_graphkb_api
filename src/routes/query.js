@@ -1,6 +1,6 @@
 const jc = require('json-cycle');
 
-const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
+const { ValidationError } = require('@bcgsc-pori/graphkb-schema');
 const { logger } = require('../repo/logging');
 const { parse } = require('../repo/query_builder');
 const { select } = require('../repo/commands');
@@ -19,12 +19,12 @@ const addQueryRoute = (app) => {
             const { body } = req;
 
             if (!body) {
-                return next(new AttributeError(
+                return next(new ValidationError(
                     { message: 'request body is required' },
                 ));
             }
             if (!body.target) {
-                return next(new AttributeError(
+                return next(new ValidationError(
                     { message: 'request body.target is required. Must specify the class being queried' },
                 ));
             }

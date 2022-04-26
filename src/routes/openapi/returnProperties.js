@@ -40,7 +40,7 @@ const generatePropertiesMd = () => {
         if (model.inherits.length) {
             content.push(`Inherits from: ${model.inherits.map((i) => `\`${i}\``).join(', ')}\n`);
         }
-        const currentProps = Object.values(model.queryProperties)
+        const currentProps = Object.values(schema.queryableProperties(modelName))
             .sort((p1, p2) => p1.name.localeCompare(p2.name));
 
         for (const prop of currentProps) {

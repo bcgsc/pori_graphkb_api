@@ -5,7 +5,7 @@
 This repository is part of the [platform for oncogenomic reporting and interpretation](https://github.com/bcgsc/pori).
 
 The GraphKB database is implemented using [orientDB](https://github.com/orientechnologies/orientdb) and [orientjs](https://github.com/orientechnologies/orientjs).
-It is a graph database which is used to store variants, ontologies, and the relevance of this terms and variants. The KB uses strict controlled vocabulary to provide a parseable and machine-readable interface for other applications to build on. The API is a REST API built on node/express.
+It is a graph database which is used to store variants, ontologies, and the relevance of this terms and variants. The KB uses strict controlled vocabulary to provide a parsable and machine-readable interface for other applications to build on. The API is a REST API built on node/express.
 
 ## About
 
@@ -16,7 +16,7 @@ In general it consists of four major types of data: ontology terms, variants, ev
 
 ### OpenAPI Specification
 
-All KB API routes are documented with openapi specification. The specification is hosted with the api under `/api/spec`
+All KB API routes are documented with OpenAPI specification. The specification is hosted with the api under `/api/spec`
 
 ### Authentication
 
@@ -28,7 +28,7 @@ The next step happens when KB looks up the username in the KB database. Each use
 
 ![KB Authentication Process](docs/authentication.svg)
 
-In summary, KB Client will send user credentials and recieve a token which will be used in the header of all subsequent requests.
+In summary, KB Client will send user credentials and receive a token which will be used in the header of all subsequent requests.
 
 ## Quick Start
 

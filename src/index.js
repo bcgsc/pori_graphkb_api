@@ -10,6 +10,7 @@ const HTTP_STATUS = require('http-status-codes');
 const { getPortPromise } = require('portfinder');
 const morgan = require('morgan');
 const path = require('path');
+const { schema } = require('@bcgsc-pori/graphkb-schema');
 
 const { logger, morganFormatter } = require('./repo/logging');
 const {
@@ -75,7 +76,6 @@ class AppServer {
      * @property {express.Router} router the main router
      * @property {string} prefix the prefix to use for all routes
      * @property {Object} conf the configuration object
-     * @property {?Object.<string,ClassModel>} schema the mapping of class names to models for the db
      */
     constructor(conf = createConfig()) {
         this.app = express();
@@ -98,7 +98,6 @@ class AppServer {
         }));
 
         this.db = null;
-        this.schema = null;
         this.server = null;
         this.conf = conf;
 
@@ -130,9 +129,8 @@ class AppServer {
         } = this.conf;
 
         logger.log('info', `starting db connection (${GKB_DB_HOST}:${GKB_DB_PORT})`);
-        const { pool, schema } = await connectDB({ ...this.conf, ...opt });
+        const { pool } = await connectDB({ ...this.conf, ...opt });
         this.pool = pool;
-        this.schema = schema;
     }
 
     /**
@@ -151,11 +149,11 @@ class AppServer {
         } = this.conf;
 
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(this.schema, { host: this.host, port: this.port });
+        this.spec = generateSwaggerSpec(schema, { host: this.host, port: this.port });
         registerSpecEndpoints(this.router, this.spec);
 
         this.router.get('/schema', async (req, res) => {
-            res.status(HTTP_STATUS.OK).json({ schema: jc.decycle(this.schema) });
+            res.status(HTTP_STATUS.OK).json({ schema: jc.decycle(schema.models) });
         });
         this.router.get('/version', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({
@@ -187,9 +185,9 @@ class AppServer {
         addStatsRoute(this);
 
         // simple routes
-        for (const model of Object.values(this.schema)) {
+        for (const model of Object.values(schema.models)) {
             if (model.name !== 'LicenseAgreement') {
-                addResourceRoutes(this, model);
+                addResourceRoutes(this, model.name);
             }
         }
         addExtensionRoutes(this);

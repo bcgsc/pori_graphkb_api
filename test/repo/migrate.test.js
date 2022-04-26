@@ -9,8 +9,8 @@ const {
 
 jest.mock('../../src/repo/migrate/version');
 jest.mock('../../src/repo/model', () => ({
-    ClassModel: { create: jest.fn() },
-    Property: { create: jest.fn() },
+    createModelInDb: jest.fn(),
+    createPropertyInDb: jest.fn(),
 }));
 
 const { getCurrentVersion, getLoadVersion } = jest.requireActual('./../../src/repo/migrate/version');
@@ -49,8 +49,8 @@ describe('migrate', () => {
             }),
         };
         const model = require('../../src/repo/model');  // eslint-disable-line
-        propertyMock = model.Property.create;
-        modelMock = model.ClassModel.create;
+        propertyMock = model.createPropertyInDb;
+        modelMock = model.createModelInDb;
     });
 
     afterEach(() => {

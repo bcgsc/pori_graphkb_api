@@ -1,4 +1,4 @@
-const { schema: { schema }, util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
+const { util } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     create,
@@ -7,7 +7,7 @@ const {
     select,
 } = require('../../src/repo/commands');
 const {
-    RecordConflictError, AttributeError, NotImplementedError,
+    RecordConflictError, ValidationError, NotImplementedError,
 } = require('../../src/repo/error');
 const {
     parseRecord,
@@ -48,7 +48,7 @@ describeWithAuth('CRUD operations', () => {
 
     test('update error on missing changes argument', async () => {
         try {
-            await update(session, { model: schema.User, query: {}, user: db.admin });
+            await update(session, { modelName: 'User', query: {}, user: db.admin });
         } catch (err) {
             expect(err.message).toContain('opt.changes is a required argument');
             return;
@@ -69,15 +69,15 @@ describeWithAuth('CRUD operations', () => {
     describe('user', () => {
         describe('create new', () => {
             test('ok', async () => {
-                const record = await create(session, { content: { name: 'alice' }, model: schema.User, user: db.admin });
+                const record = await create(session, { content: { name: 'alice' }, modelName: 'User', user: db.admin });
                 expect(record).toHaveProperty('name', 'alice');
             });
 
             test('error on duplicate name', async () => {
-                await create(session, { content: { name: 'alice' }, model: schema.User, user: db.admin });
+                await create(session, { content: { name: 'alice' }, modelName: 'User', user: db.admin });
 
                 try {
-                    await create(session, { content: { name: 'alice' }, model: schema.User, user: db.admin });
+                    await create(session, { content: { name: 'alice' }, modelName: 'User', user: db.admin });
                 } catch (err) {
                     expect(err).toBeInstanceOf(RecordConflictError);
                     return;
@@ -92,7 +92,7 @@ describeWithAuth('CRUD operations', () => {
             beforeEach(async () => {
                 original = await create(
                     session,
-                    { content: { name: 'alice' }, model: schema.User, user: db.admin },
+                    { content: { name: 'alice' }, modelName: 'User', user: db.admin },
                 );
             });
 
@@ -100,7 +100,7 @@ describeWithAuth('CRUD operations', () => {
                 try {
                     await create(
                         session,
-                        { content: { name: original.name }, model: schema.User, user: db.admin },
+                        { content: { name: original.name }, modelName: 'User', user: db.admin },
                     );
                 } catch (err) {
                     expect(err).toBeInstanceOf(RecordConflictError);
@@ -111,7 +111,7 @@ describeWithAuth('CRUD operations', () => {
 
             test('update ok', async () => {
                 const query = parseRecord(
-                    schema.User,
+                    'User',
                     original,
                     {
                         history: true,
@@ -119,7 +119,7 @@ describeWithAuth('CRUD operations', () => {
                     },
                 );
                 const updated = await update(session, {
-                    changes: { name: 'bob' }, model: schema.User, query, user: db.admin,
+                    changes: { name: 'bob' }, modelName: 'User', query, user: db.admin,
                 });
                 expect(updated).toHaveProperty('name', 'bob');
                 expect(updated).toHaveProperty('history');
@@ -128,7 +128,7 @@ describeWithAuth('CRUD operations', () => {
 
             test('non-paranoid update does not duplicate record', async () => {
                 const query = parseRecord(
-                    schema.User,
+                    'User',
                     original,
                     {
                         history: true,
@@ -137,7 +137,7 @@ describeWithAuth('CRUD operations', () => {
                 );
                 const updated = await update(session, {
                     changes: { name: 'bob2' },
-                    model: schema.User,
+                    modelName: 'User',
                     paranoid: false,
                     query,
                     user: db.admin,
@@ -147,7 +147,7 @@ describeWithAuth('CRUD operations', () => {
 
             test('delete', async () => {
                 const query = parseRecord(
-                    schema.User,
+                    'User',
                     original,
                     {
                         history: true,
@@ -156,7 +156,7 @@ describeWithAuth('CRUD operations', () => {
                 );
                 const deleted = await remove(
                     session,
-                    { model: schema.User, query, user: db.admin },
+                    { modelName: 'User', query, user: db.admin },
                 );
                 expect(deleted).toHaveProperty('deletedAt');
                 expect(deleted.deletedAt).not.toBeNull();
@@ -180,7 +180,7 @@ describeWithAuth('CRUD operations', () => {
         beforeEach(async () => {
             source = await create(
                 session,
-                { content: { name: 'source' }, model: schema.Source, user: db.admin },
+                { content: { name: 'source' }, modelName: 'Source', user: db.admin },
             );
             ([srcVertex, tgtVertex] = await Promise.all([
                 { sourceId: 'cancer' },
@@ -188,7 +188,7 @@ describeWithAuth('CRUD operations', () => {
             ].map(
                 async (content) => create(
                     session,
-                    { content: { ...content, source }, model: schema.Disease, user: db.admin },
+                    { content: { ...content, source }, modelName: 'Disease', user: db.admin },
                 ),
             )));
         });
@@ -201,7 +201,7 @@ describeWithAuth('CRUD operations', () => {
                         out: srcVertex,
                         source,
                     },
-                    model: schema.AliasOf,
+                    modelName: 'AliasOf',
                     user: db.admin,
                 });
                 expect(edge).toHaveProperty('source');
@@ -218,11 +218,11 @@ describeWithAuth('CRUD operations', () => {
                             out: srcVertex,
                             source,
                         },
-                        model: schema.AliasOf,
+                        modelName: 'AliasOf',
                         user: db.admin,
                     });
                 } catch (err) {
-                    expect(err).toBeInstanceOf(AttributeError);
+                    expect(err).toBeInstanceOf(ValidationError);
                     expect(err.message).toContain('an edge cannot be used to relate a node/vertex to itself');
                     return;
                 }
@@ -237,11 +237,11 @@ describeWithAuth('CRUD operations', () => {
                             out: null,
                             source,
                         },
-                        model: schema.AliasOf,
+                        modelName: 'AliasOf',
                         user: db.admin,
                     });
                 } catch (err) {
-                    expect(err).toBeInstanceOf(AttributeError);
+                    expect(err).toBeInstanceOf(ValidationError);
                     expect(err.message).toContain('[AliasOf] missing required attribute out');
                     return;
                 }
@@ -256,11 +256,11 @@ describeWithAuth('CRUD operations', () => {
                             out: srcVertex,
                             source,
                         },
-                        model: schema.AliasOf,
+                        modelName: 'AliasOf',
                         user: db.admin,
                     });
                 } catch (err) {
-                    expect(err).toBeInstanceOf(AttributeError);
+                    expect(err).toBeInstanceOf(ValidationError);
                     expect(err.message).toContain('[AliasOf] missing required attribute in');
                     return;
                 }
@@ -274,7 +274,7 @@ describeWithAuth('CRUD operations', () => {
                         out: srcVertex,
                         source: null,
                     },
-                    model: schema.AliasOf,
+                    modelName: 'AliasOf',
                     user: db.admin,
                 });
                 expect(record).toHaveProperty('source', null);
@@ -292,19 +292,19 @@ describeWithAuth('CRUD operations', () => {
                         out: srcVertex,
                         source,
                     },
-                    model: schema.AliasOf,
+                    modelName: 'AliasOf',
                     user: db.admin,
                 });
             });
 
             test('delete duplicates immediate vertices and creates history links', async () => {
                 const query = parseRecord(
-                    schema.AliasOf,
+                    'AliasOf',
                     { '@rid': original['@rid'].toString(), createdAt: original.createdAt },
                 );
                 // now update the edge, both src and target node should have history after
                 const result = await remove(session, {
-                    model: schema.AliasOf,
+                    modelName: 'AliasOf',
                     query,
                     user: db.admin,
                 });
@@ -319,7 +319,7 @@ describeWithAuth('CRUD operations', () => {
 
             test('update is not allowed', async () => {
                 const query = parseRecord(
-                    schema.AliasOf,
+                    'AliasOf',
                     { '@rid': original['@rid'].toString(), createdAt: original.createdAt },
                 );
 
@@ -327,7 +327,7 @@ describeWithAuth('CRUD operations', () => {
                 try {
                     await update(session, {
                         changes: { source: null },
-                        model: schema.AliasOf,
+                        modelName: 'AliasOf',
                         query,
                         user: db.admin,
                     });
@@ -347,7 +347,7 @@ describeWithAuth('CRUD operations', () => {
                     content: {
                         name: 'blargh',
                     },
-                    model: schema.Source,
+                    modelName: 'Source',
                     user: db.admin,
                 });
                 expect(record).toHaveProperty('name', 'blargh');
@@ -357,7 +357,7 @@ describeWithAuth('CRUD operations', () => {
                 try {
                     await create(session, {
                         content: {},
-                        model: schema.Source,
+                        modelName: 'Source',
                         user: db.admin,
                     });
                 } catch (err) {
@@ -376,32 +376,32 @@ describeWithAuth('CRUD operations', () => {
             beforeEach(async () => {
                 source = await create(session, {
                     content: { name: 'blargh' },
-                    model: schema.Source,
+                    modelName: 'Source',
                     user: db.admin,
                 });
                 ([cancer, carcinoma] = await Promise.all([
                     create(session, {
                         content: { source, sourceId: 'cancer' },
-                        model: schema.Disease,
+                        modelName: 'Disease',
                         user: db.admin,
                     }),
                     create(session, {
                         content: { source, sourceId: 'carcinoma' },
-                        model: schema.Disease,
+                        modelName: 'Disease',
                         user: db.admin,
                     }),
                 ]));
                 // add a link
                 await create(
                     session,
-                    { content: { in: carcinoma, out: cancer }, model: schema.AliasOf, user: db.admin },
+                    { content: { in: carcinoma, out: cancer }, modelName: 'AliasOf', user: db.admin },
                 );
             });
 
             test('update copies node and creates history link', async () => {
                 const { name = null, sourceId, '@rid': rid } = cancer;
                 const query = parseRecord(
-                    schema.Disease,
+                    'Disease',
                     { name, source, sourceId },
                     {
                         history: false,
@@ -414,7 +414,7 @@ describeWithAuth('CRUD operations', () => {
                     changes: {
                         name: 'new name',
                     },
-                    model: schema.Disease,
+                    modelName: 'Disease',
                     query,
                     user: db.admin,
                 });
@@ -424,7 +424,7 @@ describeWithAuth('CRUD operations', () => {
                 expect(updated['@rid']).toEqual(rid);
                 // select the original node
                 const reselectQuery = parseRecord(
-                    schema.Disease,
+                    'Disease',
                     { name, source, sourceId },
                     {
                         history: true,
@@ -448,7 +448,7 @@ describeWithAuth('CRUD operations', () => {
             test('delete also deletes linked edges', async () => {
                 const original = cancer;
                 const query = parseRecord(
-                    schema.Disease,
+                    'Disease',
                     { source, sourceId: original.sourceId },
                     {
                         history: true,
@@ -457,7 +457,7 @@ describeWithAuth('CRUD operations', () => {
                 );
                 // change the name
                 const deleted = await remove(session, {
-                    model: schema.Disease,
+                    modelName: 'Disease',
                     query,
                     user: db.admin,
                 });
@@ -488,28 +488,28 @@ describeWithAuth('CRUD operations', () => {
         beforeEach(async () => {
             const source = await create(
                 session,
-                { content: { name: 'some source' }, model: schema.Source, user: db.admin },
+                { content: { name: 'some source' }, modelName: 'Source', user: db.admin },
             );
             // set up the dependent records
             let feature;
             const parts = await Promise.all([
-                { content: { sourceId: 'disease:1234' }, model: schema.Disease },
-                { content: { sourceId: 'publication:1234' }, model: schema.Publication },
-                { content: { sourceId: 'trial:1234' }, model: schema.ClinicalTrial },
-                { content: { name: 'sensitivity', sourceId: 'sensitivity' }, model: schema.Vocabulary },
-                { content: { sourceId: 'therapy:1234' }, model: schema.Therapy },
-                { content: { biotype: 'gene', sourceId: 'feature:1234' }, model: schema.Feature },
+                { content: { sourceId: 'disease:1234' }, modelName: 'Disease' },
+                { content: { sourceId: 'publication:1234' }, modelName: 'Publication' },
+                { content: { sourceId: 'trial:1234' }, modelName: 'ClinicalTrial' },
+                { content: { name: 'sensitivity', sourceId: 'sensitivity' }, modelName: 'Vocabulary' },
+                { content: { sourceId: 'therapy:1234' }, modelName: 'Therapy' },
+                { content: { biotype: 'gene', sourceId: 'feature:1234' }, modelName: 'Feature' },
             ].map(async (opt) => create(
                 session,
                 { ...opt, content: { ...opt.content, source }, user: db.admin },
             )));
             [disease, trial, publication, relevance, therapy, feature] = parts
-                .map(castToRID)
+                .map(util.castToRID)
                 .map((x) => x.toString());
 
             variant = await create(session, {
                 content: { reference1: feature, type: relevance },
-                model: schema.CategoryVariant,
+                modelName: 'CategoryVariant',
                 user: db.admin,
             });
         });
@@ -525,7 +525,7 @@ describeWithAuth('CRUD operations', () => {
                         relevance,
                         subject: disease,
                     },
-                    model: schema.Statement,
+                    modelName: 'Statement',
                     user: db.admin,
                 },
             );
@@ -541,7 +541,7 @@ describeWithAuth('CRUD operations', () => {
                             relevance,
                             subject: disease,
                         },
-                        model: schema.Statement,
+                        modelName: 'Statement',
                         user: db.admin,
                     },
                 );
@@ -563,7 +563,7 @@ describeWithAuth('CRUD operations', () => {
                         relevance,
                         subject: therapy,
                     },
-                    model: schema.Statement,
+                    modelName: 'Statement',
                     user: db.admin,
                 },
             );
@@ -584,12 +584,12 @@ describeWithAuth('CRUD operations', () => {
                             relevance,
                             subject: therapy,
                         },
-                        model: schema.Statement,
+                        modelName: 'Statement',
                         user: db.admin,
                     },
                 );
                 query = parseRecord(
-                    schema.Statement,
+                    'Statement',
                     originalStatement,
                     {
                         history: true,
@@ -605,7 +605,7 @@ describeWithAuth('CRUD operations', () => {
                         changes: {
                             conditions: [variant, therapy],
                         },
-                        model: schema.Statement,
+                        modelName: 'Statement',
                         query,
                         user: db.admin,
                     },
@@ -621,7 +621,7 @@ describeWithAuth('CRUD operations', () => {
                             conditions: [variant, therapy],
                             displayNameTemplate: originalStatement.displayNameTemplate,
                         },
-                        model: schema.Statement,
+                        modelName: 'Statement',
                         query,
                         user: db.admin,
                     },
@@ -636,7 +636,7 @@ describeWithAuth('CRUD operations', () => {
                         changes: {
                             subject: trial,
                         },
-                        model: schema.Statement,
+                        modelName: 'Statement',
                         query,
                         user: db.admin,
                     },
@@ -655,7 +655,7 @@ describeWithAuth('CRUD operations', () => {
                             conditions: [disease],
                             subject: trial,
                         },
-                        model: schema.Statement,
+                        modelName: 'Statement',
                         query,
                         user: db.admin,
                     },
@@ -675,7 +675,7 @@ describeWithAuth('CRUD operations', () => {
                         changes: {
                             conditions: [variant],
                         },
-                        model: schema.Statement,
+                        modelName: 'Statement',
                         query,
                         user: db.admin,
                     },
@@ -684,7 +684,7 @@ describeWithAuth('CRUD operations', () => {
                 expect(result.subject.toString()).toEqual(therapy);
                 expect(result).toHaveProperty('conditions');
                 expect(result.conditions.map((x) => x.toString())).toContain(therapy);
-                expect(result.conditions.map((x) => x.toString())).toContain(castToRID(variant).toString());
+                expect(result.conditions.map((x) => x.toString())).toContain(util.castToRID(variant).toString());
             });
         });
     });

@@ -5,10 +5,10 @@
  * @ignore
  */
 const {
-    schema: { schema },
-    error: { AttributeError },
-    sentenceTemplates: { chooseDefaultTemplate },
-    util: { castToRID },
+    schema,
+    ValidationError,
+    sentenceTemplates,
+    util,
 } = require('@bcgsc-pori/graphkb-schema');
 const { stringifyVariant } = require('@bcgsc-pori/graphkb-parser');
 
@@ -25,9 +25,9 @@ const { wrapIfTypeError } = require('./util');
 const RELATED_NODE_DEPTH = 3;
 const QUERY_LIMIT = 1000;
 
-const groupableParams = Object.values(schema.V.queryProperties)
+const groupableParams = Object.values(schema.queryableProperties('V'))
     .filter((prop) => prop.linkedClass && (
-        Object.keys(prop.linkedClass.queryProperties).includes('displayName')
+        Object.keys(schema.queryableProperties(prop.linkedClass)).includes('displayName')
     ))
     .map((prop) => prop.name);
 
@@ -42,11 +42,11 @@ const selectCounts = async (db, opt = {}) => {
     const {
         groupBy = '',
         history = false,
-        classList = Object.keys(schema),
+        classList = Object.keys(schema.models),
     } = opt;
 
     if (groupBy && !groupableParams.includes(groupBy)) {
-        throw new AttributeError(`Invalid groupBy parameter (${groupBy}) must be one of (${groupableParams.join(',')})`);
+        throw new ValidationError(`Invalid groupBy parameter (${groupBy}) must be one of (${groupableParams.join(',')})`);
     }
 
     const tempCounts = await Promise.all(classList.map(
@@ -157,7 +157,6 @@ const select = async (db, query, opt = {}) => {
         logger.log('debug', `Error in executing the query statement (${statement})`);
         logger.log('debug', err);
         const error = wrapIfTypeError({ ...err, sql: statement });
-        console.error(error);
         throw error;
     }
 
@@ -187,8 +186,10 @@ const select = async (db, query, opt = {}) => {
 /**
  * Calculate the display name when it requires a db connection to resolve linked records
  */
-const fetchDisplayName = async (db, model, content) => {
-    if (model.inherits.includes('Variant')) {
+const fetchDisplayName = async (db, modelName, content) => {
+    const model = schema.get(modelName);
+
+    if (schema.ancestors(modelName).includes('Variant')) {
         const links = [content.type, content.reference1];
 
         if (content.reference2) {
@@ -230,7 +231,7 @@ const fetchDisplayName = async (db, model, content) => {
             }),
         );
         const recordsById = {};
-        const recId = (x) => castToRID(x).toString();
+        const recId = (x) => util.castToRID(x).toString();
 
         for (const record of records) {
             recordsById[record['@rid']] = record;
@@ -242,7 +243,7 @@ const fetchDisplayName = async (db, model, content) => {
             relevance: recordsById[recId(content.relevance)],
             subject: recordsById[recId(content.subject)],
         };
-        return chooseDefaultTemplate(templateContent);
+        return sentenceTemplates.chooseDefaultTemplate(templateContent);
     }
     return content.name;
 };

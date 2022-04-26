@@ -1,7 +1,7 @@
 const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 
-const { error: { AttributeError }, schema: { schema }, schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
+const { ValidationError, schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
 const { parseVariant, ParsingError } = require('@bcgsc-pori/graphkb-parser');
 
 const openapi = require('./openapi');
@@ -18,10 +18,10 @@ const parseClassListQueryParam = (param) => param.split(',').map((cls) => schema
 
 const addStatsRoute = (app) => {
     // add the stats route
-    const defaultClassList = Object.keys(schema).filter(
-        (name) => !schema[name].isAbstract
-            && schema[name].subclasses.length === 0 // terminal classes only
-            && !schema[name].embedded,
+    const defaultClassList = Object.keys(schemaDefn.models).filter(
+        (name) => !schemaDefn.models[name].isAbstract
+            && schemaDefn.descendants(name).length === 0 // terminal classes only
+            && !schemaDefn.models[name].embedded,
     );
     app.router.get('/stats', async (req, res, next) => {
         let session;
@@ -52,12 +52,12 @@ const addParserRoute = (app) => {
     logger.info('NEW ROUTE [POST] /parse');
     app.router.post('/parse', async (req, res, next) => {
         if (!req.body || !req.body.content) {
-            return next(new AttributeError('body.content is a required input'));
+            return next(new ValidationError('body.content is a required input'));
         }
         const { content, requireFeatures = true, ...rest } = req.body;
 
         if (Object.keys(rest).length) {
-            return next(new AttributeError(`Unexpected attributes: ${Object.keys(rest).join(', ')}`));
+            return next(new ValidationError(`Unexpected attributes: ${Object.keys(rest).join(', ')}`));
         }
 
         try {

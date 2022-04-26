@@ -1,9 +1,5 @@
 const {
-    schema: {
-        schema: {
-            SubClassOf,
-        },
-    },
+    schema,
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { modifyEdgeTx } = require('../../../src/repo/commands/update');
@@ -32,7 +28,7 @@ describe('remove (delete edge)', () => {
         try {
             await modifyEdgeTx(db, {
                 changes: null,
-                model: SubClassOf,
+                modelName: 'SubClassOf',
                 original: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
                 user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'regular') },
             });

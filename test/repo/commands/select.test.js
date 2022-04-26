@@ -1,7 +1,5 @@
 const {
-    schema: {
-        schema,
-    },
+    schema: schemaDefn,
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { fetchDisplayName } = require('../../../src/repo/commands/select');
@@ -27,7 +25,7 @@ describe('fetchDisplayName', () => {
             reference1: '1:1',
             type: '2:1',
         };
-        const displayName = await fetchDisplayName(db, schema.CategoryVariant, content);
+        const displayName = await fetchDisplayName(db, 'CategoryVariant', content);
         expect(displayName).toEqual('KRAS mksgkj');
     });
 
@@ -47,7 +45,7 @@ describe('fetchDisplayName', () => {
             reference2: '2:3',
             type: '2:1',
         };
-        const displayName = await fetchDisplayName(db, schema.CategoryVariant, content);
+        const displayName = await fetchDisplayName(db, 'CategoryVariant', content);
         expect(displayName).toEqual('EWSR1 and FLI1 fusion');
     });
 
@@ -75,7 +73,7 @@ describe('fetchDisplayName', () => {
             type: '2:1',
             untemplatedSeq: 'D',
         };
-        const displayName = await fetchDisplayName(db, schema.PositionalVariant, content);
+        const displayName = await fetchDisplayName(db, 'PositionalVariant', content);
         expect(displayName).toEqual('KRAS:p.G12D');
     });
 
@@ -100,7 +98,7 @@ describe('fetchDisplayName', () => {
             type: '2:1',
             untemplatedSeq: 'D',
         };
-        const displayName = await fetchDisplayName(db, schema.PositionalVariant, content);
+        const displayName = await fetchDisplayName(db, 'PositionalVariant', content);
         expect(displayName).toEqual('KRAS:p.G12D');
     });
 
@@ -125,7 +123,7 @@ describe('fetchDisplayName', () => {
             type: '2:1',
             untemplatedSeq: '*',
         };
-        const displayName = await fetchDisplayName(db, schema.PositionalVariant, content);
+        const displayName = await fetchDisplayName(db, 'PositionalVariant', content);
         expect(displayName).toEqual('KRAS:p.G12*');
     });
 
@@ -149,7 +147,7 @@ describe('fetchDisplayName', () => {
             reference1: '1:1',
             type: '2:1',
         };
-        const displayName = await fetchDisplayName(db, schema.PositionalVariant, content);
+        const displayName = await fetchDisplayName(db, 'PositionalVariant', content);
         expect(displayName).toEqual('KRAS:p.G12D');
     });
 });

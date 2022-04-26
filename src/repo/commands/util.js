@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-const { util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
+const { util } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     NoRecordFoundError,
@@ -67,10 +67,10 @@ const hasRecordAccess = (user, record) => {
     }
 
     for (let rgroup of record.groupRestrictions) {
-        rgroup = castToRID(rgroup).toString();
+        rgroup = util.castToRID(rgroup).toString();
 
         for (let ugroup of user.groups) {
-            ugroup = castToRID(ugroup).toString();
+            ugroup = util.castToRID(ugroup).toString();
 
             if (rgroup === ugroup) {
                 return true;
