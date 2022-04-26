@@ -1,8 +1,8 @@
 const HTTP_STATUS = require('http-status-codes');
 const {
-    util: { timeStampNow },
+    util,
     schema,
-    constants: { PERMISSIONS },
+    PERMISSIONS,
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('../repo/logging');
@@ -60,7 +60,7 @@ const addEulaRoutes = (app) => {
                 if (!user) {
                     throw new RecordNotFoundError(`No user with the ID ${user['@rid']}`);
                 }
-                const result = await session.record.update({ ...record, signedLicenseAt: timeStampNow() });
+                const result = await session.record.update({ ...record, signedLicenseAt: util.timeStampNow() });
                 session.close();
                 return res.json(result);
             } catch (err) {
@@ -91,7 +91,7 @@ const addEulaRoutes = (app) => {
             try {
                 const result = await session.insert().into(schema.models.LicenseAgreement.name).set({
                     content,
-                    enactedAt: timeStampNow(),
+                    enactedAt: util.timeStampNow(),
                 }).one();
                 session.close();
                 return res.status(HTTP_STATUS.CREATED).json(result);

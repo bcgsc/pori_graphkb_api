@@ -9,7 +9,6 @@ const {
 const { Subquery } = require('./fragment');
 const constants = require('./constants');
 
-const { schema } = schemaDefn;
 const { MAX_LIMIT } = constants;
 
 /**
@@ -99,21 +98,21 @@ class WrapperQuery {
         const query = Subquery.parse({
             history, model: inputModel, target, ...rest,
         });
-        const model = schema[inputModel] || schema[target];
+        const model = schemaDefn.get(inputModel, false) || schemaDefn.get(target, false) || schemaDefn.models.V;
 
         // try to project the ordering to ensure they are valid properties
         if (orderBy) {
-            propsToProjection(model || schema.V, orderBy);
+            propsToProjection(model.name, orderBy);
         }
 
         let projection = '*';
 
         if (returnProperties) {
-            projection = propsToProjection(model || schema.V, returnProperties, true);
+            projection = propsToProjection(model.name, returnProperties, true);
         } else if (neighbors && neighbors < 2) {
             projection = nestedProjection(neighbors);
         } else if (neighbors) {
-            projection = nonSpecificProjection((model || schema.V), {
+            projection = nonSpecificProjection((model.name), {
                 depth: neighbors,
                 edges: schemaDefn.getEdgeModels().filter((e) => !e.isAbstract).map((e) => e.name),
                 history,
@@ -145,23 +144,23 @@ const parse = (query) => WrapperQuery.parse(query);
 /**
  * Given some input record, create a query to find it
  *
- * @param {ClassModel} model the model/class to query
+ * @param {string} modelName the model/class to query
  * @param {object} record the record content
  *
  */
-const parseRecord = (model, record, { activeIndexOnly = false, ...opt } = {}) => {
-    const query = { ...opt, filters: { AND: [] }, target: model.name };
+const parseRecord = (modelName, record, { activeIndexOnly = false, ...opt } = {}) => {
+    const query = { ...opt, filters: { AND: [] }, target: modelName };
 
     if (record['@rid']) {
         query.target = [record['@rid']];
-        query.model = model.name;
+        query.model = modelName;
     }
 
     const filters = query.filters.AND;
     const content = { ...record };
 
-    const activeIndexProps = model.getActiveProperties();
-    const properties = Object.values(model.properties).filter(
+    const activeIndexProps = schemaDefn.activeProperties(modelName);
+    const properties = Object.values(schemaDefn.getProperties(modelName)).filter(
         (prop) => !activeIndexOnly || activeIndexProps.includes(prop.name),
     );
 

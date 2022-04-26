@@ -1,7 +1,5 @@
 const uuidV4 = require('uuid/v4');
 
-const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
-
 const { getUserByName, create, update } = require('../../src/repo/commands');
 const { connectDB } = require('../../src/repo');
 const { createConfig } = require('../../src');
@@ -41,7 +39,7 @@ const createSeededDb = async () => {
     const session = await pool.acquire();
     const source = await create(
         session,
-        { content: { name: 'default source' }, model: schema.Source, user: admin },
+        { content: { name: 'default source' }, modelName: 'Source', user: admin },
     );
 
     const createRecord = async (opt) => create(
@@ -63,25 +61,25 @@ const createSeededDb = async () => {
         resistance,
         drug,
     ] = await Promise.all([
-        { content: { displayName: 'mutation', sourceId: 'mutation' }, model: schema.Vocabulary },
-        { content: { displayName: 'substitution', sourceId: 'substitution' }, model: schema.Vocabulary },
-        { content: { sourceId: 'gain of function' }, model: schema.Vocabulary },
-        { content: { sourceId: 'cancer', subsets: ['singleSubset'] }, model: schema.Disease },
-        { content: { sourceId: 'disease of cellular proliferation', subsets: ['wordy', 'singleSubset'] }, model: schema.Disease },
-        { content: { sourceId: 'carcinomas' }, model: schema.Disease },
-        { content: { biotype: 'gene', displayName: 'KRAS', sourceId: 'kras' }, model: schema.Feature },
-        { content: { biotype: 'gene', displayName: 'KRAS1', sourceId: 'kras1' }, model: schema.Feature },
-        { content: { sourceId: '1234' }, model: schema.Publication },
-        { content: { sourceId: 'sensitivity' }, model: schema.Vocabulary },
-        { content: { sourceId: 'resistance' }, model: schema.Vocabulary },
-        { content: { sourceId: 'drug' }, model: schema.Therapy },
+        { content: { displayName: 'mutation', sourceId: 'mutation' }, modelName: 'Vocabulary' },
+        { content: { displayName: 'substitution', sourceId: 'substitution' }, modelName: 'Vocabulary' },
+        { content: { sourceId: 'gain of function' }, modelName: 'Vocabulary' },
+        { content: { sourceId: 'cancer', subsets: ['singleSubset'] }, modelName: 'Disease' },
+        { content: { sourceId: 'disease of cellular proliferation', subsets: ['wordy', 'singleSubset'] }, modelName: 'Disease' },
+        { content: { sourceId: 'carcinomas' }, modelName: 'Disease' },
+        { content: { biotype: 'gene', displayName: 'KRAS', sourceId: 'kras' }, modelName: 'Feature' },
+        { content: { biotype: 'gene', displayName: 'KRAS1', sourceId: 'kras1' }, modelName: 'Feature' },
+        { content: { sourceId: '1234' }, modelName: 'Publication' },
+        { content: { sourceId: 'sensitivity' }, modelName: 'Vocabulary' },
+        { content: { sourceId: 'resistance' }, modelName: 'Vocabulary' },
+        { content: { sourceId: 'drug' }, modelName: 'Therapy' },
     ].map(createRecord));
 
     // update a record so there is something deleted we can test
     const query = `SELECT * FROM [${carcinomas['@rid']}]`;
     const carcinoma = await update(session, {
         changes: { sourceId: 'carcinoma' },
-        model: schema.Disease,
+        modelName: 'Disease',
         query: {
             displayString: () => query,
             toString: () => ({ params: {}, query }),
@@ -91,10 +89,10 @@ const createSeededDb = async () => {
 
     // add some default relationships
     await Promise.all([
-        { content: { in: proliferation, out: cancer }, model: schema.AliasOf },
-        { content: { in: cancer, out: carcinoma }, model: schema.SubClassOf },
-        { content: { in: mutation, out: substitution }, model: schema.SubClassOf },
-        { content: { in: kras, out: kras1 }, model: schema.DeprecatedBy },
+        { content: { in: proliferation, out: cancer }, modelName: 'AliasOf' },
+        { content: { in: cancer, out: carcinoma }, modelName: 'SubClassOf' },
+        { content: { in: mutation, out: substitution }, modelName: 'SubClassOf' },
+        { content: { in: kras, out: kras1 }, modelName: 'DeprecatedBy' },
     ].map(createRecord));
 
     // create a positional variant
@@ -107,7 +105,7 @@ const createSeededDb = async () => {
                 untemplatedSeq: 'D',
                 untemplatedSeqSize: 1,
             },
-            model: schema.PositionalVariant,
+            modelName: 'PositionalVariant',
             user: admin,
         }),
         create(session, {
@@ -115,11 +113,11 @@ const createSeededDb = async () => {
                 reference1: kras,
                 type: mutation,
             },
-            model: schema.CategoryVariant,
+            modelName: 'CategoryVariant',
             user: admin,
         }),
     ]);
-    await createRecord({ content: { in: krasMut, out: krasSub }, model: schema.Infers });
+    await createRecord({ content: { in: krasMut, out: krasSub }, modelName: 'Infers' });
     // create a statement
     const [sensToDrug, resToDrug, mutIsGof] = await Promise.all([
         create(session, {
@@ -129,7 +127,7 @@ const createSeededDb = async () => {
                 relevance: sensitivity,
                 subject: drug,
             },
-            model: schema.Statement,
+            modelName: 'Statement',
             user: admin,
         }),
         create(session, {
@@ -139,7 +137,7 @@ const createSeededDb = async () => {
                 relevance: resistance,
                 subject: drug,
             },
-            model: schema.Statement,
+            modelName: 'Statement',
             user: admin,
         }),
         create(session, {
@@ -149,7 +147,7 @@ const createSeededDb = async () => {
                 relevance: gof,
                 subject: kras,
             },
-            model: schema.Statement,
+            modelName: 'Statement',
             user: admin,
         }),
     ]);

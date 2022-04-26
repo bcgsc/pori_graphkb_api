@@ -1,13 +1,9 @@
-const {
-    schema: schemaDefn,
-} = require('@bcgsc-pori/graphkb-schema');
-
 const { stripSQL } = require('./util');
 const { nonSpecificProjection, propsToProjection, parsePropertyList } = require('../../../src/repo/query_builder/projection');
 
 describe('nonSpecificProjection', () => {
     test('linkDepth 0', () => {
-        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 0, edges: null });
+        const result = nonSpecificProjection('Statement', { depth: 0, edges: null });
         expect(result).toEqual([
             '@class',
             '@rid',
@@ -16,7 +12,7 @@ describe('nonSpecificProjection', () => {
     });
 
     test('linkDepth 1', () => {
-        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 1, edges: null });
+        const result = nonSpecificProjection('Statement', { depth: 1, edges: null });
         expect(result).toEqual([
             '@class',
             '@rid',
@@ -33,7 +29,7 @@ describe('nonSpecificProjection', () => {
     });
 
     test('linkDepth 2', () => {
-        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 2, edges: null });
+        const result = nonSpecificProjection('Statement', { depth: 2, edges: null });
         expect(result).toEqual([
             '@class',
             '@rid',
@@ -50,7 +46,7 @@ describe('nonSpecificProjection', () => {
     });
 
     test('linkDepth 1 with edges', () => {
-        const result = nonSpecificProjection(schemaDefn.schema.Statement, { depth: 1, edges: ['AliasOf'] });
+        const result = nonSpecificProjection('Statement', { depth: 1, edges: ['AliasOf'] });
         expect(result).toEqual(stripSQL(`
         @class, @rid, *,
         conditions:{@class, @rid, *, !history},
@@ -94,7 +90,7 @@ describe('nonSpecificProjection', () => {
 
 describe('propsToProjection', () => {
     test('deeply nested projection', () => {
-        const projection = propsToProjection(schemaDefn.schema.Statement, [
+        const projection = propsToProjection('Statement', [
             'conditions.@rid',
             'conditions.@class',
             'conditions.reference1.@class',
@@ -108,7 +104,7 @@ describe('propsToProjection', () => {
 
 describe('parsePropertyList', () => {
     test('deeply nested projection', () => {
-        const obj = parsePropertyList(schemaDefn.schema.Statement, [
+        const obj = parsePropertyList('Statement', [
             'conditions.@rid',
             'conditions.@class',
             'conditions.reference1.@class',

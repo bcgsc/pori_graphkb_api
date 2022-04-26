@@ -8,11 +8,11 @@ const semver = require('semver');
 const {
     constants,
     schema,
-    util: { timeStampNow },
-    sentenceTemplates: { chooseDefaultTemplate },
+    util,
+    sentenceTemplates,
 } = require('@bcgsc-pori/graphkb-schema');
 
-constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
+constants.RID = RID; // IMPORTANT: Without this all util.castToRID will do is convert to a string
 const { PERMISSIONS } = constants;
 
 const { logger } = require('../logging');
@@ -308,7 +308,7 @@ const migrate3From2xto3x = async (db) => {
 
         if (!existing) {
             logger.info(`creating the user group (${group.name})`);
-            const content = schema.models.UserGroup.formatRecord(group, { addDefaults: true });
+            const content = schema.formatRecord('UserGroup', group, { addDefaults: true });
             await db.insert().into(schema.models.UserGroup.name).set(content).one();
         } else {
             logger.info(`updating the group (${group.name}) permissions`);
@@ -337,7 +337,7 @@ const migrate3From3xto4x = async (db) => {
         let newTemplate = statement.displayNameTemplate;
 
         try {
-            newTemplate = chooseDefaultTemplate(statement);
+            newTemplate = sentenceTemplates.chooseDefaultTemplate(statement);
         } catch (err) {
             logger.warn(`Failed to assign a new default template to statement (${statement['@rid']})`);
             continue;
@@ -388,7 +388,7 @@ const migrate3xFrom6xto7x = async (db) => {
     // create the first agreement
     await db.insert().into(schema.models.LicenseAgreement.name).set({
         content: DEFAULT_LICENSE_CONTENT,
-        enactedAt: timeStampNow(),
+        enactedAt: util.timeStampNow(),
     }).one();
 
     logger.info('Adding the signedLicenseAt property to User');
@@ -606,7 +606,7 @@ const migrate3xFrom14xto15x = async (db) => {
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
-        createdAt: timeStampNow(),
+        createdAt: util.timeStampNow(),
         name,
         url,
         version,

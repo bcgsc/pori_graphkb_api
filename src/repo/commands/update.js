@@ -8,7 +8,7 @@ const _ = require('lodash');
 
 const {
     util: { castToRID, timeStampNow },
-    error: { AttributeError },
+    ValidationError,
     constants: { PERMISSIONS },
     schema: schemaDefn,
 } = require('@bcgsc-pori/graphkb-schema');
@@ -38,12 +38,10 @@ const { checkUserAccessFor } = require('../../middleware/auth');
  * @param {Object} opt.original the original edge record to be updated
  * @param {Object} opt.user the user performing the record update
  */
-const updateStatementTx = async (db, opt) => {
-    const { original, changes } = opt;
-    const userRID = castToRID(opt.user);
-    const { Statement: model } = schemaDefn.schema;
+const updateStatementTx = async (db, { original, changes, user }) => {
+    const userRID = castToRID(user);
 
-    const content = model.formatRecord(omitDBAttributes(original), {
+    const content = schemaDefn.formatRecord('Statement', omitDBAttributes(original), {
         addDefaults: false,
         dropExtra: true,
     });
@@ -65,14 +63,14 @@ const updateStatementTx = async (db, opt) => {
 
     if (!changes.displayNameTemplate) {
         const postUpdateRecord = { ...content, ...changes };
-        changes.displayNameTemplate = await fetchDisplayName(db, model, postUpdateRecord);
+        changes.displayNameTemplate = await fetchDisplayName(db, 'Statement', postUpdateRecord);
     }
 
     content.deletedAt = timeStampNow();
     content.deletedBy = userRID;
     changes.updatedBy = userRID;
     changes.updatedAt = timeStampNow();
-    const formattedChanges = model.formatRecord(omitDBAttributes(changes), {
+    const formattedChanges = schemaDefn.formatRecord('Statement', omitDBAttributes(changes), {
         addDefaults: false,
         dropExtra: true,
         ignoreMissing: true,
@@ -104,15 +102,15 @@ const updateStatementTx = async (db, opt) => {
  * @param {Object} opt.original the original edge record to be updated
  * @param {Object} opt.user the user performing the record update
  */
-const updateNodeTx = async (db, opt) => {
-    const { original, changes, model } = opt;
-
-    if (model.name === 'Statement') {
-        return updateStatementTx(db, opt);
+const updateNodeTx = async (db, {
+    original, changes, modelName, user,
+}) => {
+    if (modelName === 'Statement') {
+        return updateStatementTx(db, { changes, original, user });
     }
-    const userRID = castToRID(opt.user);
+    const userRID = castToRID(user);
 
-    const content = model.formatRecord(omitDBAttributes(original), {
+    const content = schemaDefn.formatRecord(modelName, omitDBAttributes(original), {
         addDefaults: false,
         dropExtra: true,
     });
@@ -122,22 +120,22 @@ const updateNodeTx = async (db, opt) => {
         ['displayName', 'break1Repr', 'break2Repr'],
     );
 
-    if (model.name === 'PositionalVariant') {
+    if (modelName === 'PositionalVariant') {
         // break1Repr and break2Repr require re-generating when changes are made
-        const reformatted = model.formatRecord(postUpdateRecord, { addDefaults: true });
+        const reformatted = schemaDefn.formatRecord(modelName, postUpdateRecord, { addDefaults: true });
         changes.break1Repr = reformatted.break1Repr;
         changes.break2Repr = reformatted.break2Repr;
         Object.assign(postUpdateRecord, changes);
     }
 
     // regenerate the displayName if it was not given
-    if (!changes.displayName && model.properties.displayName) {
-        changes.displayName = await fetchDisplayName(db, model, postUpdateRecord);
+    if (!changes.displayName && schemaDefn.hasProperty(modelName, 'displayName')) {
+        changes.displayName = await fetchDisplayName(db, modelName, postUpdateRecord);
     }
     content.deletedAt = timeStampNow();
     content.deletedBy = userRID;
 
-    if (model.inherits.includes('V')) {
+    if (schemaDefn.inheritsFrom(modelName, 'V')) {
         changes.updatedBy = userRID;
         changes.updatedAt = timeStampNow();
     } else {
@@ -147,7 +145,7 @@ const updateNodeTx = async (db, opt) => {
 
     let commit;
 
-    if (model.inherits.includes('V')) {
+    if (schemaDefn.inheritsFrom(modelName, 'V')) {
         commit = db
             .let('copy', (tx) => tx.create('VERTEX', original['@class'])
                 .set(content));
@@ -184,8 +182,7 @@ const updateNodeTx = async (db, opt) => {
  * @param {Object} opt.original the original edge record to be updated
  * @param {Object} opt.user the user performing the record update
  */
-const modifyEdgeTx = async (db, opt) => {
-    const { original, changes, user } = opt;
+const modifyEdgeTx = async (db, { original, changes, user }) => {
     const userRID = castToRID(user);
     const [src, tgt] = await db.record.get([original.out, original.in]);
 
@@ -264,9 +261,8 @@ const modifyEdgeTx = async (db, opt) => {
  * @param {orientjs.Db} db the database connection object
  * @param {Object} opt options
  */
-const deleteNodeTx = async (db, opt) => {
-    const { original } = opt;
-    const userRID = castToRID(opt.user);
+const deleteNodeTx = async (db, { original, user }) => {
+    const userRID = castToRID(user);
     const commit = db
         .let('deleted', (tx) => tx.update(original['@rid'])
             .set({ deletedAt: timeStampNow(), deletedBy: userRID })
@@ -331,11 +327,11 @@ const deleteNodeTx = async (db, opt) => {
  * Check if the record to be deleted is used by some links
  *
  * @param {orientjs.Db} db database connection object
- * @param {ClassModel} model the model of the current record
+ * @param {string} modelName the model of the current record
  * @param {string} ridToDelete the recordId being deleted
  */
-const deletionLinkChecks = async (db, model, ridToDelete) => {
-    if (model.name === 'Vocabulary') {
+const deletionLinkChecks = async (db, modelName, ridToDelete) => {
+    if (modelName === 'Vocabulary') {
         // check variants
         let [{ count }] = await select(db, parse({
             count: true,
@@ -364,7 +360,7 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
         if (count > 0) {
             throw new RecordConflictError(`Cannot delete ${ridToDelete} since it is used by ${count} Statement records`);
         }
-    } else if (model.inherits.includes('Ontology')) {
+    } else if (schemaDefn.inheritsFrom(modelName, 'Ontology')) {
         // check variants
         let [{ count }] = await select(db, parse({
             count: true,
@@ -411,13 +407,13 @@ const deletionLinkChecks = async (db, model, ridToDelete) => {
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
  */
-const modify = async (db, opt) => {
-    const {
-        model, user, query, paranoid = true,
-    } = opt;
+const modify = async (db, {
+    modelName, user, query, paranoid = true, changes: changesIn = null,
+}) => {
+    const model = schemaDefn.get(modelName);
 
     if (!query || !model || !user) {
-        throw new AttributeError('missing required argument');
+        throw new ValidationError('missing required argument');
     }
     if (paranoid) {
         query.projection = nestedProjection(2);
@@ -434,15 +430,15 @@ const modify = async (db, opt) => {
     }
 
     // check for outstanding links before deleting
-    if (opt.changes === null) {
-        await deletionLinkChecks(db, model, original['@rid'].toString());
+    if (changesIn === null) {
+        await deletionLinkChecks(db, model.name, original['@rid'].toString());
     }
 
     // now delete the record
-    const changes = opt.changes === null
+    const changes = changesIn === null
         ? null
         : ({
-            ...model.formatRecord(opt.changes, {
+            ...schemaDefn.formatRecord(model.name, changesIn, {
                 addDefaults: false,
                 dropExtra: false,
                 ignoreExtra: false,
@@ -472,7 +468,7 @@ const modify = async (db, opt) => {
         } else {
         // vertex update
             commit = await updateNodeTx(db, {
-                changes, model, original, user,
+                changes, modelName: model.name, original, user,
             });
         }
         logger.log('debug', commit.buildStatement());
@@ -499,11 +495,11 @@ const modify = async (db, opt) => {
  * @param {Object} opt.changes the new content to be set for the node/edge
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
- * @param {ClassModel} opt.model
+ * @param {ClassModel} opt.modelName
  */
 const update = async (db, opt) => {
     if (opt.changes === null || opt.changes === undefined) {
-        throw new AttributeError('opt.changes is a required argument');
+        throw new ValidationError('opt.changes is a required argument');
     }
     return modify(db, opt);
 };
@@ -515,7 +511,7 @@ const update = async (db, opt) => {
  * @param {Object} opt options
  * @param {Query} opt.query the selection criteria for the original node
  * @param {Object} opt.user the user updating the record
- * @param {ClassModel} opt.model the class model
+ * @param {ClassModel} opt.modelName the class model
  */
 const remove = async (db, opt) => modify(db, { ...opt, changes: null });
 

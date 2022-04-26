@@ -1,7 +1,7 @@
 /**
  * Tests for building read only queries at the db level
  */
-const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
+const { schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     select,
@@ -10,7 +10,7 @@ const {
     getUserByName,
 } = require('../../src/repo/commands');
 const {
-    AttributeError, NoRecordFoundError,
+    ValidationError, NoRecordFoundError,
 } = require('../../src/repo/error');
 const {
     parse,
@@ -221,7 +221,7 @@ describeWithAuth('query builder', () => {
             try {
                 await select(session, parse({ target: [krasMut, krasSub, '44444:982958'] }));
             } catch (err) {
-                expect(err).toBeInstanceOf(AttributeError);
+                expect(err).toBeInstanceOf(ValidationError);
                 return;
             }
             throw new Error('Did not throw expected error');
@@ -243,17 +243,17 @@ describeWithAuth('query builder', () => {
 
     describe('fetchDisplayName', () => {
         test('PositionalVariant', async () => {
-            const name = await fetchDisplayName(session, schema.PositionalVariant, db.records.krasSub);
+            const name = await fetchDisplayName(session, 'PositionalVariant', db.records.krasSub);
             expect(name).toEqual('KRAS1:p.G12D');
         });
 
         test('CategoryVariant', async () => {
-            const name = await fetchDisplayName(session, schema.CategoryVariant, db.records.krasMut);
+            const name = await fetchDisplayName(session, 'CategoryVariant', db.records.krasMut);
             expect(name).toEqual('KRAS mutation');
         });
 
         test('Statement', async () => {
-            const name = await fetchDisplayName(session, schema.Statement, db.records.sensToDrug);
+            const name = await fetchDisplayName(session, 'Statement', db.records.sensToDrug);
             expect(name).toContain('is associated with {relevance} to {subject}');
         });
     });

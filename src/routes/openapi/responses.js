@@ -42,7 +42,7 @@ const BadInput = {
         'application/json': {
             schema: {
                 $ref: '#/components/schemas/Error',
-                properties: { name: { example: 'AttributeError' } },
+                properties: { name: { example: 'ValidationError' } },
             },
         },
     },
