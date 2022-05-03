@@ -532,23 +532,23 @@ class FixedSubquery {
         });
         return query;
     }
-
-    static parse({ queryType, ...opt }, subQueryParser) {
-        if (queryType === 'ancestors') {
-            return new this(queryType, ancestors, opt);
-        } if (queryType === 'descendants') {
-            return new this(queryType, descendants, opt);
-        } if (queryType === 'neighborhood') {
-            return new this(queryType, neighborhood, opt);
-        } if (queryType === 'similarTo') {
-            return new this(queryType, similarTo, opt);
-        } if (queryType === 'keyword') {
-            return new this(queryType, keywordSearch, { ...opt, subQueryParser });
-        } if (queryType === 'edge') {
-            return new this(queryType, edgeQuery, { ...opt, subQueryParser });
-        }
-        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
-    }
 }
 
-module.exports = { FixedSubquery };
+const parseFixedQuery = ({ queryType, ...opt }, subQueryParser) => {
+    if (queryType === 'ancestors') {
+        return new FixedSubquery(queryType, ancestors, opt);
+    } if (queryType === 'descendants') {
+        return new FixedSubquery(queryType, descendants, opt);
+    } if (queryType === 'neighborhood') {
+        return new FixedSubquery(queryType, neighborhood, opt);
+    } if (queryType === 'similarTo') {
+        return new FixedSubquery(queryType, similarTo, opt);
+    } if (queryType === 'keyword') {
+        return new FixedSubquery(queryType, keywordSearch, { ...opt, subQueryParser });
+    } if (queryType === 'edge') {
+        return new FixedSubquery(queryType, edgeQuery, { ...opt, subQueryParser });
+    }
+    throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
+};
+
+module.exports = { FixedSubquery, parseFixedQuery };

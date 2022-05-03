@@ -4,7 +4,7 @@ const {
 
 const { stripSQL } = require('./util');
 
-describe('WrapperQuery.parseRecord', () => {
+describe('parseRecord', () => {
     test('select basic record', () => {
         const record = { name: 'bob' };
         const { query, params } = parseRecord('User', record, { history: true }).toString();
@@ -35,7 +35,7 @@ describe('WrapperQuery.parseRecord', () => {
     });
 });
 
-describe('WrapperQuery.parse', () => {
+describe('parse', () => {
     test('multiple keyword search params', () => {
         const parsed = parse({
             filters: {

@@ -1,10 +1,6 @@
-const { RecordID: RID } = require('orientjs');
-
-const { ValidationError, schema, util } = require('@bcgsc-pori/graphkb-schema');
+const { ValidationError } = require('@bcgsc-pori/graphkb-schema');
 
 const { OPERATORS, PARAM_PREFIX } = require('./constants');
-const { FixedSubquery } = require('./fixed');
-const { getQueryableProps } = require('./util');
 
 const NUMBER_ONLY_OPERATORS = [OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE];
 
@@ -120,88 +116,6 @@ class Comparison {
     }
 
     /**
-     * @param {string} modelName the starting model
-     * @param {object} opt the JSON representation to be parsed
-     *
-     * @returns {Comparison} the parsed object
-     */
-    static parse(modelName, {
-        operator: inputOperator, negate = false, ...rest
-    }) {
-        if (Object.keys(rest).length === 0) {
-            throw new ValidationError('Missing the property name for the comparison');
-        }
-        let [name] = Object.keys(rest);
-        const isLength = name.endsWith('.length');
-
-        if (isLength) {
-            name = name.slice(0, name.length - '.length'.length);
-        }
-        let value = rest[name];
-
-        const properties = getQueryableProps(modelName);
-        const prop = name === '@this'
-            ? { choices: Object.values(schema.models).map((m) => m.name) }
-            : properties[name];
-
-        if (!prop) {
-            throw new ValidationError(`The property (${name}) does not exist on the model (${modelName})`);
-        }
-
-        if (typeof value === 'object'
-            && value !== null
-            && !(value instanceof Array)
-            && !(value instanceof RID)
-        ) {
-            if (value.queryType || value.filters) {
-                value = Subquery.parse(value);
-            }
-        }
-
-        let defaultOperator = OPERATORS.EQ;
-
-        if (inputOperator === undefined) {
-            if (prop.iterable) {
-                if (Array.isArray(value)) {
-                    defaultOperator = OPERATORS.EQ;
-                } else if (value && value.isSubquery) {
-                    defaultOperator = OPERATORS.CONTAINSANY;
-                } else {
-                    defaultOperator = OPERATORS.CONTAINS;
-                }
-            } else if (value && (Array.isArray(value) || value.isSubquery)) {
-                defaultOperator = OPERATORS.IN;
-            }
-        }
-        const operator = inputOperator || defaultOperator;
-
-        if (!Object.values(OPERATORS).includes(operator) || operator === OPERATORS.OR || operator === OPERATORS.AND) {
-            throw new ValidationError(
-                `Invalid operator (${
-                    operator
-                }). Must be one of (${
-                    Object.values(OPERATORS).join(', ')
-                })`,
-            );
-        }
-
-        if (name === '@this' && operator !== OPERATORS.INSTANCEOF) {
-            throw new ValidationError(`Only the INSTANCEOF operator is valid to use with @this (${operator})`);
-        }
-
-        const result = new this({
-            isLength,
-            name,
-            negate,
-            operator,
-            prop,
-            value,
-        });
-        result.validate();
-        return result;
-    }
-
-    /**
      * @param {int} [paramIndex=0] the number to append to parameter names
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
@@ -264,44 +178,6 @@ class Clause {
         this.model = model;
         this.operator = operator;
         this.filters = filters;
-    }
-
-    static parse(modelName, content) {
-        if (Object.keys(content).length !== 1) {
-            throw new ValidationError(`Filter clauses must be an object with a single AND or OR key. Found multiple keys (${Object.keys(content)})`);
-        }
-        const [operator] = Object.keys(content);
-
-        if (!['AND', 'OR'].includes(operator)) {
-            throw new ValidationError(`Filter clauses must be an object with a single AND or OR key. Found ${operator}`);
-        }
-        if (!Array.isArray(content[operator])) {
-            throw new ValidationError('Expected filter clause value to be an array');
-        }
-
-        // clause may contain other clauses or direct comparisons
-        const parsedFilters = [];
-
-        for (const clause of content[operator]) {
-            let parsed;
-
-            try {
-                parsed = this.parse(modelName, clause);
-            } catch (err) {
-                if (clause.OR || clause.AND) {
-                    throw err;
-                }
-                // direct property instead of a nested clause
-                parsed = Comparison.parse(modelName, clause);
-            }
-            parsedFilters.push(parsed);
-        }
-
-        if (parsedFilters.length === 0) {
-            throw new ValidationError('Clause must contain filters. Cannot be an empty array');
-        }
-
-        return new this(modelName, operator, parsedFilters);
     }
 
     /**
@@ -376,97 +252,6 @@ class Subquery {
 
         return { params, query: statement };
     }
-
-    static parse({
-        target: rawTarget,
-        history = false,
-        filters: rawFilters = null,
-        queryType,
-        model: inputModel,
-        ...rest
-    }) {
-        let target = rawTarget,
-            filters = null;
-
-        if (Array.isArray(rawTarget)) {
-            if (!rawTarget.length) {
-                throw new ValidationError('target cannot be an empty array');
-            }
-            target = rawTarget.map(util.castToRID);
-        } else if (typeof target !== 'string') {
-            // fixed query. pre-parse the target and filters
-            if (typeof rawTarget !== 'string') {
-                target = this.parse(rawTarget);
-            }
-        }
-        if (Object.keys(rest).length && !queryType) {
-            throw new ValidationError(`Unrecognized query arguments: ${Object.keys(rest).join(',')}`);
-        }
-
-        if (rawFilters) {
-            filters = rawFilters;
-
-            if (Array.isArray(filters)) {
-                filters = { AND: filters };
-            } else if (!filters.AND && !filters.OR) {
-                filters = { AND: [{ ...filters }] };
-            }
-        }
-
-        let model = target.isSubquery
-            ? null
-            : schema.get(target, false);
-
-        if (target.isSubquery && target.target && schema.has(target.target)) {
-            model = schema.get(target.target);
-        }
-
-        if (!model && (!target || !target.isSubquery) && !Array.isArray(target)) {
-            throw new ValidationError(`Invalid target class (${target})`);
-        }
-
-        if (model && model.isEdge && queryType !== 'edge' && filters && typeof target === 'string') {
-            // stop the user from making very inefficient queries
-            if (filters.AND.some((cond) => cond.out)) {
-                target = this.parse({
-                    direction: 'out',
-                    queryType: 'edge',
-                    target: model.name,
-                    vertexFilter: filters.AND.find((cond) => cond.out).out,
-                });
-            } else if (filters.AND.some((cond) => cond.in)) {
-                target = this.parse({
-                    direction: 'in',
-                    queryType: 'edge',
-                    target: model.name,
-                    vertexFilter: filters.AND.find((cond) => cond.in).in,
-                });
-            }
-        }
-
-        let defaultModel = schema.get(inputModel, false) || schema.models.V;
-
-        if (target && target.queryType === 'edge') {
-            defaultModel = schema.models.E;
-        }
-        if (filters) {
-            filters = Clause.parse((model && model.name) || defaultModel.name, filters);
-        }
-
-        if (queryType) {
-            if (!filters) {
-                return FixedSubquery.parse({
-                    ...rest, history, queryType, target,
-                }, this.parse.bind(this)); // has to be passed to avoid circular dependency
-            }
-            return FixedSubquery.parse({
-                ...rest, filters, history, queryType, target,
-            }, this.parse.bind(this)); // has to be passed to avoid circular dependency
-        }
-        return new this({
-            filters, history, target,
-        });
-    }
 }
 
-module.exports = { Subquery };
+module.exports = { Clause, Comparison, Subquery };

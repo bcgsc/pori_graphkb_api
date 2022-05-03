@@ -6,7 +6,7 @@ const {
 const {
     propsToProjection, nonSpecificProjection, nestedProjection,
 } = require('./projection');
-const { Subquery } = require('./fragment');
+const { parseSubquery } = require('./parse');
 const constants = require('./constants');
 
 const { MAX_LIMIT } = constants;
@@ -79,58 +79,6 @@ class WrapperQuery {
     displayString() {
         return displayQuery(this.toString());
     }
-
-    static parse(opt) {
-        const {
-            target,
-            limit = MAX_LIMIT,
-            skip = 0,
-            history = false,
-            neighbors,
-            orderBy,
-            orderByDirection,
-            returnProperties,
-            count,
-            model: inputModel,
-            ...rest
-        } = checkStandardOptions(opt);
-
-        const query = Subquery.parse({
-            history, model: inputModel, target, ...rest,
-        });
-        const model = schemaDefn.get(inputModel, false) || schemaDefn.get(target, false) || schemaDefn.models.V;
-
-        // try to project the ordering to ensure they are valid properties
-        if (orderBy) {
-            propsToProjection(model.name, orderBy);
-        }
-
-        let projection = '*';
-
-        if (returnProperties) {
-            projection = propsToProjection(model.name, returnProperties, true);
-        } else if (neighbors && neighbors < 2) {
-            projection = nestedProjection(neighbors);
-        } else if (neighbors) {
-            projection = nonSpecificProjection((model.name), {
-                depth: neighbors,
-                edges: schemaDefn.getEdgeModels().filter((e) => !e.isAbstract).map((e) => e.name),
-                history,
-            });
-        }
-
-        return new this({
-            count,
-            history,
-            limit,
-            orderBy,
-            orderByDirection,
-            projection,
-            query,
-            skip,
-            target,
-        });
-    }
 }
 
 /**
@@ -139,7 +87,57 @@ class WrapperQuery {
  * @param {object} query JSON query object
  *
  */
-const parse = (query) => WrapperQuery.parse(query);
+const parse = (opt) => {
+    const {
+        target,
+        limit = MAX_LIMIT,
+        skip = 0,
+        history = false,
+        neighbors,
+        orderBy,
+        orderByDirection,
+        returnProperties,
+        count,
+        model: inputModel,
+        ...rest
+    } = checkStandardOptions(opt);
+
+    const query = parseSubquery({
+        history, model: inputModel, target, ...rest,
+    });
+    const model = schemaDefn.get(inputModel, false) || schemaDefn.get(target, false) || schemaDefn.models.V;
+
+    // try to project the ordering to ensure they are valid properties
+    if (orderBy) {
+        propsToProjection(model.name, orderBy);
+    }
+
+    let projection = '*';
+
+    if (returnProperties) {
+        projection = propsToProjection(model.name, returnProperties, true);
+    } else if (neighbors && neighbors < 2) {
+        projection = nestedProjection(neighbors);
+    } else if (neighbors) {
+        projection = nonSpecificProjection((model.name), {
+            depth: neighbors,
+            edges: schemaDefn.getEdgeModels().filter((e) => !e.isAbstract).map((e) => e.name),
+            history,
+        });
+    }
+
+    return new WrapperQuery({
+        count,
+        history,
+        limit,
+        orderBy,
+        orderByDirection,
+        projection,
+        query,
+        skip,
+        target,
+    });
+};
 
 /**
  * Given some input record, create a query to find it
