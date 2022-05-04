@@ -16,7 +16,7 @@ constants.RID = RID; // IMPORTANT: Without this all util.castToRID will do is co
 const { PERMISSIONS } = constants;
 
 const { logger } = require('../logging');
-const { Property, ClassModel } = require('../model');
+const { createPropertyInDb, createModelInDb } = require('../model');
 const { generateDefaultGroups, DEFAULT_LICENSE_CONTENT } = require('../schema');
 
 const _version = require('./version');
@@ -63,7 +63,7 @@ const migrate17Xto18X = async (db) => {
     logger.info('Add evidence level to Statement');
     const { evidenceLevel } = schema.models.Statement.properties;
     const dbClass = await db.class.get(schema.models.Statement.name);
-    await Property.create(evidenceLevel, dbClass);
+    await createPropertyInDb(evidenceLevel, dbClass);
 };
 
 const addClassToPermissionsSchema = async (db, model) => {
@@ -115,16 +115,16 @@ const migrate18Xto19X = async (db) => {
     logger.info('Add actionType property to class TargetOf');
     const { actionType } = schema.models.TargetOf.properties;
     const targetof = await db.class.get(schema.models.TargetOf.name);
-    await Property.create(actionType, targetof);
+    await createPropertyInDb(actionType, targetof);
 
     logger.info('Create the CuratedContent class');
-    await ClassModel.create(schema.models.CuratedContent, db);
+    await createModelInDb('CuratedContent', db);
     await addClassToPermissionsSchema(db, schema.models.CuratedContent);
 
     logger.info('Add addition Source properties');
     const source = await db.class.get(schema.models.Source.name);
     const { license, licenseType, citation } = schema.models.Source.properties;
-    await Promise.all([license, licenseType, citation].map((prop) => Property.create(prop, source)));
+    await Promise.all([license, licenseType, citation].map((prop) => createPropertyInDb(prop, source)));
 };
 
 /**
@@ -143,8 +143,8 @@ const migrate2from0xto1x = async (db) => {
     logger.info('create ClinicalTrial.startDate and ClinicalTrial.completionDate');
     const { startDate, completionDate } = schema.models.ClinicalTrial.properties;
     const trial = await db.class.get(schema.models.ClinicalTrial.name);
-    await Property.create(startDate, trial);
-    await Property.create(completionDate, trial);
+    await createPropertyInDb(startDate, trial);
+    await createPropertyInDb(completionDate, trial);
 
     logger.info('transform year properties to strings');
     await db.command('UPDATE ClinicalTrial SET startDate = startYear.toString(), completionDate = completionYear.toString()');
@@ -163,7 +163,7 @@ const migrate2from1xto2x = async (db) => {
     await db.command('ALTER CLASS Ontology SUPERCLASS +Biomarker').all();
 
     logger.info('Create the new RnaPostion class');
-    await ClassModel.create(schema.models.RnaPosition, db);
+    await createModelInDb('RnaPosition', db);
 };
 
 const migrate2from2xto3x = async () => {
@@ -176,11 +176,11 @@ const migrate2from3xto4x = async (db) => {
     logger.info('Adding properties {content, doi} to Publication class');
     const { content, doi } = schema.models.Publication.properties;
     const publication = await db.class.get(schema.models.Publication.name);
-    await Property.create(content, publication);
-    await Property.create(doi, publication);
+    await createPropertyInDb(content, publication);
+    await createPropertyInDb(doi, publication);
 
     logger.info('Creating the Abstract class');
-    await ClassModel.create(schema.models.Abstract, db);
+    await createModelInDb('Abstract', db);
     logger.info('Add Abstract to the Permissions class');
     await addClassToPermissionsSchema(db, schema.models.Abstract);
 };
@@ -204,7 +204,7 @@ const migrate2from5xto6x = async (db) => {
     const publication = await db.class.get(schema.models.Publication.name);
 
     for (const prop of [authors, citation, issue, volume, pages]) {
-        await Property.create(prop, publication);
+        await createPropertyInDb(prop, publication);
     }
 };
 
@@ -221,7 +221,7 @@ const migrate2to3From6xto0x = async (db) => {
     for (const [oldName, newName] of renames) {
         const prop = properties[newName];
         logger.info(`Create new Property Statement.${newName}`);
-        await Property.create(prop, statement);
+        await createPropertyInDb(prop, statement);
 
         logger.info(`copy content Statement.${oldName} to Statement.${newName}`);
         await db.command(`UPDATE Statement SET ${newName} = ${oldName}`).all();
@@ -249,18 +249,18 @@ const migrate2to3From6xto0x = async (db) => {
     }
 
     // remake any indices
-    await ClassModel.create(schema.models.Statement, db, { graceful: true, indices: true, properties: false });
+    await createModelInDb('Statement', db, { graceful: true, indices: true, properties: false });
 };
 
 const migrate3From0xto1x = async (db) => {
     // remake any missing indices (were renamed here)
-    await ClassModel.create(schema.models.Statement, db, { graceful: true, indices: true, properties: false });
+    await createModelInDb('Statement', db, { graceful: true, indices: true, properties: false });
 
     // add source.sort property
     logger.info('Adding Source.sort property');
     const { sort } = schema.models.Source.properties;
     const source = await db.class.get(schema.models.Source.name);
-    await Property.create(sort, source);
+    await createPropertyInDb(sort, source);
 };
 
 const migrate3From1xto2x = async (db) => {
@@ -272,7 +272,7 @@ const migrate3From1xto2x = async (db) => {
     logger.info(`Adding Statement.${tempProp} property`);
     const { evidenceLevel } = schema.models.Statement.properties;
     const Statement = await db.class.get(schema.models.Statement.name);
-    await Property.create({ ...evidenceLevel, name: tempProp }, Statement);
+    await createPropertyInDb({ ...evidenceLevel, name: tempProp }, Statement);
 
     logger.info('Copying the data into the new property');
     await db.command(`UPDATE Statement SET ${tempProp} = [evidenceLevel] WHERE evidenceLevel IS NOT NULL`);
@@ -382,7 +382,7 @@ const migrate3From5xto6x = async (db) => {
 
 const migrate3xFrom6xto7x = async (db) => {
     logger.info('creating the new LicenseAgreement Table');
-    await ClassModel.create(schema.models.LicenseAgreement, db);
+    await createModelInDb('LicenseAgreement', db);
     await addClassToPermissionsSchema(db, schema.models.LicenseAgreement);
 
     // create the first agreement
@@ -395,14 +395,14 @@ const migrate3xFrom6xto7x = async (db) => {
 
     const { signedLicenseAt } = schema.models.User.properties;
     const dbClass = await db.class.get(schema.models.User.name);
-    await Property.create(signedLicenseAt, dbClass);
+    await createPropertyInDb(signedLicenseAt, dbClass);
 };
 
 const migrate3xFrom7xto8x = async (db) => {
     logger.info('adding the email property to the user class');
     const { email } = schema.models.User.properties;
     const dbClass = await db.class.get(schema.models.User.name);
-    await Property.create(email, dbClass);
+    await createPropertyInDb(email, dbClass);
 };
 
 const migrate3xFrom8xto9x = async (db) => {
@@ -411,7 +411,7 @@ const migrate3xFrom8xto9x = async (db) => {
     for (const propertyName of ['doi', 'content', 'citation', 'year']) {
         logger.info(`adding the property ${schema.models.CuratedContent.name}.${propertyName}`);
         const { [propertyName]: prop } = schema.models.CuratedContent.properties;
-        await Property.create(prop, dbClass);
+        await createPropertyInDb(prop, dbClass);
     }
 };
 
@@ -420,15 +420,15 @@ const migrate3xFrom9xto10x = async (db) => {
 
     logger.info(`adding the property ${schema.models.ClinicalTrial.name}.recruitmentStatus`);
     const { recruitmentStatus } = schema.models.ClinicalTrial.properties;
-    await Property.create(recruitmentStatus, trialsClass);
+    await createPropertyInDb(recruitmentStatus, trialsClass);
 
     // add the updatedAt and updatedBy fields to V
     const vertexClass = await db.class.get(schema.models.V.name);
     const { updatedBy, updatedAt } = schema.models.V.properties;
     logger.info('create the V.updatedBy property');
-    await Property.create(updatedBy, vertexClass);
+    await createPropertyInDb(updatedBy, vertexClass);
     logger.info('create the V.updatedAt property');
-    await Property.create(updatedAt, vertexClass);
+    await createPropertyInDb(updatedAt, vertexClass);
     logger.info('set reasonable defaults for updatedAt');
     logger.info('update records with 3 or more changes');
     let [{ count }] = await db.command(`UPDATE V SET updatedBy = createdBy,
@@ -483,7 +483,7 @@ const migrate3xFrom10xto11x = async (db) => {
         const dbClass = await db.class.get(className);
         logger.info(`adding the property ${className}.${propertyName}`);
         const prop = schema.models[className].properties[propertyName];
-        await Property.create(prop, dbClass);
+        await createPropertyInDb(prop, dbClass);
     }
 };
 
@@ -494,7 +494,7 @@ const migrate3xFrom11xto12x = async (db) => {
         const dbClass = await db.class.get(className);
         logger.info(`adding the property ${className}.${propertyName}`);
         const prop = schema.models[className].properties[propertyName];
-        await Property.create(prop, dbClass);
+        await createPropertyInDb(prop, dbClass);
     }
     // any records with a non-null dependency should have this flag set
     await db.command('UPDATE Ontology SET alias = TRUE WHERE dependency IS NOT NULL').all();
@@ -503,7 +503,7 @@ const migrate3xFrom11xto12x = async (db) => {
 
 const migrate3xFrom12xto13x = async (db) => {
     logger.info('Create the new NonCdsPostion class');
-    await ClassModel.create(schema.models.NonCdsPosition, db);
+    await createModelInDb('NonCdsPosition', db);
 };
 
 const migrate3xFrom13xto14x = async (db) => {
@@ -512,7 +512,7 @@ const migrate3xFrom13xto14x = async (db) => {
     for (const propertyName of ['firstLoginAt', 'lastLoginAt', 'loginCount']) {
         logger.info(`adding the property User.${propertyName}`);
         const prop = schema.models.User.properties[propertyName];
-        await Property.create(prop, dbClass);
+        await createPropertyInDb(prop, dbClass);
     }
 
     // set the default value for firstLoginAt to the first record the user created
@@ -660,8 +660,8 @@ const migrate = async (db, opt = {}) => {
         ['3.12.0', '3.13.0', migrate3xFrom12xto13x],
         ['3.13.0', '3.14.0', migrate3xFrom13xto14x],
         ['3.14.0', '3.15.0', migrate3xFrom14xto15x],
-        ['3.15.0', '3.16.0', async () => null], // no db migration required
-        ['3.16.0', '4.0.0', async () => null], // no db migration required
+        ['3.15.0', '3.16.0', async () => {}], // no db migration required
+        ['3.16.0', '4.0.0', async () => {}], // no db migration required
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
