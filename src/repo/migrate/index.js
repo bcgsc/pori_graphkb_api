@@ -661,6 +661,7 @@ const migrate = async (db, opt = {}) => {
         ['3.13.0', '3.14.0', migrate3xFrom13xto14x],
         ['3.14.0', '3.15.0', migrate3xFrom14xto15x],
         ['3.15.0', '3.16.0', async () => null], // no db migration required
+        ['3.16.0', '4.0.0', async () => null], // no db migration required
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
