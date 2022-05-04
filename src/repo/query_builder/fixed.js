@@ -1,10 +1,6 @@
 /**
  * Create neighborhood queries where some conditions are loosely matched and then expanded to
- * surrounding verticies
- */
-/**
- * @constant
- * @ignore
+ * surrounding vertices
  */
 const {
     util,
@@ -516,39 +512,6 @@ const keywordSearch = ({
     return { params, query: `SELECT DISTINCT * FROM (${query}) WHERE deletedAt IS NULL` };
 };
 
-class FixedSubquery {
-    constructor(queryType, queryBuilder, opt = {}) {
-        this.queryType = queryType;
-        this.queryBuilder = queryBuilder;
-        this.opt = opt;
-        this.isSubquery = true;
-    }
-
-    expectedCount() { return null; }  // eslint-disable-line
-
-    buildSQL(paramIndex = 0, prefix = '') {
-        const query = this.queryBuilder({
-            ...this.opt, paramIndex, prefix: prefix || this.opt.prefix,
-        });
-        return query;
-    }
-}
-
-const parseFixedQuery = ({ queryType, ...opt }, subQueryParser) => {
-    if (queryType === 'ancestors') {
-        return new FixedSubquery(queryType, ancestors, opt);
-    } if (queryType === 'descendants') {
-        return new FixedSubquery(queryType, descendants, opt);
-    } if (queryType === 'neighborhood') {
-        return new FixedSubquery(queryType, neighborhood, opt);
-    } if (queryType === 'similarTo') {
-        return new FixedSubquery(queryType, similarTo, opt);
-    } if (queryType === 'keyword') {
-        return new FixedSubquery(queryType, keywordSearch, { ...opt, subQueryParser });
-    } if (queryType === 'edge') {
-        return new FixedSubquery(queryType, edgeQuery, { ...opt, subQueryParser });
-    }
-    throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
+module.exports = {
+    ancestors, descendants, edgeQuery, keywordSearch, neighborhood, similarTo,
 };
-
-module.exports = { FixedSubquery, parseFixedQuery };

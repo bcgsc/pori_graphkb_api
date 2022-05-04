@@ -3,9 +3,11 @@ const { RecordID: RID } = require('orientjs');
 const { ValidationError, schema, util } = require('@bcgsc-pori/graphkb-schema');
 
 const { OPERATORS } = require('./constants');
-const { parseFixedQuery } = require('./fixed');
+const fixed = require('./fixed');
 const { getQueryableProps } = require('./util');
-const { Clause, Comparison, Subquery } = require('./fragment');
+const {
+    Clause, Comparison, Subquery, FixedSubquery,
+} = require('./fragment');
 
 /**
 * @param {string} modelName the starting model
@@ -127,6 +129,23 @@ const parseClause = (modelName, content) => {
     return new Clause(modelName, operator, parsedFilters);
 };
 
+const parseFixedQuery = ({ queryType, ...opt }) => {
+    if (queryType === 'ancestors') {
+        return new FixedSubquery(queryType, fixed.ancestors, opt);
+    } if (queryType === 'descendants') {
+        return new FixedSubquery(queryType, fixed.descendants, opt);
+    } if (queryType === 'neighborhood') {
+        return new FixedSubquery(queryType, fixed.neighborhood, opt);
+    } if (queryType === 'similarTo') {
+        return new FixedSubquery(queryType, fixed.similarTo, opt);
+    } if (queryType === 'keyword') {
+        return new FixedSubquery(queryType, fixed.keywordSearch, { ...opt, subQueryParser: parseSubquery });
+    } if (queryType === 'edge') {
+        return new FixedSubquery(queryType, fixed.edgeQuery, { ...opt, subQueryParser: parseSubquery });
+    }
+    throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
+};
+
 const parseSubquery = ({
     target: rawTarget,
     history = false,
@@ -178,14 +197,14 @@ const parseSubquery = ({
     if (model && model.isEdge && queryType !== 'edge' && filters && typeof target === 'string') {
         // stop the user from making very inefficient queries
         if (filters.AND.some((cond) => cond.out)) {
-            target = parseSubquery({
+            target = parseFixedQuery({
                 direction: 'out',
                 queryType: 'edge',
                 target: model.name,
                 vertexFilter: filters.AND.find((cond) => cond.out).out,
             });
         } else if (filters.AND.some((cond) => cond.in)) {
-            target = parseSubquery({
+            target = parseFixedQuery({
                 direction: 'in',
                 queryType: 'edge',
                 target: model.name,
@@ -207,15 +226,17 @@ const parseSubquery = ({
         if (!filters) {
             return parseFixedQuery({
                 ...rest, history, queryType, target,
-            }, parseSubquery); // has to be passed to avoid circular dependency
+            }); // has to be passed to avoid circular dependency
         }
         return parseFixedQuery({
             ...rest, filters, history, queryType, target,
-        }, parseSubquery); // has to be passed to avoid circular dependency
+        }); // has to be passed to avoid circular dependency
     }
     return new Subquery({
         filters, history, target,
     });
 };
 
-module.exports = { parseClause, parseComparison, parseSubquery };
+module.exports = {
+    parseClause, parseComparison, parseFixedQuery, parseSubquery,
+};

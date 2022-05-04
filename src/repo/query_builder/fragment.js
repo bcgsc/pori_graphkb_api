@@ -204,6 +204,24 @@ class Clause {
     }
 }
 
+class FixedSubquery {
+    constructor(queryType, queryBuilder, opt = {}) {
+        this.queryType = queryType;
+        this.queryBuilder = queryBuilder;
+        this.opt = opt;
+        this.isSubquery = true;
+    }
+
+    expectedCount() { return null; }  // eslint-disable-line
+
+    buildSQL(paramIndex = 0, prefix = '') {
+        const query = this.queryBuilder({
+            ...this.opt, paramIndex, prefix: prefix || this.opt.prefix,
+        });
+        return query;
+    }
+}
+
 class Subquery {
     constructor({
         target, history, filters = null,
@@ -254,4 +272,6 @@ class Subquery {
     }
 }
 
-module.exports = { Clause, Comparison, Subquery };
+module.exports = {
+    Clause, Comparison, FixedSubquery, Subquery,
+};
