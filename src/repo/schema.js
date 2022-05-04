@@ -1,8 +1,5 @@
 /**
- * Repsonsible for defining and loading the database schema.
- */
-/**
- * @ignore
+ * Responsible for defining and loading the database schema.
  */
 
 const { RID } = require('orientjs');
