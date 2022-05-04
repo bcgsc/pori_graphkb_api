@@ -7,7 +7,7 @@ const { stripSQL } = require('./util');
 describe('parseRecord', () => {
     test('select basic record', () => {
         const record = { name: 'bob' };
-        const { query, params } = parseRecord('User', record, { history: true }).toString();
+        const { query, params } = parseRecord('User', record, { history: true }).buildSQL();
         expect(query).toEqual('SELECT * FROM User WHERE name = :param0 LIMIT 1000');
         expect(params).toEqual({ param0: 'bob' });
     });
@@ -20,7 +20,7 @@ describe('parseRecord', () => {
             untemplatedSeq: 'D',
             untemplatedSeqSize: 1,
         };
-        const { query, params } = parseRecord('PositionalVariant', record, { history: true }).toString();
+        const { query, params } = parseRecord('PositionalVariant', record, { history: true }).buildSQL();
         expect(stripSQL(query)).toEqual(stripSQL(`SELECT * FROM PositionalVariant WHERE
             break1Start.@class = :param0
             AND break1Start.pos = :param1
@@ -55,7 +55,7 @@ describe('parse', () => {
             skip: 0,
             target: 'Statement',
         });
-        const { params } = parsed.toString();
+        const { params } = parsed.buildSQL();
         expect(params).toEqual({
             param0w0: 'egfr',
             param1w0: 'glio',
@@ -85,7 +85,7 @@ describe('parse', () => {
                 vertexFilter: '#124:35332',
             },
         });
-        const { query, params } = parsed.toString();
+        const { query, params } = parsed.buildSQL();
         expect(query).toEqual('SELECT *, *:{*, @rid, @class, !history} FROM (SELECT * FROM (SELECT * FROM (SELECT expand(outE(\'ElementOf\')) FROM [#124:35332]) WHERE in = :param0 AND out = :param1 AND source = :param2) WHERE deletedAt IS NULL) LIMIT 1000');
         expect(`${params.param0}`).toEqual('#124:42320');
         expect(`${params.param1}`).toEqual('#124:35332');
@@ -100,7 +100,7 @@ describe('parse', () => {
             limit: null,
             target: 'Disease',
         });
-        const { query, params } = parsed.toString();
+        const { query, params } = parsed.buildSQL();
         expect(query).toEqual('SELECT * FROM (SELECT * FROM Disease WHERE name = :param0) WHERE deletedAt IS NULL');
         expect(params).toEqual({ param0: 'thing' });
     });
@@ -112,7 +112,7 @@ describe('parse', () => {
             limit: null,
             target: 'Disease',
         });
-        const { query, params } = parsed.toString();
+        const { query, params } = parsed.buildSQL();
         expect(query).toEqual('SELECT * FROM Disease WHERE name = :param0');
         expect(params).toEqual({ param0: 'thing' });
     });
@@ -124,7 +124,7 @@ describe('parse', () => {
             limit: null,
             target: 'Statement',
         });
-        const { query, params } = parsed.toString();
+        const { query, params } = parsed.buildSQL();
         expect(query).toEqual('SELECT * FROM Statement WHERE (conditions CONTAINSALL [:param0, :param1] AND conditions.size() = :param2)');
         expect(`${params.param0}`).toEqual('#3:2');
         expect(`${params.param1}`).toEqual('#4:3');
@@ -138,7 +138,7 @@ describe('parse', () => {
             limit: null,
             target: 'Statement',
         });
-        const { query, params } = parsed.toString();
+        const { query, params } = parsed.buildSQL();
         expect(query).toEqual('SELECT * FROM Statement WHERE conditions CONTAINSALL [:param0, :param1]');
         expect(`${params.param0}`).toEqual('#3:2');
         expect(`${params.param1}`).toEqual('#4:3');
@@ -193,7 +193,7 @@ describe('parse', () => {
                 target: 'Disease',
             });
             const sql = 'SELECT * FROM Disease ORDER BY @rid ASC LIMIT 1000';
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
         });
@@ -206,7 +206,7 @@ describe('parse', () => {
                 target: 'Disease',
             });
             const sql = 'SELECT * FROM Disease ORDER BY name DESC LIMIT 1000';
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
         });
@@ -220,7 +220,7 @@ describe('parse', () => {
             });
 
             const sql = 'SELECT * FROM Disease ORDER BY @rid ASC, @class ASC';
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
         });
@@ -245,7 +245,7 @@ describe('parse', () => {
                             (SELECT * FROM (SELECT * FROM Source WHERE name = :param0) WHERE deletedAt IS NULL)
                         )
                     WHERE deletedAt IS NULL LIMIT 1000`);
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({ param0: 'disease-ontology' });
             expect(query).toBe(sql);
         });
@@ -266,7 +266,7 @@ describe('parse', () => {
             const sql = `SELECT * FROM Disease
                 WHERE source IN (SELECT * FROM (
                     MATCH {class: Source, WHERE: (name = :param0)}.both(){WHILE: ($depth < 3)} RETURN DISTINCT $pathElements)) LIMIT 1000`;
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({ param0: 'disease-ontology' });
             expect(stripSQL(query)).toBe(stripSQL(sql));
         });
@@ -281,7 +281,7 @@ describe('parse', () => {
                 target: ['#3:2', '#4:5'],
             });
             const sql = 'TRAVERSE in(\'SubclassOf\') FROM [#3:2, #4:5] MAXDEPTH 50 LIMIT 1000';
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
         });
@@ -296,7 +296,7 @@ describe('parse', () => {
             const sql = `SELECT * FROM (
                 TRAVERSE out('SubclassOf') FROM [#3:2, #4:5] MAXDEPTH 50
             ) WHERE deletedAt IS NULL LIMIT 1000`;
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
         });
@@ -312,7 +312,7 @@ describe('parse', () => {
             const sql = `SELECT * FROM (
                 TRAVERSE out('AliasOf', 'DeprecatedBy') FROM [#3:2, #4:5] MAXDEPTH 50
             ) WHERE deletedAt IS NULL LIMIT 1000`;
-            const { query, params } = parsed.toString();
+            const { query, params } = parsed.buildSQL();
             expect(params).toEqual({});
             expect(stripSQL(query)).toBe(stripSQL(sql));
         });

@@ -81,8 +81,8 @@ const createSeededDb = async () => {
         changes: { sourceId: 'carcinoma' },
         modelName: 'Disease',
         query: {
+            buildSQL: () => ({ params: {}, query }),
             displayString: () => query,
-            toString: () => ({ params: {}, query }),
         },
         user: db.admin,
     });

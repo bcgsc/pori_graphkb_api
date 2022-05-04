@@ -52,7 +52,7 @@ const treeQuery = (opt) => {
     } else if (schemaDefn.has(target) === undefined) {
         throw new ValidationError(`Invalid target class (${target})`);
     } else {
-        const { query, params: whereParams } = filters.toString(paramIndex);
+        const { query, params: whereParams } = filters.buildSQL(paramIndex);
         target = `(SELECT * FROM ${target} WHERE ${query})`;
         params = whereParams;
     }
@@ -97,7 +97,7 @@ const neighborhood = ({
     }
     const depth = castRangeInt(depthIn || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);
 
-    const { query, params } = filters.toString(paramIndex);
+    const { query, params } = filters.buildSQL(paramIndex);
     const statement = `SELECT * FROM (MATCH
     {class: ${target}, WHERE: (${query})}
         .both(${edges.map(quoteWrap).join(', ')}){WHILE: ($depth < ${depth})}
@@ -129,7 +129,7 @@ const similarTo = ({
     if (Array.isArray(target)) {
         initialQuery = recordsAsTarget(...target);
     } else {
-        const { query: initialStatement, params: initialParams } = target.toString(paramIndex, prefix);
+        const { query: initialStatement, params: initialParams } = target.buildSQL(paramIndex, prefix);
 
         initialQuery = `(${initialStatement})`; // recordIdList is a subquery instead of a list of record IDs
         params = { ...initialParams };
@@ -431,7 +431,7 @@ const edgeQuery = ({
         } catch (err) {}
     }
     // subquery
-    const subquery = subQueryParser(vertexFilter).toString(paramIndex, prefix);
+    const subquery = subQueryParser(vertexFilter).buildSQL(paramIndex, prefix);
     return {
         params: subquery.params,
         query: `SELECT expand(${direction}E('${target}')) FROM (${subquery.query})`,
@@ -484,7 +484,7 @@ const keywordSearch = ({
             try {
                 return subQueryParser(
                     buildHgvsQuery(word),
-                ).toString(paramIndex, prefix);
+                ).buildSQL(paramIndex, prefix);
             } catch (err) {
                 if (!(err instanceof ParsingError)) {
                     throw err;
@@ -526,7 +526,7 @@ class FixedSubquery {
 
     expectedCount() { return null; }  // eslint-disable-line
 
-    toString(paramIndex = 0, prefix = '') {
+    buildSQL(paramIndex = 0, prefix = '') {
         const query = this.queryBuilder({
             ...this.opt, paramIndex, prefix: prefix || this.opt.prefix,
         });

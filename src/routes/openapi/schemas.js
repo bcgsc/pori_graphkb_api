@@ -8,10 +8,8 @@
 const { schema } = require('@bcgsc-pori/graphkb-schema');
 
 const {
-    constants: {
-        OPERATORS, DIRECTIONS, SIMILARITY_EDGES, TREE_EDGES,
-    },
-} = require('../../repo/query_builder');
+    OPERATORS, DIRECTIONS, SIMILARITY_EDGES, TREE_EDGES,
+} = require('../../repo/query_builder/constants');
 const {
     MAX_QUERY_LIMIT, MAX_JUMPS,
 } = require('./constants');

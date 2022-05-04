@@ -119,14 +119,14 @@ class Comparison {
      * @param {int} [paramIndex=0] the number to append to parameter names
      * @param {bool} [listableType=false] indicates if the attribute being compared to is a set/list/bag/map etc.
      */
-    toString(initialParamIndex = 0) {
+    buildSQL(initialParamIndex = 0) {
         const { name: attr } = this;
         let params = {},
             query,
             paramIndex = initialParamIndex;
 
         if (this.value && this.value.isSubquery) {
-            const subquery = this.value.toString(paramIndex);
+            const subquery = this.value.buildSQL(paramIndex);
             query = `${attr} ${this.operator} (${subquery.query})`;
             ({ params } = subquery);
         } else if (this.value instanceof Array || this.value instanceof Set) {
@@ -183,13 +183,13 @@ class Clause {
     /**
      * @param {int} [initialParamIndex=0] the number to append to parameter names
      */
-    toString(initialParamIndex = 0, prefix = '') {
+    buildSQL(initialParamIndex = 0, prefix = '') {
         const params = {};
         const components = [];
         let paramIndex = initialParamIndex;
 
         for (const comp of this.filters) {
-            const result = comp.toString(paramIndex, prefix);
+            const result = comp.buildSQL(paramIndex, prefix);
 
             if (comp instanceof Clause && comp.filters.length > 1) {
                 // wrap in brackets
@@ -221,7 +221,7 @@ class Subquery {
         return null;
     }
 
-    toString(paramIndex = 0, prefix = '') {
+    buildSQL(paramIndex = 0, prefix = '') {
         const { filters, history, target } = this;
         let targetString = target,
             params = {};
@@ -229,7 +229,7 @@ class Subquery {
         if (Array.isArray(target)) {
             targetString = `[${target.map((rid) => rid.toString()).join(', ')}]`;
         } else if (target.isSubquery) {
-            const { query: subQuery, params: subParams } = target.toString(paramIndex, prefix);
+            const { query: subQuery, params: subParams } = target.buildSQL(paramIndex, prefix);
             paramIndex += Object.keys(subParams).length;
             targetString = `(${subQuery})`;
             Object.assign(params, subParams);
@@ -237,7 +237,7 @@ class Subquery {
         let statement = `SELECT * FROM ${targetString}`;
 
         if (filters && Object.keys(filters).length) {
-            const { query: clause, params: filterParams } = filters.toString(paramIndex, prefix);
+            const { query: clause, params: filterParams } = filters.buildSQL(paramIndex, prefix);
 
             if (filters.isSubquery) {
                 statement = `${statement} WHERE (${clause})`;

@@ -1,8 +1,6 @@
 /**
  * Tests for building read only queries at the db level
  */
-const { schema: schemaDefn } = require('@bcgsc-pori/graphkb-schema');
-
 const {
     select,
     selectCounts,

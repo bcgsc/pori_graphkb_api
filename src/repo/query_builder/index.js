@@ -41,14 +41,14 @@ class WrapperQuery {
         return null;
     }
 
-    toString() {
+    buildSQL() {
         const {
             skip, limit, projection, count, orderByDirection, orderBy,
         } = this;
-        const { query, params } = this.query.toString(0);
+        const { query, params } = this.query.buildSQL(0);
 
         if (!count && !orderBy && !skip && limit === undefined) {
-            // don't need to wrap since there are no modificiations
+            // don't need to wrap since there are no modifications
             return { params, query };
         }
 
@@ -77,7 +77,7 @@ class WrapperQuery {
     }
 
     displayString() {
-        return displayQuery(this.toString());
+        return displayQuery(this.buildSQL());
     }
 }
 
@@ -188,5 +188,5 @@ const parseRecord = (modelName, record, { activeIndexOnly = false, ...opt } = {}
 };
 
 module.exports = {
-    WrapperQuery, constants, parse, parseRecord,
+    parse, parseRecord,
 };
