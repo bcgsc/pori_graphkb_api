@@ -10,6 +10,7 @@ const _ = require('lodash');
 const fs = require('fs');
 const HTTP_STATUS = require('http-status-codes');
 const swaggerUi = require('swagger-ui-express');
+const { schema } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     POST_TOKEN,
@@ -290,18 +291,12 @@ const tagsSorter = (tag1, tag2) => {
  * Generates the JSON object that represents the openapi specification for this API
  *
  * @param {SchemaDefinition} schema the database schema loaded from loadSchema
- * @param {Object} metadata
- * @param {number} metadata.port the port number the API is being served on
- * @param {string} metadata.host the host serving the API
  * @see loadSchema
  *
  * @returns {Object} the JSON object representing the swagger API specification
  */
-const generateSwaggerSpec = (schema, metadata) => {
+const generateSwaggerSpec = () => {
     const docs = { ...STUB };
-    docs.servers = [{
-        url: `http://${metadata.host}:${metadata.port}/api`,
-    }];
     docs.components.parameters = Object.assign(
         docs.components.parameters,
         GENERAL_QUERY_PARAMS,
@@ -463,10 +458,12 @@ const generateSwaggerSpec = (schema, metadata) => {
     return docs;
 };
 
+const spec = generateSwaggerSpec();
+
 /**
  * Add the /spec.json, /spec, and /spec/redoc endpoints to a router
  */
-const registerSpecEndpoints = (router, spec) => {
+const registerSpecEndpoints = (router) => {
     // serve the spec as plain json
     router.get('/spec.json', (req, res) => {
         res.status(HTTP_STATUS.OK).json(spec);
@@ -514,4 +511,4 @@ const registerSpecEndpoints = (router, spec) => {
     });
 };
 
-module.exports = { generateSwaggerSpec, registerSpecEndpoints };
+module.exports = { registerSpecEndpoints, spec };

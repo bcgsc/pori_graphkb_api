@@ -19,7 +19,7 @@ const {
 const { connectDB } = require('./repo');
 const { getLoadVersion } = require('./repo/migrate/version');
 const { addExtensionRoutes } = require('./extensions');
-const { generateSwaggerSpec, registerSpecEndpoints } = require('./routes/openapi');
+const { spec, registerSpecEndpoints } = require('./routes/openapi');
 const { addResourceRoutes } = require('./routes/resource');
 const { addPostToken } = require('./routes/auth');
 const { addEulaRoutes } = require('./routes/eula');
@@ -149,8 +149,7 @@ class AppServer {
         } = this.conf;
 
         // set up the swagger docs
-        this.spec = generateSwaggerSpec(schema, { host: this.host, port: this.port });
-        registerSpecEndpoints(this.router, this.spec);
+        registerSpecEndpoints(this.router);
 
         this.router.get('/schema', async (req, res) => {
             res.status(HTTP_STATUS.OK).json({ schema: jc.decycle(schema.models) });
