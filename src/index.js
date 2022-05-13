@@ -19,7 +19,7 @@ const {
 const { connectDB } = require('./repo');
 const { getLoadVersion } = require('./repo/migrate/version');
 const { addExtensionRoutes } = require('./extensions');
-const { spec, registerSpecEndpoints } = require('./routes/openapi');
+const { registerSpecEndpoints } = require('./routes/openapi');
 const { addResourceRoutes } = require('./routes/resource');
 const { addPostToken } = require('./routes/auth');
 const { addEulaRoutes } = require('./routes/eula');
