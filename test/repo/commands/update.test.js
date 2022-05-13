@@ -1,7 +1,3 @@
-const {
-    schema,
-} = require('@bcgsc-pori/graphkb-schema');
-
 const { modifyEdgeTx } = require('../../../src/repo/commands/update');
 const {
     PermissionError,
