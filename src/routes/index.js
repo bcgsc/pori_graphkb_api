@@ -20,7 +20,7 @@ const addStatsRoute = (app) => {
     // add the stats route
     const defaultClassList = Object.keys(schemaDefn.models).filter(
         (name) => !schemaDefn.models[name].isAbstract
-            && schemaDefn.descendants(name).length === 0 // terminal classes only
+            && schemaDefn.children(name).length === 0 // terminal classes only
             && !schemaDefn.models[name].embedded,
     );
     app.router.get('/stats', async (req, res, next) => {
