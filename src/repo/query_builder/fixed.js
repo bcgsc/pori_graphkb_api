@@ -452,9 +452,6 @@ const keywordSearch = ({
     if (![OPERATORS.CONTAINSTEXT, OPERATORS.EQ].includes(operator)) {
         throw new ValidationError(`Invalid operator (${operator}). Keyword search only accepts = or CONTAINSTEXT`);
     }
-    if (!model) {
-        throw new ValidationError('Invalid target class');
-    }
     if (model.isEdge) {
         throw new ValidationError(`Cannot keyword search edge classes (${target})`);
     }
