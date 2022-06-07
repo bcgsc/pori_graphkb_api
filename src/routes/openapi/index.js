@@ -350,7 +350,7 @@ const generateSwaggerSpec = (schema, metadata) => {
         }
         if (model.isAbstract) {
             // should inherit from its concrete subclasses instead
-            const anyOf = schema.descendants(model.name).map((m) => ({ $ref: `#/components/schemas/${m}` }));
+            const anyOf = schema.children(model.name).map((m) => ({ $ref: `#/components/schemas/${m}` }));
             docs.components.schemas[model.name].anyOf = anyOf;
             continue;
         }
