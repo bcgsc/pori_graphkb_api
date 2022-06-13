@@ -26,6 +26,7 @@ const {
     addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute,
 } = require('./routes');
 const config = require('./config');
+const packageLockJson = require('../package-lock.json');
 
 // https://github.com/nodejs/node-v0.x-archive/issues/9075
 http.globalAgent.keepAlive = true;
@@ -161,6 +162,7 @@ class AppServer {
             res.status(HTTP_STATUS.OK).json({
                 api: process.env.npm_package_version,
                 db: GKB_DB_NAME,
+                parser: packageLockJson.packages['node_modules/@bcgsc-pori/graphkb-parser'].version,
                 schema: getLoadVersion().version,
             });
         });

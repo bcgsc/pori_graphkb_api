@@ -137,6 +137,7 @@ const GET_VERSION = {
                         properties: {
                             api: { description: 'Version of the API', example: '0.6.3', type: 'string' },
                             db: { description: 'Name of the database the API is connected to', example: 'kbapi_v0.6.3', type: 'string' },
+                            parser: { description: 'Version of the variant parser package', example: '2.0.0', type: 'string' },
                             schema: { description: 'Version of the schema package used to build the database', example: '1.2.1', type: 'string' },
                         },
                         type: 'object',
