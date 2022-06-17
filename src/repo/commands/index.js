@@ -1,10 +1,11 @@
 const { create, createUser } = require('./create');
 const {
+    fetchDisplayName,
     getUserByName,
     QUERY_LIMIT,
     RELATED_NODE_DEPTH,
     select,
-    fetchDisplayName,
+    selectCounts,
 } = require('./select');
 const { remove, update } = require('./update');
 
@@ -17,5 +18,6 @@ module.exports = {
     getUserByName,
     remove,
     select,
+    selectCounts,
     update,
 };
