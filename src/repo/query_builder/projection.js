@@ -1,6 +1,6 @@
 const { merge } = require('lodash');
 const {
-    error: { AttributeError },
+    ValidationError,
     schema: schemaDefn,
 } = require('@bcgsc-pori/graphkb-schema');
 
@@ -36,22 +36,21 @@ const nestedProjection = (initialDepth, excludeHistory = true) => {
  * @param {string} direction the edge direction
  * @param {*} opt pass-through optins to hand off to projectionFromProperties
  */
-const projectEdge = (model, direction, opt) => {
+const projectEdge = (modelName, direction, opt) => {
     const target = direction === 'out'
         ? 'in'
         : 'out';
+    const model = schemaDefn.get(modelName);
 
     const edgeProjection = projectionFromProperties(
-        Object.values(model.queryProperties).filter((p) => !['out', 'in'].includes(p.name)),
+        Object.values(schemaDefn.queryableProperties(modelName)).filter((p) => !['out', 'in'].includes(p.name)),
         { ...opt, isEdge: true },
     ).join(', ');
-    const targetModel = schemaDefn.schema[
-        (direction === 'out'
-            ? model.targetModel
-            : model.sourceModel) || 'V'
-    ];
+    const targetModel = (direction === 'out'
+        ? model.targetModel
+        : model.sourceModel) || 'V';
     const targetProjection = projectionFromProperties(
-        Object.values(targetModel.queryProperties),
+        Object.values(schemaDefn.queryableProperties(targetModel)),
         { ...opt, isEdge: false, linkDepth: (opt.linkDepth || 1) - 1 },
     ).join(', ');
     const edgeString = model.name === 'E'
@@ -62,6 +61,7 @@ const projectEdge = (model, direction, opt) => {
 
 /**
  * calculate the SQL (orientdb) projection from an list of properties record
+ * @param {PropertyDefinition[]} queryableProperties
  * @param {boolean} isEdge is the starting record an edge?
  * @param {string} edges list of edge classes to expand on
  * @param {Number} depth distance to expand related records
@@ -69,7 +69,7 @@ const projectEdge = (model, direction, opt) => {
  * @param {Array.<string>} exclude list of properties to exclude in expanded records
  * @param {Array.<string>} terminal list of properties that should not have their edges/links expanded
  */
-const projectionFromProperties = (queryProperties, {
+const projectionFromProperties = (queryableProperties, {
     isEdge = false,
     depth = 1,
     edges = null,
@@ -79,7 +79,7 @@ const projectionFromProperties = (queryProperties, {
 } = {}) => {
     const properties = ['@class', '@rid', '*'];
 
-    for (const prop of queryProperties.sort((p1, p2) => p1.name.localeCompare(p2.name))) {
+    for (const prop of queryableProperties.sort((p1, p2) => p1.name.localeCompare(p2.name))) {
         if (
             exclude.includes(prop.name)
             || (prop.name === 'deletedBy' && !history)
@@ -92,11 +92,11 @@ const projectionFromProperties = (queryProperties, {
             let { linkedClass } = prop;
 
             if (prop.type === 'link' || prop.type === 'linkset') {
-                linkedClass = linkedClass || schemaDefn.schema.V;
+                linkedClass = linkedClass || 'V';
             }
 
-            if (linkedClass && !linkedClass.embedded) {
-                const innerQueryProps = Object.values(linkedClass.queryProperties);
+            if (linkedClass && !schemaDefn.get(linkedClass).embedded) {
+                const innerQueryProps = Object.values(schemaDefn.queryableProperties(linkedClass));
                 const innerProps = projectionFromProperties(
                     terminal.includes(prop.name)
                         ? []
@@ -124,7 +124,7 @@ const projectionFromProperties = (queryProperties, {
             if (edges.length) {
                 for (const edge of edges) {
                     properties.push(projectEdge(
-                        schemaDefn.schema[edge],
+                        edge,
                         direction,
                         {
                             depth,
@@ -136,7 +136,7 @@ const projectionFromProperties = (queryProperties, {
                 }
             } else {
                 properties.push(projectEdge(
-                    schemaDefn.schema.E,
+                    'E',
                     direction,
                     {
                         depth,
@@ -153,16 +153,16 @@ const projectionFromProperties = (queryProperties, {
 
 /**
  * For a given model expand the current record for a specific depth
- * @param {ClassModel} model
+ * @param {ClassDefinition} model
  * @param {*} opt options to pass-through to projectionFromProperties
  */
-const nonSpecificProjection = (model, opt) => {
+const nonSpecificProjection = (modelName, opt) => {
     const props = projectionFromProperties(
-        Object.values(model.queryProperties),
+        Object.values(schemaDefn.queryableProperties(modelName)),
         {
             edges: null,
             ...opt,
-            isEdge: model.isEdge,
+            isEdge: schemaDefn.get(modelName).isEdge,
         },
     );
     return props
@@ -174,13 +174,13 @@ const nonSpecificProjection = (model, opt) => {
  * Convert a list of property names to a nested object representing the projection of
  * these properties. Validates the property list against the input model
  *
- * @param {ClassModel} model the model to validate the property list against
+ * @param {string} model the model to validate the property list against
  * @param {Array.<string>} properties the list of properties to be parsed/validated
  * @param {boolean} allowDirectEmbedded flag to indicate if an error should be throw for embedded props without a subprop selection
  */
-const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
+const parsePropertyList = (modelName, properties, allowDirectEmbedded = false) => {
     const projections = {};
-    const propModels = getQueryableProps(model, allowDirectEmbedded);
+    const propModels = getQueryableProps(modelName, allowDirectEmbedded);
 
     for (const prop of properties) {
         const [directProp] = prop.trim().split('.');
@@ -188,14 +188,14 @@ const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
         projections[directProp] = projections[directProp] || {};
 
         if (!propModel) {
-            throw new AttributeError(`property ${directProp} does not exist or cannot be accessed on the model ${model.name}`);
+            throw new ValidationError(`property ${directProp} does not exist or cannot be accessed on the model ${modelName}`);
         }
 
         const nestedProps = prop.trim().slice(directProp.length + 1);
 
         if (nestedProps) {
             if (!propModel.linkedClass) {
-                throw new AttributeError(`Cannot return nested property (${prop}), the property (${propModel.name}) does not have a linked class`);
+                throw new ValidationError(`Cannot return nested property (${prop}), the property (${propModel.name}) does not have a linked class`);
             }
             const innerProjection = parsePropertyList(propModel.linkedClass, [nestedProps]);
             merge(projections[directProp], innerProjection);
@@ -204,6 +204,13 @@ const parsePropertyList = (model, properties, allowDirectEmbedded = false) => {
     return projections;
 };
 
+/**
+ *
+ * @param {ClassDefinition} model
+ * @param {string[]} properties
+ * @param {boolean} allowDirectEmbedded
+ * @returns
+ */
 const propsToProjection = (model, properties, allowDirectEmbedded = false) => {
     const projection = parsePropertyList(model, properties, allowDirectEmbedded);
 

@@ -1,11 +1,7 @@
 const HTTP_STATUS = require('http-status-codes');
 
 const {
-    schema: {
-        schema: {
-            Vocabulary, User, UserGroup, Source,
-        },
-    },
+    schema,
 } = require('@bcgsc-pori/graphkb-schema');
 
 const { checkClassPermissions } = require('../../src/middleware/auth');
@@ -32,7 +28,7 @@ describe('checkClassPermissions', () => {
 
     describe('users', () => {
         beforeEach(() => {
-            req = { model: User };
+            req = { model: schema.models.User };
         });
 
         describe('create', () => {
@@ -167,7 +163,7 @@ describe('checkClassPermissions', () => {
 
     describe('usergroups', () => {
         beforeEach(() => {
-            req = { model: UserGroup };
+            req = { model: schema.models.UserGroup };
         });
 
         describe('create', () => {
@@ -302,7 +298,7 @@ describe('checkClassPermissions', () => {
 
     describe('vocabulary', () => {
         beforeEach(() => {
-            req = { model: Vocabulary };
+            req = { model: schema.models.Vocabulary };
         });
 
         describe('create', () => {
@@ -434,7 +430,7 @@ describe('checkClassPermissions', () => {
 
     describe('source', () => {
         beforeEach(() => {
-            req = { model: Source };
+            req = { model: schema.models.Source };
         });
 
         describe('create', () => {

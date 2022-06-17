@@ -1,7 +1,7 @@
 const {
-    error: { AttributeError },
-    constants: { PERMISSIONS },
-    util: { castToRID },
+    ValidationError,
+    PERMISSIONS,
+    util,
     schema,
 } = require('@bcgsc-pori/graphkb-schema');
 const { RecordID: RID } = require('orientjs');
@@ -86,7 +86,7 @@ const groupRecordsBy = (records, keysList, opt = {}) => {
                 ? record[nestedProperty]
                 : record;
         } else {
-            throw new AttributeError('grouping is not unique. Must aggregate for non-unique groupings');
+            throw new ValidationError('grouping is not unique. Must aggregate for non-unique groupings');
         }
     }
     return nested;
@@ -108,7 +108,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
 
     if (user) {
         for (const group of user.groups) {
-            allGroups.add(castToRID(group).toString());
+            allGroups.add(util.castToRID(group).toString());
 
             for (const [cls, permissions] of Object.entries(group.permissions || {})) {
                 if (permissions & PERMISSIONS.READ) {
@@ -132,7 +132,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
             }
 
             for (let group of record.groupRestrictions || []) {
-                group = castToRID(group).toString();
+                group = util.castToRID(group).toString();
 
                 if (allGroups.has(group)) {
                     return true;
@@ -146,7 +146,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
     while (queue.length > 0) {
         const curr = queue.shift(); // remove the first element from the list
         const currRID = curr['@rid']
-            ? castToRID(curr['@rid'])
+            ? util.castToRID(curr['@rid'])
             : null;
 
         if (visited.has(curr)) { // avoid infinite look from cycles
@@ -154,10 +154,10 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
         }
         visited.add(curr);
         const keys = Array.from(Object.keys(curr));
-        const model = curr['@class'] && schema.schema[curr['@class']];
-        const queryProperties = model
-            ? model.queryProperties
-            : null;
+        const modelName = schema.has(curr['@class'])
+            ? curr['@class']
+            : 'V';
+        const queryableProperties = schema.queryableProperties(modelName);
 
         for (const attr of keys) {
             const value = curr[attr];
@@ -165,7 +165,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
             if (attr === '@type' || attr === '@version' || attr.startsWith('_$')) {
                 delete curr[attr];
             } else if (attr === 'history' && history && value) {
-                curr[attr] = castToRID(value);
+                curr[attr] = util.castToRID(value);
             } else if (value instanceof RID) {
                 if (value.cluster < 0) { // abstract, remove
                     delete curr[attr];
@@ -193,8 +193,8 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
                         }
                         if (edgeCheck.out
                         && edgeCheck.in
-                        && castToRID(edgeCheck.out).toString() !== currRID.toString()
-                        && castToRID(edgeCheck.in).toString() !== currRID.toString()
+                        && util.castToRID(edgeCheck.out).toString() !== currRID.toString()
+                        && util.castToRID(edgeCheck.in).toString() !== currRID.toString()
                         ) {
                             continue;
                         } else if (!accessOk(edge)) {
@@ -205,7 +205,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
                     }
                     curr[attr] = arr;
                 }
-            } else if (value === null && queryProperties && !queryProperties[attr]) {
+            } else if (value === null && queryableProperties && !queryableProperties[attr]) {
                 delete curr[attr];
             }
         }

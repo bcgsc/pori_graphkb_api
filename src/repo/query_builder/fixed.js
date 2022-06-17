@@ -7,8 +7,8 @@
  * @ignore
  */
 const {
-    util: { castToRID, looksLikeRID },
-    error: { AttributeError }, schema: { schema },
+    util,
+    ValidationError, schema: schemaDefn,
 } = require('@bcgsc-pori/graphkb-schema');
 const {
     parseVariant,
@@ -17,7 +17,13 @@ const {
 const { quoteWrap } = require('../util');
 
 const {
-    MAX_TRAVEL_DEPTH, MAX_NEIGHBORS, DEFAULT_NEIGHBORS, OPERATORS, MIN_WORD_SIZE, SIMILARITY_EDGES, TREE_EDGES,
+    MAX_TRAVEL_DEPTH,
+    MAX_NEIGHBORS,
+    DEFAULT_NEIGHBORS,
+    OPERATORS,
+    MIN_WORD_SIZE,
+    SIMILARITY_EDGES,
+    TREE_EDGES,
 } = require('./constants');
 const { castRangeInt } = require('./util');
 
@@ -42,9 +48,9 @@ const treeQuery = (opt) => {
         target = rawTarget;
 
     if (Array.isArray(rawTarget)) {
-        target = `[${rawTarget.map(castToRID).map((rid) => rid.toString()).join(', ')}]`;
-    } else if (schema[target] === undefined) {
-        throw new AttributeError(`Invalid target class (${target})`);
+        target = `[${rawTarget.map(util.castToRID).map((rid) => rid.toString()).join(', ')}]`;
+    } else if (schemaDefn.has(target) === undefined) {
+        throw new ValidationError(`Invalid target class (${target})`);
     } else {
         const { query, params: whereParams } = filters.toString(paramIndex);
         target = `(SELECT * FROM ${target} WHERE ${query})`;
@@ -52,7 +58,7 @@ const treeQuery = (opt) => {
     }
 
     if (!['out', 'in'].includes(direction)) {
-        throw new AttributeError(`direction (${direction}) must be in or out`);
+        throw new ValidationError(`direction (${direction}) must be in or out`);
     }
 
     if (disambiguate) {
@@ -81,13 +87,13 @@ const neighborhood = ({
 }) => {
     // check the edges are valid edge names
     for (const edge of edges) {
-        if (!schema.get(edge)) {
-            throw new AttributeError(`Invalid edge parameter (${edge})`);
+        if (!schemaDefn.get(edge)) {
+            throw new ValidationError(`Invalid edge parameter (${edge})`);
         }
     }
 
-    if (schema[target] === undefined) {
-        throw new AttributeError(`Invalid target class (${target})`);
+    if (!schemaDefn.has(target)) {
+        throw new ValidationError(`Invalid target class (${target})`);
     }
     const depth = castRangeInt(depthIn || DEFAULT_NEIGHBORS, 0, MAX_NEIGHBORS);
 
@@ -99,7 +105,7 @@ RETURN DISTINCT $pathElements)`;
     return { params, query: statement };
 };
 
-const recordsAsTarget = (...target) => `[${target.map((p) => castToRID(p).toString()).join(', ')}]`;
+const recordsAsTarget = (...target) => `[${target.map((p) => util.castToRID(p).toString()).join(', ')}]`;
 
 const similarTo = ({
     target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = TREE_EDGES, matchType, ...rest
@@ -109,16 +115,16 @@ const similarTo = ({
         params = {};
 
     for (const edge of [...treeEdges, ...edges]) {
-        if (!schema[edge]) {
-            throw new AttributeError(`unrecognized edge class (${edge})`);
+        if (!schemaDefn.has(edge)) {
+            throw new ValidationError(`unrecognized edge class (${edge})`);
         }
     }
 
     if (!edges.length) {
-        throw new AttributeError('Must specify 1 or more edge types to follow');
+        throw new ValidationError('Must specify 1 or more edge types to follow');
     }
     if (Object.keys(rest).length) {
-        throw new AttributeError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
+        throw new ValidationError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
     }
     if (Array.isArray(target)) {
         initialQuery = recordsAsTarget(...target);
@@ -151,13 +157,13 @@ const similarTo = ({
     let query = `SELECT expand(rid) FROM (SELECT distinct(@rid) as rid FROM (${innerQuery}))`;
 
     if (matchType) {
-        if (!schema[matchType]) {
-            throw new AttributeError(`Did not recognize type matchType (${matchType})`);
+        if (!schemaDefn.has(matchType)) {
+            throw new ValidationError(`Did not recognize type matchType (${matchType})`);
         }
         if (!history) {
-            query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL AND @this INSTANCEOF ${schema[matchType].name}`;
+            query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL AND @this INSTANCEOF ${schemaDefn.get(matchType).name}`;
         } else {
-            query = `SELECT * FROM (${query}) WHERE @this INSTANCEOF ${schema[matchType].name}`;
+            query = `SELECT * FROM (${query}) WHERE @this INSTANCEOF ${schemaDefn.get(matchType).name}`;
         }
     } else if (!history) {
         query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL`;
@@ -310,7 +316,7 @@ const singleKeywordSearch = ({
     targetQuery,
     ...opt
 }) => {
-    const model = schema[target];
+    const model = schemaDefn.get(target);
 
     if (model.name === 'EvidenceLevel') {
         return `SELECT *
@@ -318,7 +324,7 @@ const singleKeywordSearch = ({
         WHERE name ${operator} :${param}
             OR sourceId ${operator} :${param}
             OR source.name ${operator} :${param}`;
-    } if (model.inherits.includes('Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
+    } if (schemaDefn.inheritsFrom(model.name, 'Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
         return `SELECT *
         FROM ${targetQuery || model.name}
         WHERE name ${operator} :${param}
@@ -360,7 +366,7 @@ const singleKeywordSearch = ({
                 )
         `;
         return query;
-    } if (model.inherits.includes('Variant') || model.name === 'Variant') {
+    } if (schemaDefn.inheritsFrom(model.name, 'Variant') || model.name === 'Variant') {
         const subquery = singleKeywordSearch({
             ...opt,
             operator,
@@ -398,17 +404,17 @@ const edgeQuery = ({
 }) => {
     // if either filter.in or filter.out is given use those
     if (!vertexFilter) {
-        throw new AttributeError('edge query must be filtered by a vertex');
+        throw new ValidationError('edge query must be filtered by a vertex');
     }
     if (!['out', 'in', 'both'].includes(direction)) {
-        throw new AttributeError(`direction (${direction}) must be one of: in, out, both`);
+        throw new ValidationError(`direction (${direction}) must be one of: in, out, both`);
     }
-    if (!schema[target] || !schema[target].isEdge) {
-        throw new AttributeError(`target (${target}) must be an edge class`);
+    if (!schemaDefn.has(target) || !schemaDefn.get(target).isEdge) {
+        throw new ValidationError(`target (${target}) must be an edge class`);
     }
 
     try {
-        const rid = castToRID(vertexFilter);
+        const rid = util.castToRID(vertexFilter);
         return {
             params: {},
             query: `SELECT expand(${direction}E('${target}')) FROM [${rid}]`,
@@ -417,7 +423,7 @@ const edgeQuery = ({
 
     if (Array.isArray(vertexFilter)) {
         try {
-            const rid = vertexFilter.map(castToRID);
+            const rid = vertexFilter.map(util.castToRID);
             return {
                 params: {},
                 query: `SELECT expand(${direction}E('${target}')) FROM [${rid.join(', ')}]`,
@@ -441,20 +447,17 @@ const keywordSearch = ({
     subQueryParser,
     ...opt
 }) => {
-    const model = schema[target];
+    const model = schemaDefn.get(target);
 
     if (![OPERATORS.CONTAINSTEXT, OPERATORS.EQ].includes(operator)) {
-        throw new AttributeError(`Invalid operator (${operator}). Keyword search only accepts = or CONTAINSTEXT`);
-    }
-    if (!model) {
-        throw new AttributeError('Invalid target class');
+        throw new ValidationError(`Invalid operator (${operator}). Keyword search only accepts = or CONTAINSTEXT`);
     }
     if (model.isEdge) {
-        throw new AttributeError(`Cannot keyword search edge classes (${target})`);
+        throw new ValidationError(`Cannot keyword search edge classes (${target})`);
     }
 
     if (!keyword) {
-        throw new AttributeError('Missing required keyword parameter');
+        throw new ValidationError('Missing required keyword parameter');
     }
 
     // remove any duplicate words
@@ -463,7 +466,7 @@ const keywordSearch = ({
         : [keyword.trim().toLowerCase()];
 
     if (wordList.length < 1) {
-        throw new AttributeError('missing keywords');
+        throw new ValidationError('missing keywords');
     }
     const keywords = Array.from(new Set(wordList)).filter((k) => k).sort();
 
@@ -472,7 +475,7 @@ const keywordSearch = ({
     if (keywords.length === 1) {
         const [word] = keywords;
 
-        if (looksLikeRID(word)) {
+        if (util.looksLikeRID(word)) {
             return { params: {}, query: `SELECT FROM ${recordsAsTarget(word)}` };
         } if (target.endsWith('Variant')) {
             try {
@@ -541,7 +544,7 @@ class FixedSubquery {
         } if (queryType === 'edge') {
             return new this(queryType, edgeQuery, { ...opt, subQueryParser });
         }
-        throw new AttributeError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
+        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
     }
 }
 

@@ -1,6 +1,6 @@
 const { OrientDBClient } = require('orientjs');
 
-const { util: { timeStampNow }, schema } = require('@bcgsc-pori/graphkb-schema');
+const { util } = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('./logging');
 const { loadSchema, createSchema } = require('./schema');
@@ -134,7 +134,7 @@ const connectDB = async ({
             await createUser(session, {
                 existsOk: true,
                 groupNames: ['admin'],
-                signedLicenseAt: timeStampNow(),
+                signedLicenseAt: util.timeStampNow(),
                 userName: process.env.USER,
             });
         } catch (err) {
@@ -165,7 +165,7 @@ const connectDB = async ({
     }
     session.close();
     // create the admin user
-    return { pool, schema: schema.models, server };
+    return { pool, server };
 };
 
 /**
@@ -173,7 +173,11 @@ const connectDB = async ({
  */
 const incrementUserVisit = async (db, username) => {
     const userRecord = await getUserByName(db, username);
-    const changes = { firstLoginAt: timeStampNow(), lastLoginAt: timeStampNow(), loginCount: 1 };
+    const changes = {
+        firstLoginAt: util.timeStampNow(),
+        lastLoginAt: util.timeStampNow(),
+        loginCount: 1,
+    };
 
     if (userRecord.loginCount) {
         changes.loginCount = userRecord.loginCount + 1;
@@ -183,9 +187,9 @@ const incrementUserVisit = async (db, username) => {
     }
     await update(db, {
         changes,
-        model: schema.models.User,
+        modelName: 'User',
         paranoid: false,
-        query: parseRecord(schema.models.User, { '@rid': userRecord['@rid'] }),
+        query: parseRecord('User', { '@rid': userRecord['@rid'] }),
         user: userRecord,
     });
 };

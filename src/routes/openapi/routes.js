@@ -2,7 +2,7 @@
  * Route definition components (components/routes) that cannot be auto generated only from the schema
  * @module app/routes/openapi/routes
  */
-const { schema: { schema } } = require('@bcgsc-pori/graphkb-schema');
+const { schema } = require('@bcgsc-pori/graphkb-schema');
 const { groupableParams } = require('../../repo/commands/select');
 
 const POST_TOKEN = {
@@ -168,7 +168,7 @@ const GET_STATS = {
             name: 'classList',
             schema: {
                 example: 'Statement',
-                pattern: `^(${Object.values(schema).filter((model) => !model.isAbstract).map((model) => model.name).join('|')})+$`,
+                pattern: `^(${schema.getModels().filter((m) => !m.isAbstract).map((model) => model.name).join('|')})+$`,
                 type: 'string',
             },
         },

@@ -6,12 +6,12 @@
  */
 
 const { RID } = require('orientjs');
-const { constants, schema, util: { timeStampNow } } = require('@bcgsc-pori/graphkb-schema');
+const { constants, schema, util } = require('@bcgsc-pori/graphkb-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
 const { logger } = require('./logging');
-const { ClassModel, Property } = require('./model');
+const { createModelInDb, createPropertyInDb, compareToDbClass } = require('./model');
 const { getLoadVersion } = require('./migrate/version');
 const { createUser } = require('./commands');
 
@@ -63,7 +63,7 @@ const createSchemaHistory = async (db) => {
     // now insert the current schema version
     logger.log('info', `Log the current schema version (${version})`);
     await db.insert().into(tableName).set({
-        createdAt: timeStampNow(),
+        createdAt: util.timeStampNow(),
         name,
         url,
         version,
@@ -94,7 +94,7 @@ const generateDefaultGroups = () => {
 };
 
 /**
- * Defines and uilds the schema in the database
+ * Defines and builds the schema in the database
  *
  * @param {orientjs.Db} db the orientjs database connection object
  */
@@ -103,24 +103,24 @@ const createSchema = async (db) => {
     await createSchemaHistory(db);
     // create the permissions class
     logger.log('info', 'create the Permissions class');
-    await ClassModel.create(schema.models.Permissions, db); // (name, extends, clusters, abstract)
+    await createModelInDb('Permissions', db); // (name, extends, clusters, abstract)
     // create the user class
     logger.log('info', 'create the UserGroup class');
-    await ClassModel.create(schema.models.UserGroup, db, { indices: false, properties: false });
+    await createModelInDb('UserGroup', db, { indices: false, properties: false });
     logger.log('info', 'create the User class');
-    await ClassModel.create(schema.models.User, db);
+    await createModelInDb('User', db);
     logger.log('info', 'Add properties to the UserGroup class');
-    await ClassModel.create(schema.models.UserGroup, db, { indices: true, properties: true });
+    await createModelInDb('UserGroup', db, { indices: true, properties: true });
     // modify the existing vertex and edge classes to add the minimum required attributes for tracking etc
     const V = await db.class.get('V');
     await Promise.all(Array.from(
-        Object.values(schema.models.V._properties).filter((p) => !p.name.startsWith('@')),
-        async (prop) => Property.create(prop, V),
+        Object.values(schema.models.V.properties).filter((p) => !p.name.startsWith('@')),
+        async (prop) => createPropertyInDb(prop, V),
     ));
     const E = await db.class.get('E');
     await Promise.all(Array.from(
-        Object.values(schema.models.E._properties).filter((p) => !p.name.startsWith('@')),
-        async (prop) => Property.create(prop, E),
+        Object.values(schema.models.E.properties).filter((p) => !p.name.startsWith('@')),
+        async (prop) => createPropertyInDb(prop, E),
     ));
 
     await Promise.all(Array.from(['E', 'V', 'User'], (cls) => db.index.create({
@@ -132,12 +132,14 @@ const createSchema = async (db) => {
     })));
     logger.log('info', 'defined schema for the major base classes');
     // create the other schema classes
-    const classesByLevel = schema.splitClassLevels();
+    const classesByLevel = schema.splitClassLevels().slice(1);
+
+    const manualClasses = ['Permissions', 'V', 'E', 'User', 'UserGroup'];
 
     for (const classList of classesByLevel) {
-        const toCreate = classList.filter((model) => !['Permissions', 'User', 'UserGroup', 'V', 'E'].includes(model.name));
-        logger.log('info', `creating the classes: ${Array.from(toCreate, (cls) => cls.name).join(', ')}`);
-        await Promise.all(Array.from(toCreate, async (cls) => ClassModel.create(cls, db))); // eslint-disable-line no-await-in-loop
+        const toCreate = classList.filter((c) => !manualClasses.includes(c));
+        logger.log('info', `creating the classes: ${Array.from(toCreate, (cls) => cls).join(', ')}`);
+        await Promise.all(Array.from(toCreate, async (cls) => createModelInDb(cls, db))); // eslint-disable-line no-await-in-loop
     }
 
     // create the default user groups
@@ -145,25 +147,25 @@ const createSchema = async (db) => {
 
     logger.log('info', 'creating the default user groups');
     const defaultGroups = userGroups
-        .map((rec) => schema.models.UserGroup.formatRecord(rec, { addDefaults: true }));
+        .map((rec) => schema.formatRecord('UserGroup', rec, { addDefaults: true }));
 
     await Promise.all(Array.from(defaultGroups, async (x) => db.insert().into('UserGroup').set(x).one()));
 
     logger.info('creating the default user agreement');
     await db.insert().into(schema.models.LicenseAgreement.name).set({
         content: DEFAULT_LICENSE_CONTENT,
-        enactedAt: timeStampNow(),
+        enactedAt: util.timeStampNow(),
     }).one();
 
     // create the default users
     logger.info('create default user: graphkb_importer');
-    await createUser(db, { groupNames: ['manager', 'regular'], signedLicenseAt: timeStampNow(), userName: 'graphkb_importer' });
+    await createUser(db, { groupNames: ['manager', 'regular'], signedLicenseAt: util.timeStampNow(), userName: 'graphkb_importer' });
 
     logger.info('create default user: graphkb_admin');
-    await createUser(db, { groupNames: ['admin', 'manager', 'regular'], signedLicenseAt: timeStampNow(), userName: 'graphkb_admin' });
+    await createUser(db, { groupNames: ['admin', 'manager', 'regular'], signedLicenseAt: util.timeStampNow(), userName: 'graphkb_admin' });
 
     logger.info('create default user: ipr_graphkb_link');
-    await createUser(db, { groupNames: ['readonly'], signedLicenseAt: timeStampNow(), userName: 'ipr_graphkb_link' });
+    await createUser(db, { groupNames: ['readonly'], signedLicenseAt: util.timeStampNow(), userName: 'ipr_graphkb_link' });
 
     logger.log('info', 'Schema is Complete');
 };
@@ -185,15 +187,14 @@ const loadSchema = async (db) => {
         if (/^(O[A-Z]|_)/.exec(cls.name)) { // orientdb builtin classes
             continue;
         }
-        const model = schema.models[cls.name];
 
-        if (model === undefined) {
-            throw new Error(`The class loaded from the database (${model.name}) is not defined in the SCHEMA_DEFN`);
+        if (!schema.has(cls.name)) {
+            throw new Error(`The class loaded from the database (${cls.name}) is not defined in the SCHEMA_DEFN`);
         }
-        ClassModel.compareToDbClass(model, cls); // check that the DB matches the SCHEMA_DEFN
+        compareToDbClass(cls); // check that the DB matches the SCHEMA_DEFN
 
-        if (cls.superClass && !model.inherits.includes(cls.superClass)) {
-            throw new Error(`The class ${model.name} inherits according to the database (${cls.superClass}) does not match those defined by the schema definition: ${schema.models[model.name].inherits}`);
+        if (cls.superClass && !schema.inheritsFrom(cls.name, cls.superClass)) {
+            throw new Error(`The class ${cls.name} inherits according to the database (${cls.superClass}) does not match those defined by the schema definition: ${schema.ancestors(cls.name)}`);
         }
     }
 

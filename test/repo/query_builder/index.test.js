@@ -1,5 +1,3 @@
-const { schema } = require('@bcgsc-pori/graphkb-schema');
-
 const {
     parse, parseRecord,
 } = require('../../../src/repo/query_builder');
@@ -9,7 +7,7 @@ const { stripSQL } = require('./util');
 describe('WrapperQuery.parseRecord', () => {
     test('select basic record', () => {
         const record = { name: 'bob' };
-        const { query, params } = parseRecord(schema.get('User'), record, { history: true }).toString();
+        const { query, params } = parseRecord('User', record, { history: true }).toString();
         expect(query).toEqual('SELECT * FROM User WHERE name = :param0 LIMIT 1000');
         expect(params).toEqual({ param0: 'bob' });
     });
@@ -22,7 +20,7 @@ describe('WrapperQuery.parseRecord', () => {
             untemplatedSeq: 'D',
             untemplatedSeqSize: 1,
         };
-        const { query, params } = parseRecord(schema.get('PositionalVariant'), record, { history: true }).toString();
+        const { query, params } = parseRecord('PositionalVariant', record, { history: true }).toString();
         expect(stripSQL(query)).toEqual(stripSQL(`SELECT * FROM PositionalVariant WHERE
             break1Start.@class = :param0
             AND break1Start.pos = :param1

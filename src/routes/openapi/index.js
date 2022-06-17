@@ -289,7 +289,7 @@ const tagsSorter = (tag1, tag2) => {
 /**
  * Generates the JSON object that represents the openapi specification for this API
  *
- * @param {Object.<string,ClassModel>} schema the database schema loaded from loadSchema
+ * @param {SchemaDefinition} schema the database schema loaded from loadSchema
  * @param {Object} metadata
  * @param {number} metadata.port the port number the API is being served on
  * @param {string} metadata.host the host serving the API
@@ -318,7 +318,7 @@ const generateSwaggerSpec = (schema, metadata) => {
     docs.info.description = about;
 
     // simple routes
-    for (const model of Object.values(schema)) {
+    for (const model of Object.values(schema.models)) {
         if (model.description) {
             docs.tags.push({ description: model.description, name: model.name });
         }
@@ -350,7 +350,7 @@ const generateSwaggerSpec = (schema, metadata) => {
         }
         if (model.isAbstract) {
             // should inherit from its concrete subclasses instead
-            const anyOf = model.subclasses.map((m) => ({ $ref: `#/components/schemas/${m.name}` }));
+            const anyOf = schema.children(model.name).map((m) => ({ $ref: `#/components/schemas/${m}` }));
             docs.components.schemas[model.name].anyOf = anyOf;
             continue;
         }
@@ -438,11 +438,11 @@ const generateSwaggerSpec = (schema, metadata) => {
 
     docs.tags.sort(tagsSorter);
 
-    const vertexTags = Object.values(schema)
+    const vertexTags = Object.values(schema.models)
         .filter((model) => !model.isEdge && model.name !== 'Statement')
         .map((model) => model.name);
 
-    const edgeTags = Object.values(schema)
+    const edgeTags = Object.values(schema.models)
         .filter((model) => model.isEdge)
         .map((model) => model.name);
 

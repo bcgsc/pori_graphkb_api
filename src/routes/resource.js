@@ -2,7 +2,7 @@ const HTTP_STATUS = require('http-status-codes');
 const jc = require('json-cycle');
 const _ = require('lodash');
 
-const { util: { looksLikeRID }, error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
+const { util, ValidationError, schema } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     NoRecordFoundError,
@@ -17,10 +17,10 @@ const { parse } = require('../repo/query_builder');
 const { checkStandardOptions } = require('../repo/query_builder/util');
 const { OPERATORS } = require('../repo/query_builder/constants');
 
-const activeRidQuery = (model, rid, opt = {}) => {
+const activeRidQuery = (modelName, rid, opt = {}) => {
     const query = parse({
         ...opt,
-        filters: { '@this': model.name, operator: OPERATORS.INSTANCEOF },
+        filters: { '@this': modelName, operator: OPERATORS.INSTANCEOF },
         history: false,
         target: [rid],
     });
@@ -41,14 +41,14 @@ const getRoute = (app, model) => {
             const { neighbors = 0, ...extra } = req.query;
 
             if (Object.keys(extra).length > 0) {
-                return next(new AttributeError(`Did not recognize the query parameter: ${Object.keys(extra).sort().join(' ')}`));
+                return next(new ValidationError(`Did not recognize the query parameter: ${Object.keys(extra).sort().join(' ')}`));
             }
             let query;
 
             try {
-                query = activeRidQuery(model, req.params.rid, { neighbors });
+                query = activeRidQuery(model.name, req.params.rid, { neighbors });
             } catch (err) {
-                if (err instanceof AttributeError) {
+                if (err instanceof ValidationError) {
                     return next(err);
                 }
                 logger.log('error', err.stack || err);
@@ -89,7 +89,7 @@ const postRoute = (app, model) => {
         model.routeName,
         async (req, res, next) => {
             if (!_.isEmpty(req.query)) {
-                return next(new AttributeError(
+                return next(new ValidationError(
                     { message: 'No query parameters are allowed for this query type', params: req.query },
                 ));
             }
@@ -103,7 +103,7 @@ const postRoute = (app, model) => {
 
             try {
                 const result = await create(session, {
-                    content: req.body, model, schema: app.schema, user: req.user,
+                    content: req.body, modelName: model.name, user: req.user,
                 });
                 session.close();
                 return res.status(HTTP_STATUS.CREATED).json(jc.decycle({ result }));
@@ -132,15 +132,15 @@ const updateRoute = (app, model) => {
     app.router.patch(
         `${model.routeName}/:rid`,
         async (req, res, next) => {
-            if (!looksLikeRID(req.params.rid, false)) {
-                return next(new AttributeError(
+            if (!util.looksLikeRID(req.params.rid, false)) {
+                return next(new ValidationError(
                     { message: `ID does not look like a valid record ID: ${req.params.rid}` },
                 ));
             }
             const rid = `#${req.params.rid.replace(/^#/, '')}`;
 
             if (!_.isEmpty(req.query)) {
-                return next(new AttributeError(
+                return next(new ValidationError(
                     { message: 'Query parameters are not allowed for this query type', params: req.query },
                 ));
             }
@@ -155,8 +155,8 @@ const updateRoute = (app, model) => {
             try {
                 const result = await update(session, {
                     changes: req.body,
-                    model,
-                    query: activeRidQuery(model, rid),
+                    modelName: model.name,
+                    query: activeRidQuery(model.name, rid),
                     schema: app.schema,
                     user: req.user,
                 });
@@ -183,15 +183,15 @@ const deleteRoute = (app, model) => {
         async (req, res, next) => {
             let { rid } = req.params;
 
-            if (!looksLikeRID(rid, false)) {
-                return next(new AttributeError(
+            if (!util.looksLikeRID(rid, false)) {
+                return next(new ValidationError(
                     { message: `ID does not look like a valid record ID: ${rid}` },
                 ));
             }
             rid = `#${rid.replace(/^#/, '')}`;
 
             if (!_.isEmpty(req.query)) {
-                return next(new AttributeError(
+                return next(new ValidationError(
                     { message: 'No query parameters are allowed for this query type' },
                 ));
             }
@@ -205,8 +205,8 @@ const deleteRoute = (app, model) => {
 
             try {
                 const result = await remove(session, {
-                    model,
-                    query: activeRidQuery(model, rid),
+                    modelName: model.name,
+                    query: activeRidQuery(model.name, rid),
                     user: req.user,
                 });
                 session.close();
@@ -228,7 +228,8 @@ const deleteRoute = (app, model) => {
  * example:
  *      router.route('/feature') = resource({model: <ClassModel>, db: <OrientDB conn>, reqQueryParams: ['source', 'name', 'biotype']});
  */
-const addResourceRoutes = (app, model) => {
+const addResourceRoutes = (app, modelName) => {
+    const model = schema.get(modelName);
     // attach the db model required for checking class permissions
     app.router.use(model.routeName, (req, res, next) => {
         req.model = model;

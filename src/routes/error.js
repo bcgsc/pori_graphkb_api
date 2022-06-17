@@ -1,6 +1,6 @@
 const HTTP_STATUS = require('http-status-codes');
 
-const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
+const { ValidationError } = require('@bcgsc-pori/graphkb-schema');
 
 const {
     DatabaseConnectionError,
@@ -27,7 +27,7 @@ const addErrorRoute = (app) => {
             code = HTTP_STATUS.FORBIDDEN;
         } else if (err instanceof AuthenticationError) {
             code = HTTP_STATUS.UNAUTHORIZED;
-        } else if (err instanceof AttributeError) {
+        } else if (err instanceof ValidationError) {
             code = HTTP_STATUS.BAD_REQUEST;
         } else if (err instanceof NoRecordFoundError) {
             code = HTTP_STATUS.NOT_FOUND;
