@@ -1,5 +1,5 @@
-const { error: { ErrorMixin } } = require('@bcgsc-pori/graphkb-parser');
-const { error: { AttributeError } } = require('@bcgsc-pori/graphkb-schema');
+const { ErrorMixin } = require('@bcgsc-pori/graphkb-parser');
+const { ValidationError } = require('@bcgsc-pori/graphkb-schema');
 
 class ParsingError extends ErrorMixin {}
 
@@ -22,7 +22,6 @@ class DatabaseConnectionError extends ErrorMixin {}
 class DatabaseRequestError extends ErrorMixin {}
 
 module.exports = {
-    AttributeError,
     AuthenticationError,
     ControlledVocabularyError,
     DatabaseConnectionError,
@@ -34,4 +33,5 @@ module.exports = {
     ParsingError,
     PermissionError,
     RecordConflictError,
+    ValidationError,
 };

@@ -7,7 +7,7 @@
 const HTTP_STATUS = require('http-status-codes');
 const jwt = require('jsonwebtoken');
 
-const { constants: { PERMISSIONS } } = require('@bcgsc-pori/graphkb-schema');
+const { PERMISSIONS } = require('@bcgsc-pori/graphkb-schema');
 
 const { PermissionError } = require('../repo/error');
 const { logger } = require('../repo/logging');
@@ -36,7 +36,7 @@ const checkToken = (privateKey) => async (req, res, next) => {
 };
 
 /**
- * Check that the user has permissions for a gicven operation
+ * Check that the user has permissions for a given operation
  */
 const checkUserAccessFor = (user, modelName, operationPermission) => {
     for (const group of user.groups) {
@@ -57,7 +57,7 @@ const checkUserAccessFor = (user, modelName, operationPermission) => {
  * Note that to do this, model and user need to already be assigned to the request
  *
  * @param {GraphKBRequest} req
- * @param {ClassModel} req.model the resolved model for this request
+ * @param {ClassDefinition} req.model the resolved model for this request
  *
  */
 const checkClassPermissions = async (req, res, next) => {

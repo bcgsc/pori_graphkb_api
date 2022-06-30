@@ -4,15 +4,14 @@
 /**
  * @ignore
  */
-const _ = require('lodash');
 
 const { RID } = require('orientjs');
-const { constants, schema: { schema: SCHEMA_DEFN }, util: { timeStampNow } } = require('@bcgsc-pori/graphkb-schema');
+const { constants, schema, util } = require('@bcgsc-pori/graphkb-schema');
 
 constants.RID = RID; // IMPORTANT: Without this all castToRID will do is convert to a string
 
 const { logger } = require('./logging');
-const { ClassModel, Property } = require('./model');
+const { createModelInDb, createPropertyInDb, compareToDbClass } = require('./model');
 const { getLoadVersion } = require('./migrate/version');
 const { createUser } = require('./commands');
 
@@ -24,47 +23,6 @@ const DEFAULT_LICENSE_CONTENT = [
     { content: 'In no event shall Canada\'s Michael Smith Genome Sciences Centre be liable for any damages or other liability to you or any other users of the GraphKB platform. To the maximum extent permitted by law, in no event shall Canada\'s Michael Smith Genome Sciences Centre or any of its affiliates be liable for any special, punitive, indirect, incidental or consequential damages, including but not limited to personal injury, wrongful death, loss of goodwill, loss of use, loss of profits, interruption of service or loss of data, whether in any action in warranty, contract, tort or any other theory of liability (including, but not limited to negligence or fundamental breach), or otherwise arising out of or in any way connected with the use of, reliance on, or the inability to use, the GraphKB platform or any service offered through the GraphKB platform or any material or information contained in, accessed through, or information, products or services obtained through this platform, even if an authorized representative of GraphKB or Canada\'s Michael Smith Genome Sciences Centre is advised of the likelihood or possibility of the same. To the extent any of the above limitations of liability are restricted by applicable federal, state or local law, such limitations shall not apply to the extent of such restrictions.', id: 'limits', label: 'Limitation of Liability' },
     { content: 'Canada\'s Michael Smith Genome Sciences Centre reserves the right, at its sole discretion, to amend these Terms of Use at any time and will update these Terms of Use in the event of any such amendments. Users are expected to periodically check the Terms of Use for any amendments, but Canada\'s Michael Smith Genome Sciences Centre will take reasonable steps to notify users of significant material changes. Users continued use of the platform and/or the services following such changes shall constitute their affirmative acknowledgment of the Terms of Use, the modification, and agreement to abide and be bound by the Terms of Use, as amended.', id: 'terms', label: 'Modification of Terms of Use' },
 ];
-
-/**
- * Split class models into an array or with dependencies
- * will be in an array after the array it depends on
- * @param {Object.<string,ClassModel>} schema mapping of names to class models
- */
-const splitSchemaClassLevels = (schema) => {
-    const ranks = {};
-    const queue = Object.values(schema);
-
-    while (queue.length > 0) {
-        const curr = queue.shift();
-        let dependencies = Array.from(curr.inherits || []);
-
-        for (const prop of Object.values(curr.properties)) {
-            if (prop.linkedClass) {
-                dependencies.push(prop.linkedClass.name);
-            }
-        }
-        dependencies = dependencies.filter((name) => schema[name] !== undefined);
-
-        if (dependencies.length > 0) {
-            if (dependencies.some((name) => ranks[name] === undefined)) {
-                queue.push(curr);
-            } else {
-                ranks[curr.name] = Math.max(...Array.from(dependencies, (name) => ranks[name])) + 1;
-            }
-        } else {
-            ranks[curr.name] = 0;
-        }
-    }
-    const split = [];
-
-    for (const [clsName, rank] of Object.entries(ranks)) {
-        if (split[rank] === undefined) {
-            split[rank] = [];
-        }
-        split[rank].push(schema[clsName]);
-    }
-    return split;
-};
 
 /**
  * Uses a table to track the last version of the schema for this db
@@ -105,7 +63,7 @@ const createSchemaHistory = async (db) => {
     // now insert the current schema version
     logger.log('info', `Log the current schema version (${version})`);
     await db.insert().into(tableName).set({
-        createdAt: timeStampNow(),
+        createdAt: util.timeStampNow(),
         name,
         url,
         version,
@@ -119,7 +77,7 @@ const generateDefaultGroups = () => {
         admin: {}, manager: {}, readonly: {}, regular: {},
     };
 
-    for (const model of Object.values(SCHEMA_DEFN)) {
+    for (const model of Object.values(schema.models)) {
         // The permissions for operations against a class should be the intersection of the
         // exposed routes and the group type
         const { name, permissions } = model;
@@ -136,7 +94,7 @@ const generateDefaultGroups = () => {
 };
 
 /**
- * Defines and uilds the schema in the database
+ * Defines and builds the schema in the database
  *
  * @param {orientjs.Db} db the orientjs database connection object
  */
@@ -145,24 +103,24 @@ const createSchema = async (db) => {
     await createSchemaHistory(db);
     // create the permissions class
     logger.log('info', 'create the Permissions class');
-    await ClassModel.create(SCHEMA_DEFN.Permissions, db); // (name, extends, clusters, abstract)
+    await createModelInDb('Permissions', db); // (name, extends, clusters, abstract)
     // create the user class
     logger.log('info', 'create the UserGroup class');
-    await ClassModel.create(SCHEMA_DEFN.UserGroup, db, { indices: false, properties: false });
+    await createModelInDb('UserGroup', db, { indices: false, properties: false });
     logger.log('info', 'create the User class');
-    await ClassModel.create(SCHEMA_DEFN.User, db);
+    await createModelInDb('User', db);
     logger.log('info', 'Add properties to the UserGroup class');
-    await ClassModel.create(SCHEMA_DEFN.UserGroup, db, { indices: true, properties: true });
+    await createModelInDb('UserGroup', db, { indices: true, properties: true });
     // modify the existing vertex and edge classes to add the minimum required attributes for tracking etc
     const V = await db.class.get('V');
     await Promise.all(Array.from(
-        Object.values(SCHEMA_DEFN.V._properties).filter((p) => !p.name.startsWith('@')),
-        async (prop) => Property.create(prop, V),
+        Object.values(schema.models.V.properties).filter((p) => !p.name.startsWith('@')),
+        async (prop) => createPropertyInDb(prop, V),
     ));
     const E = await db.class.get('E');
     await Promise.all(Array.from(
-        Object.values(SCHEMA_DEFN.E._properties).filter((p) => !p.name.startsWith('@')),
-        async (prop) => Property.create(prop, E),
+        Object.values(schema.models.E.properties).filter((p) => !p.name.startsWith('@')),
+        async (prop) => createPropertyInDb(prop, E),
     ));
 
     await Promise.all(Array.from(['E', 'V', 'User'], (cls) => db.index.create({
@@ -174,13 +132,14 @@ const createSchema = async (db) => {
     })));
     logger.log('info', 'defined schema for the major base classes');
     // create the other schema classes
-    const classesByLevel = splitSchemaClassLevels(
-        _.omit(SCHEMA_DEFN, ['Permissions', 'User', 'UserGroup', 'V', 'E']),
-    );
+    const classesByLevel = schema.splitClassLevels().slice(1);
+
+    const manualClasses = ['Permissions', 'V', 'E', 'User', 'UserGroup'];
 
     for (const classList of classesByLevel) {
-        logger.log('info', `creating the classes: ${Array.from(classList, (cls) => cls.name).join(', ')}`);
-        await Promise.all(Array.from(classList, async (cls) => ClassModel.create(cls, db))); // eslint-disable-line no-await-in-loop
+        const toCreate = classList.filter((c) => !manualClasses.includes(c));
+        logger.log('info', `creating the classes: ${Array.from(toCreate, (cls) => cls).join(', ')}`);
+        await Promise.all(Array.from(toCreate, async (cls) => createModelInDb(cls, db))); // eslint-disable-line no-await-in-loop
     }
 
     // create the default user groups
@@ -188,25 +147,25 @@ const createSchema = async (db) => {
 
     logger.log('info', 'creating the default user groups');
     const defaultGroups = userGroups
-        .map((rec) => SCHEMA_DEFN.UserGroup.formatRecord(rec, { addDefaults: true }));
+        .map((rec) => schema.formatRecord('UserGroup', rec, { addDefaults: true }));
 
     await Promise.all(Array.from(defaultGroups, async (x) => db.insert().into('UserGroup').set(x).one()));
 
     logger.info('creating the default user agreement');
-    await db.insert().into(SCHEMA_DEFN.LicenseAgreement.name).set({
+    await db.insert().into(schema.models.LicenseAgreement.name).set({
         content: DEFAULT_LICENSE_CONTENT,
-        enactedAt: timeStampNow(),
+        enactedAt: util.timeStampNow(),
     }).one();
 
     // create the default users
     logger.info('create default user: graphkb_importer');
-    await createUser(db, { groupNames: ['manager', 'regular'], signedLicenseAt: timeStampNow(), userName: 'graphkb_importer' });
+    await createUser(db, { groupNames: ['manager', 'regular'], signedLicenseAt: util.timeStampNow(), userName: 'graphkb_importer' });
 
-    logger.info('create default user: graphkb_admin');
-    await createUser(db, { groupNames: ['admin', 'manager', 'regular'], signedLicenseAt: timeStampNow(), userName: 'graphkb_admin' });
+    logger.info('create default user: pori_admin');
+    await createUser(db, { groupNames: ['admin', 'manager', 'regular'], signedLicenseAt: util.timeStampNow(), userName: 'pori_admin' });
 
     logger.info('create default user: ipr_graphkb_link');
-    await createUser(db, { groupNames: ['readonly'], signedLicenseAt: timeStampNow(), userName: 'ipr_graphkb_link' });
+    await createUser(db, { groupNames: ['readonly'], signedLicenseAt: util.timeStampNow(), userName: 'ipr_graphkb_link' });
 
     logger.log('info', 'Schema is Complete');
 };
@@ -228,36 +187,33 @@ const loadSchema = async (db) => {
         if (/^(O[A-Z]|_)/.exec(cls.name)) { // orientdb builtin classes
             continue;
         }
-        const model = SCHEMA_DEFN[cls.name];
 
-        if (model === undefined) {
-            throw new Error(`The class loaded from the database (${model.name}) is not defined in the SCHEMA_DEFN`);
+        if (!schema.has(cls.name)) {
+            throw new Error(`The class loaded from the database (${cls.name}) is not defined in the SCHEMA_DEFN`);
         }
-        ClassModel.compareToDbClass(model, cls); // check that the DB matches the SCHEMA_DEFN
+        compareToDbClass(cls); // check that the DB matches the SCHEMA_DEFN
 
-        if (cls.superClass && !model.inherits.includes(cls.superClass)) {
-            throw new Error(`The class ${model.name} inherits according to the database (${cls.superClass}) does not match those defined by the schema definition: ${SCHEMA_DEFN[model.name].inherits}`);
+        if (cls.superClass && !schema.inheritsFrom(cls.name, cls.superClass)) {
+            throw new Error(`The class ${cls.name} inherits according to the database (${cls.superClass}) does not match those defined by the schema definition: ${schema.ancestors(cls.name)}`);
         }
     }
 
-    for (const cls of Object.values(SCHEMA_DEFN)) {
+    for (const cls of Object.values(schema.models)) {
         if (cls.isAbstract) {
             continue;
         }
         logger.log('verbose', `loaded class: ${cls.name} [${cls.inherits}]`);
     }
     logger.log('verbose', 'linking models');
-    db.schema = SCHEMA_DEFN;
+    db.schema = schema.models;
     // set the default record group
     logger.log('info', 'schema loading complete');
-    return SCHEMA_DEFN;
 };
 
 module.exports = {
     DEFAULT_LICENSE_CONTENT,
-    SCHEMA_DEFN,
     createSchema,
     generateDefaultGroups,
     loadSchema,
-    splitSchemaClassLevels,
+
 };

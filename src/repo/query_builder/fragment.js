@@ -1,6 +1,6 @@
 const { RecordID: RID } = require('orientjs');
 
-const { error: { AttributeError }, schema: { schema }, util: { castToRID } } = require('@bcgsc-pori/graphkb-schema');
+const { ValidationError, schema, util } = require('@bcgsc-pori/graphkb-schema');
 
 const { OPERATORS, PARAM_PREFIX } = require('./constants');
 const { FixedSubquery } = require('./fixed');
@@ -40,7 +40,7 @@ class Comparison {
         const validateValue = (value) => {
             if (value !== null) {
                 if (prop.choices && !prop.choices.includes(value)) {
-                    throw new AttributeError(`Expect the property (${prop.name}) to be restricted to enum values but found: ${value}`);
+                    throw new ValidationError(`Expect the property (${prop.name}) to be restricted to enum values but found: ${value}`);
                 }
             }
 
@@ -51,12 +51,12 @@ class Comparison {
         };
 
         if (this.length && [...NUMBER_ONLY_OPERATORS, OPERATORS.EQ, OPERATORS.NE].includes(this.operator)) {
-            throw new AttributeError('The length comparison can only be used with number values');
+            throw new ValidationError('The length comparison can only be used with number values');
         }
 
         if (NUMBER_ONLY_OPERATORS.includes(this.operator)) {
             if (prop.iterable || this.valueIsIterable) {
-                throw new AttributeError(
+                throw new ValidationError(
                     `Non-equality operator (${
                         this.operator
                     }) cannot be used in conjunction with an iterable property or value (${
@@ -66,7 +66,7 @@ class Comparison {
             }
         } else if (this.operator === OPERATORS.IS) {
             if (this.value !== null) {
-                throw new AttributeError(`IS operator (${
+                throw new ValidationError(`IS operator (${
                     this.operator
                 }) can only be used on prop (${
                     prop.name
@@ -77,7 +77,7 @@ class Comparison {
         }
 
         if (this.operator === OPERATORS.CONTAINS && !prop.iterable) {
-            throw new AttributeError(
+            throw new ValidationError(
                 `CONTAINS can only be used with iterable properties (${
                     prop.name
                 }). To check for a substring, use CONTAINSTEXT instead`,
@@ -86,14 +86,14 @@ class Comparison {
 
         if (this.valueIsIterable) {
             if (this.operator === OPERATORS.CONTAINS) {
-                throw new AttributeError(
+                throw new ValidationError(
                     `CONTAINS should be used with non-iterable values (${
                         prop.name
                     }). To compare two interables for intersecting values use CONTAINSANY or CONTAINSALL instead`,
                 );
             }
             if (this.operator === OPERATORS.EQ && !prop.iterable) {
-                throw new AttributeError(
+                throw new ValidationError(
                     `Using a direct comparison (${
                         this.operator
                     }) of a non-iterable property (${
@@ -102,7 +102,7 @@ class Comparison {
                 );
             }
         } else if (this.operator === OPERATORS.IN) {
-            throw new AttributeError('IN should only be used with iterable values');
+            throw new ValidationError('IN should only be used with iterable values');
         }
 
         // cast values and check types
@@ -115,21 +115,21 @@ class Comparison {
         } else if (this.value !== null) {
             this.value = validateValue(this.value);
         } else if (this.operator !== OPERATORS.EQ && this.operator !== OPERATORS.IS) {
-            throw new AttributeError(`Invalid operator (${this.operator}) used for NULL comparison`);
+            throw new ValidationError(`Invalid operator (${this.operator}) used for NULL comparison`);
         }
     }
 
     /**
-     * @param {ClassModel} model the starting model
+     * @param {string} modelName the starting model
      * @param {object} opt the JSON representation to be parsed
      *
      * @returns {Comparison} the parsed object
      */
-    static parse(model, {
+    static parse(modelName, {
         operator: inputOperator, negate = false, ...rest
     }) {
         if (Object.keys(rest).length === 0) {
-            throw new AttributeError('Missing the property name for the comparison');
+            throw new ValidationError('Missing the property name for the comparison');
         }
         let [name] = Object.keys(rest);
         const isLength = name.endsWith('.length');
@@ -139,13 +139,13 @@ class Comparison {
         }
         let value = rest[name];
 
-        const properties = getQueryableProps(model);
+        const properties = getQueryableProps(modelName);
         const prop = name === '@this'
-            ? { choices: Object.values(schema).map((m) => m.name) }
+            ? { choices: Object.values(schema.models).map((m) => m.name) }
             : properties[name];
 
         if (!prop) {
-            throw new AttributeError(`The property (${name}) does not exist on the model (${model.name})`);
+            throw new ValidationError(`The property (${name}) does not exist on the model (${modelName})`);
         }
 
         if (typeof value === 'object'
@@ -176,7 +176,7 @@ class Comparison {
         const operator = inputOperator || defaultOperator;
 
         if (!Object.values(OPERATORS).includes(operator) || operator === OPERATORS.OR || operator === OPERATORS.AND) {
-            throw new AttributeError(
+            throw new ValidationError(
                 `Invalid operator (${
                     operator
                 }). Must be one of (${
@@ -186,7 +186,7 @@ class Comparison {
         }
 
         if (name === '@this' && operator !== OPERATORS.INSTANCEOF) {
-            throw new AttributeError(`Only the INSTANCEOF operator is valid to use with @this (${operator})`);
+            throw new ValidationError(`Only the INSTANCEOF operator is valid to use with @this (${operator})`);
         }
 
         const result = new this({
@@ -266,17 +266,17 @@ class Clause {
         this.filters = filters;
     }
 
-    static parse(model, content) {
+    static parse(modelName, content) {
         if (Object.keys(content).length !== 1) {
-            throw new AttributeError(`Filter clauses must be an object with a single AND or OR key. Found multiple keys (${Object.keys(content)})`);
+            throw new ValidationError(`Filter clauses must be an object with a single AND or OR key. Found multiple keys (${Object.keys(content)})`);
         }
         const [operator] = Object.keys(content);
 
         if (!['AND', 'OR'].includes(operator)) {
-            throw new AttributeError(`Filter clauses must be an object with a single AND or OR key. Found ${operator}`);
+            throw new ValidationError(`Filter clauses must be an object with a single AND or OR key. Found ${operator}`);
         }
         if (!Array.isArray(content[operator])) {
-            throw new AttributeError('Expected filter clause value to be an array');
+            throw new ValidationError('Expected filter clause value to be an array');
         }
 
         // clause may contain other clauses or direct comparisons
@@ -286,22 +286,22 @@ class Clause {
             let parsed;
 
             try {
-                parsed = this.parse(model, clause);
+                parsed = this.parse(modelName, clause);
             } catch (err) {
                 if (clause.OR || clause.AND) {
                     throw err;
                 }
                 // direct property instead of a nested clause
-                parsed = Comparison.parse(model, clause);
+                parsed = Comparison.parse(modelName, clause);
             }
             parsedFilters.push(parsed);
         }
 
         if (parsedFilters.length === 0) {
-            throw new AttributeError('Clause must contain filters. Cannot be an empty array');
+            throw new ValidationError('Clause must contain filters. Cannot be an empty array');
         }
 
-        return new this(model, operator, parsedFilters);
+        return new this(modelName, operator, parsedFilters);
     }
 
     /**
@@ -390,9 +390,9 @@ class Subquery {
 
         if (Array.isArray(rawTarget)) {
             if (!rawTarget.length) {
-                throw new AttributeError('target cannot be an empty array');
+                throw new ValidationError('target cannot be an empty array');
             }
-            target = rawTarget.map(castToRID);
+            target = rawTarget.map(util.castToRID);
         } else if (typeof target !== 'string') {
             // fixed query. pre-parse the target and filters
             if (typeof rawTarget !== 'string') {
@@ -400,7 +400,7 @@ class Subquery {
             }
         }
         if (Object.keys(rest).length && !queryType) {
-            throw new AttributeError(`Unrecognized query arguments: ${Object.keys(rest).join(',')}`);
+            throw new ValidationError(`Unrecognized query arguments: ${Object.keys(rest).join(',')}`);
         }
 
         if (rawFilters) {
@@ -413,17 +413,16 @@ class Subquery {
             }
         }
 
-        let model = schema[target.isSubquery
+        let model = target.isSubquery
             ? null
-            : target
-        ];
+            : schema.get(target, false);
 
-        if (target.isSubquery && target.target && schema[target.target]) {
-            model = schema[target.target];
+        if (target.isSubquery && target.target && schema.has(target.target)) {
+            model = schema.get(target.target);
         }
 
         if (!model && (!target || !target.isSubquery) && !Array.isArray(target)) {
-            throw new AttributeError(`Invalid target class (${target})`);
+            throw new ValidationError(`Invalid target class (${target})`);
         }
 
         if (model && model.isEdge && queryType !== 'edge' && filters && typeof target === 'string') {
@@ -445,13 +444,13 @@ class Subquery {
             }
         }
 
-        let defaultModel = schema[inputModel] || schema.V;
+        let defaultModel = schema.get(inputModel, false) || schema.models.V;
 
         if (target && target.queryType === 'edge') {
-            defaultModel = schema.E;
+            defaultModel = schema.models.E;
         }
         if (filters) {
-            filters = Clause.parse(model || defaultModel, filters);
+            filters = Clause.parse((model && model.name) || defaultModel.name, filters);
         }
 
         if (queryType) {

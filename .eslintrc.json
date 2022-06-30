@@ -35,7 +35,16 @@
             "unix"
         ],
         "max-classes-per-file": "off",
-        "max-len": "warn",
+        "max-len": [
+            "warn",
+            {
+                "code": 100,
+                "ignoreComments": true,
+                "ignoreStrings": true,
+                "ignoreTemplateLiterals": true,
+                "ignoreTrailingComments": true
+            }
+        ],
         "multiline-ternary": [
             "error",
             "always"

@@ -3,7 +3,7 @@
  */
 const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
-const { util: { timeStampNow } } = require('@bcgsc-pori/graphkb-schema');
+const { util } = require('@bcgsc-pori/graphkb-schema');
 
 const { AppServer } = require('../../src');
 const { createUser } = require('../../src/repo/commands/create');
@@ -642,7 +642,7 @@ describeWithAuth('api crud routes', () => {
                 createUser(session, {
                     existsOk: true,
                     groupNames: ['manager'],
-                    signedLicenseAt: timeStampNow(),
+                    signedLicenseAt: util.timeStampNow(),
                     userName: 'manager',
                 }),
                 createUser(session, {
@@ -729,7 +729,7 @@ describeWithAuth('api crud routes', () => {
 
         describe('POST /sign', () => {
             test('new sign ok', async () => {
-                const before = timeStampNow();
+                const before = util.timeStampNow();
                 const res = await request({
                     headers: {
                         Authorization: unsignedUserToken,
@@ -743,7 +743,7 @@ describeWithAuth('api crud routes', () => {
             });
 
             test('updates the timestamp when the user re-signs', async () => {
-                const before = timeStampNow();
+                const before = util.timeStampNow();
                 const res = await request({
                     headers: {
                         Authorization: managerUserToken,

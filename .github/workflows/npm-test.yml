@@ -29,7 +29,8 @@ jobs:
       - run: npm ci
       - run: npm run lint -- --quiet # errors only, no warnings
         name: eslint
-      - run: npm audit --production --audit-level=high
+      - run: npm audit --production --audit-level high
+        if: ${{ github.base_ref == 'master' }}
       - run: npm run test
         env:
           GKB_DB_HOST: localhost
@@ -39,13 +40,13 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           files: coverage/junit.xml
-        if: matrix.node == 12 && matrix.orientdb == '3.0'
+        if: matrix.node == 16 && matrix.orientdb == '3.0'
       - uses: codecov/codecov-action@v1
         with:
           yml: codecov.yml
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_if_ci_error: true
-        if: matrix.node == 12 && matrix.orientdb == '3.0'
+        if: matrix.node == 16 && matrix.orientdb == '3.0'
   docker:
     runs-on: ubuntu-latest
     name: docker build

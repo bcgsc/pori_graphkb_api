@@ -1,7 +1,8 @@
 const { RecordID: RID } = require('orientjs');
 const {
-    error: { AttributeError },
-    util: { castInteger },
+    ValidationError,
+    util,
+    schema,
 } = require('@bcgsc-pori/graphkb-schema');
 const { MAX_LIMIT, MAX_NEIGHBORS } = require('./constants');
 
@@ -14,16 +15,16 @@ const { MAX_LIMIT, MAX_NEIGHBORS } = require('./constants');
  * @param {?Number} max the maximum allowed value. If null then no maximum is enforced
  *
  * @returns {Number} the cast integer value
- * @throws {AttributeError} on bad input
+ * @throws {ValidationError} on bad input
  */
 const castRangeInt = (value, min, max) => {
-    const castValue = castInteger(value);
+    const castValue = util.castInteger(value);
 
     if (min !== null && castValue < min) {
-        throw new AttributeError(`value (${castValue}) must be greater than or equal to ${min}`);
+        throw new ValidationError(`value (${castValue}) must be greater than or equal to ${min}`);
     }
     if (max !== null && castValue > max) {
-        throw new AttributeError(`value (${castValue}) must be less than or equal to ${max}`);
+        throw new ValidationError(`value (${castValue}) must be less than or equal to ${max}`);
     }
     return castValue;
 };
@@ -36,19 +37,25 @@ const castBoolean = (value) => {
     } if (['f', 'false', '0', 'null'].includes(castValue)) {
         return false;
     }
-    throw new AttributeError(`Expected a boolean value but found ${castValue}`);
+    throw new ValidationError(`Expected a boolean value but found ${castValue}`);
 };
 
-const getQueryableProps = (model, includeEmbedded = false) => {
+/**
+ *
+ * @param {string} modelName
+ * @param {boolean} includeEmbedded
+ * @returns
+ */
+const getQueryableProps = (modelName, includeEmbedded = false) => {
     const allProps = {};
 
-    for (const prop of Object.values(model.queryProperties)) {
+    for (const prop of Object.values(schema.queryableProperties(modelName))) {
         if (prop.linkedClass && !prop.iterable && prop.type.includes('embedded')) {
             if (includeEmbedded) {
                 allProps[prop.name] = prop;
             }
 
-            for (const [subKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass))) {
+            for (const [subKey, subprop] of Object.entries(getQueryableProps(prop.linkedClass, includeEmbedded))) {
                 allProps[`${prop.name}.${subKey}`] = subprop;
             }
         } else {
@@ -93,7 +100,7 @@ const checkStandardOptions = (opt) => {
         options.orderByDirection = `${orderByDirection}`.trim().toUpperCase();
 
         if (!['ASC', 'DESC'].includes(options.orderByDirection)) {
-            throw new AttributeError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
+            throw new ValidationError(`Bad value (${options.orderByDirection}). orderByDirection must be one of ASC or DESC`);
         }
     }
     if (returnProperties) {
