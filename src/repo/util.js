@@ -235,7 +235,7 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
  * 'B'
  */
 const normalizeEvidenceLevel = (displayName) => {
-    const normalize = (displayName) => {
+    const normalize = (levelDisplayName) => {
         // Evidence levels by source
         const cgi = {
             'CPIC guidelines': 'NA', // Not in Cam's code
@@ -263,16 +263,16 @@ const normalizeEvidenceLevel = (displayName) => {
         };
 
         // For cases where displayName is not following pattern
-        switch (displayName) {
+        switch (levelDisplayName) {
             case 'Clinical evidence (MOA)': return 'B';
             case /^tier*/: return 'NA'; // Not currently processed
             default: break;
         }
 
         // Parsing displayName for source and name; '-' for IPR & COSMIC cases
-        const index = displayName.search(/[ -]/);
-        const source = displayName.slice(0, index);
-        const name = displayName.slice(index + 1);
+        const index = levelDisplayName.search(/[ -]/);
+        const source = levelDisplayName.slice(0, index);
+        const name = levelDisplayName.slice(index + 1);
 
         // For cases where displayName is following pattern <source> + <name>
         switch (source) {
