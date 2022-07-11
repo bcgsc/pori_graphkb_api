@@ -223,9 +223,92 @@ const trimRecords = async (recordList, { history = false, user = null } = {}) =>
     return result;
 };
 
+/**
+ * Given an EvidenceLevel's displayName, returns the corresponding normalized EvidenceLevel
+ * Based on Cam Grisdale' script (https://www.bcgsc.ca/jira/browse/GERO-289)
+ *
+ * @param {String} displayName the EvidenceLevel's displayName
+ * @returns {String} the normalized PORI EvidenceLevel
+ *
+ * @example
+ * > normalizeEvidenceLevel('CIViC B3')
+ * 'B'
+ */
+const normalizeEvidenceLevel = (displayName) => {
+    const normalize = (displayName) => {
+        // Evidence levels by source
+        const cgi = {
+            'CPIC guidelines': 'NA', // Not in Cam's code
+            'Case report': 'C',
+            'Early trials': 'B',
+            'European LeukemiaNet guidelines': 'A',
+            'FDA guidelines': 'A',
+            'Late trials': 'B',
+            'NCCN guidelines': 'A',
+            'NCCN/CAP guidelines': 'A',
+            'Pre-clinical': 'D',
+        };
+        const moalmanac = {
+            'Clinical trial': 'B',
+            'FDA-Approved': 'A',
+            Guideline: 'A',
+            Inferential: 'E',
+            Preclinical: 'D',
+        };
+        const oncokb = {
+            1: 'A', '2A': 'A', '2B': 'A', '3A': 'B', '3B': 'B', 4: 'D', R1: 'A', R2: 'B',
+        };
+        const profyle = {
+            1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E',
+        };
+
+        // For cases where displayName is not following pattern
+        switch (displayName) {
+            case 'Clinical evidence (MOA)': return 'B';
+            case /^tier*/: return 'NA'; // Not currently processed
+            default: break;
+        }
+
+        // Parsing displayName for source and name; '-' for IPR & COSMIC cases
+        const index = displayName.search(/[ -]/);
+        const source = displayName.slice(0, index);
+        const name = displayName.slice(index + 1);
+
+        // For cases where displayName is following pattern <source> + <name>
+        switch (source) {
+            case 'CGI': return (name in cgi
+                ? cgi[name]
+                : 'NA');
+            case 'MOAlmanac': return (name in moalmanac
+                ? moalmanac[name]
+                : 'NA');
+            case 'OncoKB': return (name in oncokb
+                ? oncokb[name]
+                : 'NA');
+            case 'PROFYLE': return (name[name.length - 1] in profyle
+                ? profyle[name[name.length - 1]]
+                : 'NA');
+            case 'CIViC': return name[0];
+            case 'IPR': return name;
+            // Not currently processed
+            case 'COSMIC':
+            case 'AMP':
+            case 'cpic':
+            default: return 'NA';
+        }
+    };
+
+    // Makes sure that futur changes in EvidenceLevel never returns incorrect normalized level
+    const normalized = normalize(displayName);
+    return (['A', 'B', 'C', 'D', 'E', 'NA'].includes(normalized)
+        ? normalized
+        : 'NA');
+};
+
 module.exports = {
     groupRecordsBy,
     naturalListJoin,
+    normalizeEvidenceLevel,
     quoteWrap,
     trimRecords,
 };
