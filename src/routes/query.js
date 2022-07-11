@@ -5,6 +5,7 @@ const { logger } = require('../repo/logging');
 const { parse } = require('../repo/query_builder');
 const { select } = require('../repo/commands');
 const { NoRecordFoundError } = require('../repo/error');
+const { normalizeEvidenceLevel } = require('../repo/util');
 
 /**
  * Route to query the db
@@ -45,12 +46,38 @@ const addQueryRoute = (app) => {
             }
 
             try {
-                const result = await select(session, query, { user: req.user });
+                let result = await select(session, query, { user: req.user });
 
                 if (query.expectedCount() !== null && result.length !== query.expectedCount()) {
                     throw new NoRecordFoundError(`expected ${query.expectedCount()} records but only found ${result.length}`);
                 }
                 session.close();
+
+                // TEMPORARY FIX FOR NORMALIZED EVIDENCELEVELS (DKBEV-980)
+                // Start
+                if (body.target === 'EvidenceLevel') {
+                    result = result.map((el) => {
+                        if (el.displayName) {
+                            return { ...el, normalized: normalizeEvidenceLevel(el.displayName) };
+                        }
+                        return el;
+                    });
+                }
+                if (body.target === 'Statement') {
+                    result = result.map((st) => {
+                        if (st.evidenceLevel) {
+                            st.evidenceLevel = st.evidenceLevel.map((el) => {
+                                if (el.displayName) {
+                                    return { ...el, normalized: normalizeEvidenceLevel(el.displayName) };
+                                }
+                                return el;
+                            });
+                        }
+                        return st;
+                    });
+                }
+                // End
+
                 return res.json(jc.decycle({ metadata: { records: result.length }, result }));
             } catch (err) {
                 session.close();
