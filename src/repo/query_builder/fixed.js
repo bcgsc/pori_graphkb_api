@@ -262,7 +262,7 @@ const buildHgvsQuery = (hgvsInput) => {
             continue;
         }
         payload.filters.AND.push({
-            [`${start}.@class`]: parsed[start].toJSON()['@class'],
+            [`${start}.@class`]: parsed[start]['@class'],
         });
 
         if (parsed[start].pos !== undefined) { // ignore cytoband positions for now
