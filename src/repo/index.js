@@ -22,6 +22,7 @@ const createDB = async (server, {
         password: GKB_DBS_PASS,
         username: GKB_DBS_USER,
     });
+
     const db = await server.session({
         name: GKB_DB_NAME,
         password: GKB_DBS_PASS,
@@ -29,6 +30,7 @@ const createDB = async (server, {
     });
 
     try {
+        await db.command('create user admin identified by admin role admin;');
         await db.command('alter database custom standardElementConstraints=false');
         logger.log('verbose', 'create the schema');
         await createSchema(db);
