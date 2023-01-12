@@ -31,11 +31,11 @@ const createDB = async (server, {
 
     try {
         await db.command('alter database custom standardElementConstraints=false');
-        let admin_user_exists = await db.query("select status from OUser where name = 'admin';").all();
-        if (admin_user_exists.length === 0) {
+        const adminUserExists = await db.query('select status from OUser where name = \'admin\';').all();
+
+        if (adminUserExists.length === 0) {
             await db.command('create user admin identified by admin role admin;');
         }
-        //admin_user_exists = await db.command("select status from OUser where name = 'admin';").get();
 
         logger.log('verbose', 'create the schema');
         await createSchema(db);
