@@ -16,6 +16,7 @@ const createDB = async (server, {
     GKB_DB_NAME,
     GKB_DBS_PASS,
     GKB_DBS_USER,
+    GKB_DB_PASS,
 }) => {
     await server.createDatabase({
         name: GKB_DB_NAME,
@@ -34,7 +35,7 @@ const createDB = async (server, {
         const adminUserExists = await db.query('select status from OUser where name = \'admin\';').all();
 
         if (adminUserExists.length === 0) {
-            await db.command('create user admin identified by admin role admin;');
+            await db.command(`create user admin identified by ${GKB_DB_PASS} role admin;`);
         }
 
         logger.log('verbose', 'create the schema');
@@ -110,6 +111,7 @@ const connectDB = async ({
                 GKB_DBS_PASS,
                 GKB_DBS_USER,
                 GKB_DB_NAME,
+                GKB_DB_PASS,
                 GKB_USER_CREATE,
             });
         } else if (GKB_NEW_DB) {
