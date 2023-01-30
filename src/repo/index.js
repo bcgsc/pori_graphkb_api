@@ -13,9 +13,9 @@ const { parseRecord } = require('./query_builder');
  * Create the database and schema
  */
 const createDB = async (server, {
-    GKB_DB_NAME,
     GKB_DBS_PASS,
     GKB_DBS_USER,
+    GKB_DB_NAME,
     GKB_DB_PASS,
 }) => {
     await server.createDatabase({
