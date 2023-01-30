@@ -37,7 +37,7 @@ these please see the [contributing guide](./docs/CONTRIBUTING.md).
 
 Requirements
 
-- orientdb 3.0 or 3.1
+- orientdb 3.0, 3.1, or 3.2
 - node v12, v14 or v16
 
 Clone the repository
