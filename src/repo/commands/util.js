@@ -34,10 +34,14 @@ const wrapIfTypeError = (err) => {
                 const {
                     name, type, message, sql,
                 } = err;
+
                 // error messages exceed 500 lines and are unreadable
-                const trimmed = message.split('\n').filter((line) => !/^\s*[<"].*\s*\.\.\.\s*$/.exec(line)).join('\n');
+                const msg = message
+                    ? message.split('\n').filter((line) => !/^\s*[<"].*\s*\.\.\.\s*$/.exec(line)).join('\n')
+                    : message;
+
                 return new DatabaseRequestError({
-                    message: trimmed, name, sql, type,
+                    message: msg, name, sql, type,
                 });
             }
         }
