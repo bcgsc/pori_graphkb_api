@@ -38,7 +38,7 @@ module.exports = {
         GKB_LOG_LEVEL: 'info',
     },
     staging: {
-        GKB_CORS_ORIGIN: 'https://graphkbstaging.bcgsc.ca',
+        GKB_CORS_ORIGIN: 'https://graphkbdev.bcgsc.ca',
         GKB_DB_CREATE: false,
         GKB_DB_NAME: 'production-sync-staging',
         GKB_KEYCLOAK_KEY_FILE: 'config/keys/keycloak-dev.key',
