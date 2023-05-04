@@ -1,8 +1,8 @@
 {
   "name": "@bcgsc-pori/graphkb-api",
   "main": "server.js",
-  "version": "3.14.3",
-  "private": false,
+  "version": "3.14.4",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/bcgsc/pori_graphkb_api.git"
@@ -66,7 +66,7 @@
     "start:local": "NODE_ENV=local node bin/server.js",
     "test": "NODE_ENV=test jest --config config/jest/config.js --detectOpenHandles --forceExit",
     "test:unit": "NODE_ENV=test jest --config config/jest/unit.config.js",
-    "test:integration": "NODE_ENV=test jest --config config/jest/config.js --testRegex test/db_integration/",
+    "test:integration": "NODE_ENV=test jest --config config/jest/config.js --testRegex test/db_integration",
     "lint": "eslint -c .eslintrc.json src test",
     "version": "echo $npm_package_version",
     "commit": "git-cz"

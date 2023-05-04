@@ -59,14 +59,13 @@ const OPERATORS = {
 
 const DIRECTIONS = ['out', 'in', 'both'];
 
-const TREE_EDGES = ['SubClassOf', 'ElementOf'];
+const TREE_EDGES = ['SubClassOf', 'ElementOf', 'Infers'];
 
 const SIMILARITY_EDGES = [
     'AliasOf',
     'CrossReferenceOf',
     'DeprecatedBy',
     'GeneralizationOf',
-    'Infers',
 ];
 
 module.exports = {

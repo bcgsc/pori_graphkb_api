@@ -13,15 +13,17 @@ const { parseRecord } = require('./query_builder');
  * Create the database and schema
  */
 const createDB = async (server, {
-    GKB_DB_NAME,
     GKB_DBS_PASS,
     GKB_DBS_USER,
+    GKB_DB_NAME,
+    GKB_DB_PASS,
 }) => {
     await server.createDatabase({
         name: GKB_DB_NAME,
         password: GKB_DBS_PASS,
         username: GKB_DBS_USER,
     });
+
     const db = await server.session({
         name: GKB_DB_NAME,
         password: GKB_DBS_PASS,
@@ -30,6 +32,12 @@ const createDB = async (server, {
 
     try {
         await db.command('alter database custom standardElementConstraints=false');
+        const adminUserExists = await db.query('select status from OUser where name = \'admin\';').all();
+
+        if (adminUserExists.length === 0) {
+            await db.command(`create user admin identified by ${GKB_DB_PASS} role admin;`);
+        }
+
         logger.log('verbose', 'create the schema');
         await createSchema(db);
     } catch (err) {
@@ -103,6 +111,7 @@ const connectDB = async ({
                 GKB_DBS_PASS,
                 GKB_DBS_USER,
                 GKB_DB_NAME,
+                GKB_DB_PASS,
                 GKB_USER_CREATE,
             });
         } else if (GKB_NEW_DB) {
