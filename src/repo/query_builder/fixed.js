@@ -323,7 +323,8 @@ const singleKeywordSearch = ({
         FROM ${targetQuery || model.name}
         WHERE name ${operator} :${param}
             OR sourceId ${operator} :${param}
-            OR source.name ${operator} :${param}`;
+            OR source.name ${operator} :${param}
+            OR displayName.toLowerCase() ${operator} :${param}`;
     } if (schemaDefn.inheritsFrom(model.name, 'Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
         return `SELECT *
         FROM ${targetQuery || model.name}
