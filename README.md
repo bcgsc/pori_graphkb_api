@@ -60,7 +60,7 @@ To actually use the API, the orientDB instance must already be running. To confi
 GKB_DBS_PASS=root
 GKB_DBS_USER=root
 GKB_DB_HOST='HOST NAME'
-GKB_DB_PORT=2480
+GKB_DB_PORT=2424
 GKB_KEY_FILE='id_rsa'  # used in generating the tokens
 ```
 
