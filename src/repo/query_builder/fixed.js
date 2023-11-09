@@ -123,7 +123,7 @@ const similarTo = ({
     if (!edges.length) {
         throw new ValidationError('Must specify 1 or more edge types to follow');
     }
-    if (Object.keys(rest).length) {
+    if (Object.keys(rest).length && !(Object.keys(rest).length === 1 && rest.limit)) {
         throw new ValidationError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
     }
     if (Array.isArray(target)) {
@@ -314,6 +314,7 @@ const singleKeywordSearch = ({
     prefix = '',
     operator = OPERATORS.CONTAINSTEXT,
     targetQuery,
+    limit,
     ...opt
 }) => {
     const model = schemaDefn.get(target);
@@ -328,10 +329,12 @@ const singleKeywordSearch = ({
     } if (schemaDefn.inheritsFrom(model.name, 'Ontology') || model.name === 'Ontology' || model.name === 'Evidence') {
         return `SELECT *
         FROM ${targetQuery || model.name}
-        WHERE name ${operator} :${param}
-            OR sourceId ${operator} :${param}`;
+        WHERE name.asString() ${operator} :${param}
+            OR sourceId.asString() ${operator} :${param}
+        LIMIT ${limit}`;
     } if (model.name === 'Statement') {
         const ontologySubq = singleKeywordSearch({
+            limit,
             ...opt,
             operator,
             param,
@@ -340,6 +343,7 @@ const singleKeywordSearch = ({
         });
 
         const variantSubq = singleKeywordSearch({
+            limit,
             ...opt,
             operator,
             param,
@@ -368,25 +372,39 @@ const singleKeywordSearch = ({
         `;
         return query;
     } if (schemaDefn.inheritsFrom(model.name, 'Variant') || model.name === 'Variant') {
-        const subquery = singleKeywordSearch({
+        const subqueryFeature = singleKeywordSearch({
+            limit,
             ...opt,
             operator,
             param,
             prefix: `${prefix}ontologySubq`,
-            target: 'Ontology',
+            target: 'Feature',
+        });
+        const subqueryVocab = singleKeywordSearch({
+            limit,
+            ...opt,
+            operator,
+            param,
+            prefix: `${prefix}ontologySubq`,
+            target: 'Vocabulary',
         });
 
         return `SELECT expand($${prefix}variants)
-            LET $${prefix}ont = (
-                ${subquery}
+            LET $${prefix}ontFeature = (
+                ${subqueryFeature}
+            ),
+            $${prefix}ontVocab = (
+                ${subqueryVocab}
             ),
                 $${prefix}variants = (
                     SELECT *
                     FROM ${targetQuery || model.name}
                     WHERE
-                        type IN (SELECT expand($${prefix}ont))
-                        OR reference1 IN (SELECT expand($${prefix}ont))
-                        OR reference2 IN (SELECT expand($${prefix}ont))
+                        type IN (SELECT expand($${prefix}ontVocab))
+                        OR reference1 IN (SELECT expand($${prefix}ontFeature))
+                        OR reference2 IN (SELECT expand($${prefix}ontFeature))
+                        OR displayName.toLowerCase() ${operator} :${param}
+                    LIMIT ${limit}
                 )
         `;
     }

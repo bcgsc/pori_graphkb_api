@@ -2,7 +2,7 @@ const { RecordID: RID } = require('orientjs');
 
 const { ValidationError, schema, util } = require('@bcgsc-pori/graphkb-schema');
 
-const { OPERATORS, PARAM_PREFIX } = require('./constants');
+const { MAX_LIMIT, OPERATORS, PARAM_PREFIX } = require('./constants');
 const { FixedSubquery } = require('./fixed');
 const { getQueryableProps } = require('./util');
 
@@ -380,6 +380,7 @@ class Subquery {
     static parse({
         target: rawTarget,
         history = false,
+        limit = MAX_LIMIT,
         filters: rawFilters = null,
         queryType,
         model: inputModel,
@@ -456,11 +457,11 @@ class Subquery {
         if (queryType) {
             if (!filters) {
                 return FixedSubquery.parse({
-                    ...rest, history, queryType, target,
+                    ...rest, history, limit, queryType, target,
                 }, this.parse.bind(this)); // has to be passed to avoid circular dependency
             }
             return FixedSubquery.parse({
-                ...rest, filters, history, queryType, target,
+                ...rest, filters, history, limit, queryType, target,
             }, this.parse.bind(this)); // has to be passed to avoid circular dependency
         }
         return new this({

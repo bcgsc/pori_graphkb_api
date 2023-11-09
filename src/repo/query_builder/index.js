@@ -96,7 +96,7 @@ class WrapperQuery {
         } = checkStandardOptions(opt);
 
         const query = Subquery.parse({
-            history, model: inputModel, target, ...rest,
+            history, limit, model: inputModel, target, ...rest,
         });
         const model = schemaDefn.get(inputModel, false) || schemaDefn.get(target, false) || schemaDefn.models.V;
 
