@@ -214,6 +214,10 @@ const buildLooseSearch = (cls, name) => ({
     },
 });
 
+/**
+ * Used to be called from within keywordSearch() but removed by KBDEV-1124
+ * Keeping the function for legacy
+ */
 const buildHgvsQuery = (hgvsInput) => {
     const parsed = parseVariant(hgvsInput);
     const payload = {
@@ -496,16 +500,6 @@ const keywordSearch = ({
 
         if (util.looksLikeRID(word)) {
             return { params: {}, query: `SELECT FROM ${recordsAsTarget(word)}` };
-        } if (target.endsWith('Variant')) {
-            try {
-                return subQueryParser(
-                    buildHgvsQuery(word),
-                ).toString(paramIndex, prefix);
-            } catch (err) {
-                if (!(err instanceof ParsingError)) {
-                    throw err;
-                }
-            }
         }
     }
 
