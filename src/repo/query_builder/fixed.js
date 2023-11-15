@@ -561,4 +561,4 @@ class FixedSubquery {
     }
 }
 
-module.exports = { FixedSubquery };
+module.exports = { buildHgvsQuery, FixedSubquery };
