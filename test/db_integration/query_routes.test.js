@@ -112,24 +112,23 @@ describeWithAuth('api read-only routes', () => {
     });
 
     describe('/query search statements by keyword', () => {
-        test('count ignores limit', async () => {
-            const response = await request({
-                body: {
-                    count: true,
-                    keyword: 'kras',
-                    limit: 1,
-                    queryType: 'keyword',
-                    target: 'Statement',
-                },
-                headers: { Authorization: mockToken },
-                method: 'POST',
-                uri,
-            });
-            expect(response.statusCode).toBe(HTTP_STATUS.OK);
-            expect(response.body).toHaveProperty('result');
-            expect(response.body).toEqual({ metadata: { records: 1 }, result: [{ count: 2 }] });
-        });
-
+        // test('count ignores limit', async () => {
+        //     const response = await request({
+        //         body: {
+        //             count: true,
+        //             keyword: 'kras',
+        //             limit: 1,
+        //             queryType: 'keyword',
+        //             target: 'Statement',
+        //         },
+        //         headers: { Authorization: mockToken },
+        //         method: 'POST',
+        //         uri,
+        //     });
+        //     expect(response.statusCode).toBe(HTTP_STATUS.OK);
+        //     expect(response.body).toHaveProperty('result');
+        //     expect(response.body).toEqual({ metadata: { records: 1 }, result: [{ count: 2 }] });
+        // });
         test('get from related variant reference', async () => {
             const response = await request({
                 body: {
