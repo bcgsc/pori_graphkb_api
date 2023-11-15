@@ -12,7 +12,6 @@ const {
 } = require('@bcgsc-pori/graphkb-schema');
 const {
     parseVariant,
-    ParsingError,
 } = require('@bcgsc-pori/graphkb-parser');
 const { quoteWrap } = require('../util');
 
