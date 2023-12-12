@@ -244,6 +244,8 @@ const fetchDisplayName = async (db, modelName, content) => {
             subject: recordsById[recId(content.subject)],
         };
         return sentenceTemplates.chooseDefaultTemplate(templateContent);
+    } if (model.name === 'Feature' && content.displayName) {
+        return content.displayName;
     }
     return content.name;
 };
