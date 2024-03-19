@@ -33,6 +33,11 @@ const { generatePropertiesMd } = require('./returnProperties');
 const SCHEMA_PREFIX = '#/components/schemas';
 
 const STUB = {
+    openapi: '3.0.0',
+    info: {
+        title: 'GraphKB',
+        version: process.env.npm_package_version,
+    },
     components: {
         parameters: {
             in: {
@@ -56,15 +61,11 @@ const STUB = {
                 pattern: '^#\\d+:\\d+$',
                 type: 'string',
             },
-            RecordId: { $ref: '#/components/schemas/@rid' },
+            RecordId: { $ref: `${SCHEMA_PREFIX}/@rid` },
+            undefined: {},
             ...schemas,
         },
     },
-    info: {
-        title: 'GraphKB',
-        version: process.env.npm_package_version,
-    },
-    openapi: '3.0.0',
     paths: {
         '/license': { get: GET_LICENSE, post: POST_LICENSE },
         '/license/sign': { post: POST_SIGN_LICENSE },
@@ -350,7 +351,7 @@ const generateSwaggerSpec = (schema, metadata) => {
         }
         if (model.isAbstract) {
             // should inherit from its concrete subclasses instead
-            const anyOf = schema.children(model.name).map((m) => ({ $ref: `#/components/schemas/${m}` }));
+            const anyOf = schema.children(model.name).map((m) => ({ $ref: `${SCHEMA_PREFIX}/${m}` }));
             docs.components.schemas[model.name].anyOf = anyOf;
             continue;
         }
@@ -370,7 +371,7 @@ const generateSwaggerSpec = (schema, metadata) => {
                 docs.components.schemas[model.name].required.push(prop.name);
             }
             if (docs.components.schemas[prop.name] && model.name !== 'Permissions') {
-                docs.components.schemas[model.name].properties[prop.name] = { $ref: `#/components/schemas/${prop.name}` };
+                docs.components.schemas[model.name].properties[prop.name] = { $ref: `${SCHEMA_PREFIX}/${prop.name}` };
                 continue;
             }
             let propDefn = {};
@@ -385,9 +386,9 @@ const generateSwaggerSpec = (schema, metadata) => {
                 propDefn.type = 'string';
             } else if (prop.linkedClass) {
                 if (prop.type.includes('embedded')) {
-                    propDefn.$ref = `#/components/schemas/${prop.linkedClass.name}`;
+                    propDefn.$ref = `${SCHEMA_PREFIX}/${prop.linkedClass.name}`;
                 } else if (docs.components.schemas[`${prop.linkedClass.name}Link`]) {
-                    propDefn.$ref = `#/components/schemas/${prop.linkedClass.name}Link`;
+                    propDefn.$ref = `${SCHEMA_PREFIX}/${prop.linkedClass.name}Link`;
                 } else {
                     Object.assign(propDefn, linkOrModel(prop.linkedClass.name));
                 }
@@ -506,7 +507,7 @@ const registerSpecEndpoints = (router, spec) => {
           </head>
           <body>
             <redoc id="redoc-container" require-props-first="true" sort-props-alphabetically="true" spec-url="${req.baseUrl}/spec.json"></redoc>
-            <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
+            <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"> </script>
           </body>
         </html>`;
         res.set('Content-Type', 'text/html');
