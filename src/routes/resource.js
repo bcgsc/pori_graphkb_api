@@ -21,7 +21,7 @@ const activeRidQuery = (modelName, rid, opt = {}) => {
     const query = parse({
         ...opt,
         filters: { '@this': modelName, operator: OPERATORS.INSTANCEOF },
-        history: false,
+        history: true,
         target: [rid],
     });
     return query;
