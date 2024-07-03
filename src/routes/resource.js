@@ -18,10 +18,11 @@ const { checkStandardOptions } = require('../repo/query_builder/util');
 const { OPERATORS } = require('../repo/query_builder/constants');
 
 const activeRidQuery = (modelName, rid, opt = {}) => {
+    const { history, ...rest } = opt;
     const query = parse({
-        ...opt,
+        ...rest,
         filters: { '@this': modelName, operator: OPERATORS.INSTANCEOF },
-        history: false,
+        history: history || false,
         target: [rid],
     });
     return query;
@@ -46,7 +47,7 @@ const getRoute = (app, model) => {
             let query;
 
             try {
-                query = activeRidQuery(model.name, req.params.rid, { neighbors });
+                query = activeRidQuery(model.name, req.params.rid, { history: true, neighbors });
             } catch (err) {
                 if (err instanceof ValidationError) {
                     return next(err);

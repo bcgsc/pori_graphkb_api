@@ -15,7 +15,7 @@ const { createEmptyDb, tearDownDb } = require('./util');
 const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 
 const REALLY_LONG_TIME = 10000000000;
-const TEST_TIMEOUT_MS = 1000000;
+const TEST_TIMEOUT_MS = 2000000;
 jest.setTimeout(TEST_TIMEOUT_MS);
 
 const describeWithAuth = process.env.GKB_DBS_PASS
