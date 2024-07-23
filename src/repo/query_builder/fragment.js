@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const { RecordID: RID } = require('orientjs');
 
 const { ValidationError, schema, util } = require('@bcgsc-pori/graphkb-schema');
@@ -180,7 +181,7 @@ class Comparison {
                 `Invalid operator (${
                     operator
                 }). Must be one of (${
-                    Object.values(OPERATORS).join(', ')
+                    Object.values(_.omit(OPERATORS, ['AND', 'OR'])).join(', ')
                 })`,
             );
         }
