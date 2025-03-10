@@ -13,7 +13,7 @@
   "license": "GPL-3.0",
   "description": "GraphKB (Knowledge Base) REST API server",
   "dependencies": {
-    "@bcgsc-pori/graphkb-parser": "^2.0.0",
+    "@bcgsc-pori/graphkb-parser": "^2.1.0",
     "@bcgsc-pori/graphkb-schema": "^4.0.0",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
