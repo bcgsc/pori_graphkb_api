@@ -212,6 +212,19 @@ describeWithAuth('query builder', () => {
         });
     });
 
+    describe('similarToExtended', () => {
+        test('get extended term tree for cancer Disease', async () => {
+            const result = await select(
+                session,
+                parse({
+                    queryType: 'similarToExtended',
+                    target: { filters: { name: 'cancer' }, target: 'Disease' },
+                }),
+            );
+            expect(result).toHaveProperty('length', 3);
+        });
+    });
+
     describe('selectFromList', () => {
         test('throws error on bad record ID', async () => {
             const { krasMut, krasSub } = db.records;
