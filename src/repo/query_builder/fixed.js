@@ -171,6 +171,71 @@ const similarTo = ({
     return { params, query };
 };
 
+// KBDEV-1306; for Disease matching upon report creation
+const similarToExtended = ({
+    target, prefix = '', history = false, paramIndex = 0, edges = SIMILARITY_EDGES, treeEdges = TREE_EDGES, matchType, ...rest
+} = {}) => {
+    let initialQuery,
+        params = {};
+
+    for (const edge of [...treeEdges, ...edges]) {
+        if (!schemaDefn.has(edge)) {
+            throw new ValidationError(`unrecognized edge class (${edge})`);
+        }
+    }
+
+    if (!edges.length) {
+        throw new ValidationError('Must specify 1 or more edge types to follow');
+    }
+    if (Object.keys(rest).length) {
+        throw new ValidationError(`unrecognized arguments (${Object.keys(rest).join(', ')})`);
+    }
+    if (Array.isArray(target)) {
+        initialQuery = recordsAsTarget(...target);
+    } else {
+        const { query: initialStatement, params: initialParams } = target.toString(paramIndex, prefix);
+
+        initialQuery = `(${initialStatement})`; // recordIdList is a subquery instead of a list of record IDs
+        params = { ...initialParams };
+    }
+
+    const treeEdgeStrings = treeEdges.map((e) => `'${e}'`).join(', ');
+    const edgeStrings = edges.map((e) => `'${e}'`).join(', ');
+
+    // disambiguate
+
+    let innerQuery;
+
+    if (treeEdges.length) {
+        innerQuery = `SELECT expand($${prefix}Result)
+            LET $${prefix}Initial = (${disambiguationClause(initialQuery, edges)}),
+            $${prefix}Ancestors = (TRAVERSE in(${treeEdgeStrings}), both(${edgeStrings}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
+            $${prefix}Descendants = (TRAVERSE out(${treeEdgeStrings}), both(${edgeStrings}) FROM (SELECT expand($${prefix}Initial)) MAXDEPTH ${MAX_TRAVEL_DEPTH}),
+            $${prefix}Union = (SELECT expand(UNIONALL($${prefix}Ancestors, $${prefix}Descendants))),
+            $${prefix}Result = (${disambiguationClause(`(SELECT expand($${prefix}Union))`, edges)})`;
+    } else {
+        innerQuery = `SELECT expand($${prefix}Result)
+            LET $${prefix}Result = (${disambiguationClause(initialQuery, edges)})`;
+    }
+
+    // filter duplicates and re-expand
+    let query = `SELECT expand(rid) FROM (SELECT distinct(@rid) as rid FROM (${innerQuery}))`;
+
+    if (matchType) {
+        if (!schemaDefn.has(matchType)) {
+            throw new ValidationError(`Did not recognize type matchType (${matchType})`);
+        }
+        if (!history) {
+            query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL AND @this INSTANCEOF ${schemaDefn.get(matchType).name}`;
+        } else {
+            query = `SELECT * FROM (${query}) WHERE @this INSTANCEOF ${schemaDefn.get(matchType).name}`;
+        }
+    } else if (!history) {
+        query = `SELECT * FROM (${query}) WHERE deletedAt IS NULL`;
+    }
+    return { params, query };
+};
+
 /**
  * From some starting node (defined by the where clause conditions) follow all incoming edges and
  * return the set of nodes visited
@@ -540,12 +605,14 @@ class FixedSubquery {
             return new this(queryType, neighborhood, opt);
         } if (queryType === 'similarTo') {
             return new this(queryType, similarTo, opt);
+        } if (queryType === 'similarToExtended') {
+            return new this(queryType, similarToExtended, opt);
         } if (queryType === 'keyword') {
             return new this(queryType, keywordSearch, { ...opt, subQueryParser });
         } if (queryType === 'edge') {
             return new this(queryType, edgeQuery, { ...opt, subQueryParser });
         }
-        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
+        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo, similarToExtended]`);
     }
 }
 
