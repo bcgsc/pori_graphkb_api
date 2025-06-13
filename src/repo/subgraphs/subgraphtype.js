@@ -14,11 +14,18 @@
  * select queries on each class (compute and data intensive).
  */
 
+const { traverse } = require('./traversal');
+
 /**
  * SimilarTo subgraph
  * Given an ontology class and some base records, traverse edges (similarity) in both directions
  */
 const similarTo = async (db, ontology, opt = {}) => {
+    const subgraph = await traverse(db, ontology, {
+        ...opt,
+        direction: null,
+    });
+    return subgraph;
 };
 
 /**
@@ -27,6 +34,12 @@ const similarTo = async (db, ontology, opt = {}) => {
  * and treeEdges (hierarchy) in a 'descending/parent-to-child' direction for 1 generation
  */
 const children = async (db, ontology, opt = {}) => {
+    const subgraph = await traverse(db, ontology, {
+        ...opt,
+        direction: 'descending',
+        firstGenerationOnly: true,
+    });
+    return subgraph;
 };
 
 /**
@@ -35,6 +48,12 @@ const children = async (db, ontology, opt = {}) => {
  * and treeEdges (hierarchy) in a 'descending/parent-to-child' direction for all generations
  */
 const descendants = async (db, ontology, opt = {}) => {
+    const subgraph = await traverse(db, ontology, {
+        ...opt,
+        direction: 'descending',
+        firstGenerationOnly: false,
+    });
+    return subgraph;
 };
 
 /**
@@ -43,6 +62,12 @@ const descendants = async (db, ontology, opt = {}) => {
  * and treeEdges (hierarchy) in a 'ascending/child-to-parent' direction for 1 generation
  */
 const parents = async (db, ontology, opt = {}) => {
+    const subgraph = await traverse(db, ontology, {
+        ...opt,
+        direction: 'ascending',
+        firstGenerationOnly: true,
+    });
+    return subgraph;
 };
 
 /**
@@ -51,6 +76,12 @@ const parents = async (db, ontology, opt = {}) => {
  * and treeEdges (hierarchy) in a 'ascending/child-to-parent' direction for all generations
  */
 const ancestors = async (db, ontology, opt = {}) => {
+    const subgraph = await traverse(db, ontology, {
+        ...opt,
+        direction: 'ascending',
+        firstGenerationOnly: false,
+    });
+    return subgraph;
 };
 
 /**
@@ -66,6 +97,11 @@ const ancestors = async (db, ontology, opt = {}) => {
  * the returned subgraph can be disconnected, leading here to a 'forest' instead of a 'tree'.
  */
 const tree = async (db, ontology, opt = {}) => {
+    const subgraph = await traverse(db, ontology, {
+        ...opt,
+        direction: 'split',
+    });
+    return subgraph;
 };
 
 /**
@@ -75,6 +111,11 @@ const tree = async (db, ontology, opt = {}) => {
  * are queried seperately and results are combined.
  */
 const complete = async (db, ontology, opt = {}) => {
+    const subgraph = await traverse(db, ontology, {
+        ...opt,
+        direction: 'both',
+    });
+    return subgraph;
 };
 
 // SubgraphType parameter values and linked functions are dynamically generated from these exports.

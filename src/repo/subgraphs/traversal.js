@@ -2,6 +2,8 @@
  * GRAPH TRAVERSAL FUNCTIONS
  */
 
+const { ValidationError } = require('@bcgsc-pori/graphkb-schema');
+
 const { logger } = require('../logging');
 const {
     DEFAULT_EDGES,
@@ -10,7 +12,15 @@ const {
     DEFAULT_TREEEDGES,
     MAX_DEPTH,
 } = require('./constants');
-const { buildTraverseExpr, queryWithPagination } = require('./util');
+const {
+    baseValidation,
+    buildTraverseExpr,
+    getAdjacency,
+    getComponents,
+    getGraph,
+    queryWithPagination,
+} = require('./util');
+const { virtualize } = require('./virtual');
 
 /**
  * composition queries
@@ -290,6 +300,239 @@ const transitive = async (
     logger.debug(`results: ${records.size}`);
     return records;
 };
+
+/**
+ * traverse
+ * Given an ontology class, some base records and a direction,
+ * traverse a graph and return a subgraph.
+ * Both a 'real' subgraph (g) and/or a simplified virtual subgraph (v) can be returned.
+ *
+ * direction:
+ * - null: Follow edges (similarity) in both directions for all generations.
+ * - 'ascending': Follow edges (similarity) in both directions and treeEdges (hierarchy)
+ *                 in the given direction for 1 (parents) or all (ancestors) generations.
+ * - 'descending': Follow edges (similarity) in both directions and treeEdges (hierarchy)
+ *                 in the given direction for 1 (children) or all (descendants) generations.
+ * - 'both': Instead of a traversal, select queries are performed on the ontology class and
+ *           all Edge classes individually, then combined.
+ *
+ * subgraph:
+ *   - 'real': The subgraph is returned as a real graph
+ *   - 'virtual': The subgraph is returned as a virtual graph
+ *   - 'both': The subgraph is returned in both formats
+ *
+ * @param {Object} db - The database session object
+ * @param {string} ontology - The ontology class to perform the graph traversal on
+ * @param {Object} [opt={}]
+ * @param {Array.<string>|null} [opt.base=null] - Record RIDs to start traversing from
+ * @param {string|null} [opt.direction=null] - Hierarchy edges traversal direction
+ * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
+ * @param {boolean} [opt.firstGenerationOnly=false] - Limits hierarchy TreeEdges traversal depth to 1
+ * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth on a traversal path
+ * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {boolean} [opt.subgraph='real'] - Returned subgraph format(s)
+ * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
+ * @param {Object} [vOpt={}] - Virtualization options
+ * @returns {Object} result
+ *   @property {Object} [result.g] - The subgraph
+ *   @property {Object} [result.v] - A virtualized version of the subgraph
+ */
+const traverse = async (
+    db,
+    ontology,
+    {
+        base = null,
+        direction = null,
+        edges = DEFAULT_EDGES,
+        firstGenerationOnly = false,
+        maxDepth = MAX_DEPTH,
+        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES, // Has no effect on a virtual subgraph
+        returnNodeProperties = DEFAULT_NODE_PROPERTIES, // On a virtual subgraph, only affect associated records
+        subgraph = 'real',
+        treeEdges = DEFAULT_TREEEDGES,
+        vOpt = {},
+    } = {},
+) => {
+    // INPUTS
+    // a valid base is required for most traversals
+    if (!base && direction !== 'both') {
+        throw new ValidationError(`
+            Some base records (base parameter) are required to perform the traversal from.
+            Consider a complete queryType to traverse the whole ${ontology} ontology.
+        `);
+    }
+    await baseValidation(db, ontology, base);
+
+    // make sure minimal default properties are present/added
+    DEFAULT_EDGE_PROPERTIES.forEach((x) => {
+        if (!returnEdgeProperties.includes(x)) {
+            returnEdgeProperties.push(x);
+        }
+    });
+    DEFAULT_NODE_PROPERTIES.forEach((x) => {
+        if (!returnNodeProperties.includes(x)) {
+            returnNodeProperties.push(x);
+        }
+    });
+
+    // additional checks
+    if (typeof maxDepth !== 'number' || maxDepth === 0) {
+        // eslint-disable-next-line no-param-reassign
+        maxDepth = MAX_DEPTH;
+    }
+
+    // TRAVERSAL
+    let results;
+    const records = new Map();
+
+    switch (direction) {
+        case 'ascending':
+        case 'descending':
+            if (firstGenerationOnly) {
+                // IMMEDIATE directed traversal; for parent|children
+                results = await immediate(
+                    db,
+                    ontology,
+                    base,
+                    direction,
+                    {
+                        edges,
+                        maxDepth,
+                        returnEdgeProperties,
+                        returnNodeProperties,
+                        treeEdges,
+                    },
+                );
+                results.forEach((v, k) => { records.set(k, v); });
+            } else {
+                // TRANSITIVE directed traversal; for ancestors|descendants
+                results = await transitive(
+                    db,
+                    ontology,
+                    base,
+                    direction,
+                    {
+                        edges,
+                        maxDepth,
+                        returnEdgeProperties,
+                        returnNodeProperties,
+                        treeEdges,
+                    },
+                );
+                results.forEach((v, k) => { records.set(k, v); });
+            }
+            break;
+
+        case 'both':
+            // COMPOSITION query to get the entire graph
+            results = await composition(
+                db,
+                ontology,
+                {
+                    edges,
+                    returnEdgeProperties,
+                    returnNodeProperties,
+                    treeEdges,
+                },
+            );
+            results.forEach((v, k) => { records.set(k, v); });
+            break;
+
+        case 'split':
+            // tree-like subgraph. Direction is splitted from base
+            // TRANSITIVE directed traversal for ancestors
+            results = await transitive(
+                db,
+                ontology,
+                base,
+                'ascending', // direction
+                {
+                    edges,
+                    maxDepth,
+                    returnEdgeProperties,
+                    returnNodeProperties,
+                    treeEdges,
+                },
+            );
+            results.forEach((v, k) => { records.set(k, v); });
+
+            // TRANSITIVE directed traversal for descendants
+            // duplicates need to be addressed downstream
+            results = await transitive(
+                db,
+                ontology,
+                base,
+                'descending', // direction
+                {
+                    edges,
+                    maxDepth,
+                    returnEdgeProperties,
+                    returnNodeProperties,
+                    treeEdges,
+                },
+            );
+            results.forEach((v, k) => { records.set(k, v); });
+            logger.debug(`concatenated results: ${records.size}`);
+            break;
+
+        default: // direction = null
+            // SIMILARITY traversal
+            results = await similarity(
+                db,
+                ontology,
+                base,
+                {
+                    edges,
+                    maxDepth,
+                    returnEdgeProperties,
+                    returnNodeProperties,
+                },
+            );
+            results.forEach((v, k) => { records.set(k, v); });
+            break;
+    }
+
+    // OUTPUT
+    const output = {};
+
+    // Real graph
+    // Formatting records into a graph structure (segregated nodes & edges)
+    const graph = getGraph(records, {
+        edgeClasses: [...edges, ...treeEdges],
+        nodeClasses: [ontology],
+        returnEdgeProperties,
+        returnNodeProperties,
+    });
+    logger.debug(`g: { edges: ${graph.edges.size}, nodes: ${graph.nodes.size} }`);
+
+    if (subgraph !== 'virtual') {
+        // nodes & edges
+        output.g = {
+            edges: Object.fromEntries(graph.edges), // serializable obj.
+            nodes: Object.fromEntries(graph.nodes), // serializable obj.
+        };
+
+        // Adjacency list
+        const adj = getAdjacency(graph);
+
+        output.g.adjacency = Object.fromEntries(
+            Array.from(adj, ([key, set]) => [key, Array.from(set)]), // serializable obj.
+        );
+        logger.debug(`g: { adjacency: ${adj.size} }`);
+
+        // Connected components
+        output.g.components = getComponents(adj);
+        logger.debug(`g: { components: ${output.g.components.length} }`);
+    }
+
+    // Virtual graph
+    // Generating a virtual simplification of the real graph
+    if (subgraph === 'virtual' || subgraph === 'both') {
+        output.v = virtualize(graph, { ...vOpt, edges, treeEdges });
+    }
+
+    return output;
 };
 
 module.exports = {
@@ -297,4 +540,5 @@ module.exports = {
     immediate,
     similarity,
     transitive,
+    traverse,
 };
