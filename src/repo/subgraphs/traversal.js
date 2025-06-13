@@ -99,6 +99,12 @@ const similarity = async (
  * @param {Array.<string>} base
  * @param {string} direction - The traversal direction (ascending|descending)
  * @param {Object} opt
+ * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
+ * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth
+ * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
+ * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
 const immediate = async (
     db,
@@ -107,6 +113,66 @@ const immediate = async (
     direction,
     opt = {},
 ) => {
+    // options
+    const {
+        edges = DEFAULT_EDGES,
+        maxDepth = MAX_DEPTH,
+        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
+        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+        treeEdges = DEFAULT_TREEEDGES,
+    } = opt;
+
+    // 1st traversal; get base similarity
+    const t1 = await similarity(
+        db,
+        ontology,
+        base,
+        {
+            edges,
+            maxDepth,
+            returnEdgeProperties,
+            returnNodeProperties,
+        },
+    );
+
+    // 2nd traversal; get 1st generation (children|parents)
+    const queryString = `
+        SELECT
+            ${[...new Set([...returnEdgeProperties, ...returnNodeProperties])].join(',')}
+        FROM (
+            TRAVERSE
+                ${buildTraverseExpr({ direction, edges: [], treeEdges })}
+            FROM
+                [${[...t1.keys()].join(',')}]
+            WHILE
+                @class in [${[...edges, ...treeEdges, ontology].map((x) => `'${x}'`).join(',')}] AND
+                (in.@class is null OR in.@class = '${ontology}') AND
+                (out.@class is null OR out.@class = '${ontology}') AND
+                deletedAt is null AND
+                $depth <= 1
+        )`;
+    logger.debug(queryString);
+    const results = await db.query(queryString).all();
+    const t2 = new Map(results.map((r) => [String(r['@rid']), r]));
+    logger.debug(`results: ${t2.size}`);
+
+    // 3rd traversal; get similarity again
+    const t3 = await similarity(
+        db,
+        ontology,
+        [...t2.keys()], // base
+        {
+            edges,
+            maxDepth,
+            returnEdgeProperties,
+            returnNodeProperties,
+        },
+    );
+
+    // concatenated results
+    const records = new Map([...t1, ...t2, ...t3]);
+    logger.debug(`concatenated results: ${records.size}`);
+    return records;
 };
 
 /**
