@@ -10,13 +10,37 @@ const { ValidationError } = require('@bcgsc-pori/graphkb-schema');
 
 const { logger } = require('../repo/logging');
 const subgraphFunctions = require('../repo/subgraphs/subgraphtype');
+const { checkSubgraphPermissions } = require('../middleware/auth');
+const { DEFAULT_EDGES, DEFAULT_TREEEDGES } = require('../repo/subgraphs/constants');
 const { getInheritingClasses } = require('../repo/subgraphs/util');
 
 const addSubgraphRoutes = (app) => {
+    const subgraphRoutePattern = '/subgraphs/:ontology';
+
+    // attach models for checking class permissions
+    app.router.use(subgraphRoutePattern, (req, _, next) => {
+        const { body, params: { ontology } } = req;
+        const { edges, treeEdges } = body || {};
+
+        req.models = [
+            ...(Array.isArray(edges)
+                ? edges
+                : DEFAULT_EDGES),
+            ...(Array.isArray(treeEdges)
+                ? treeEdges
+                : DEFAULT_TREEEDGES),
+            ontology,
+        ];
+        next();
+    });
+
+    // route-specific middleware for class permissions check
+    app.router.use(subgraphRoutePattern, checkSubgraphPermissions);
+
     // route is POST only
     logger.log('verbose', 'NEW ROUTE [POST] /subgraphs/{ontology}');
     app.router.post(
-        '/subgraphs/:ontology',
+        subgraphRoutePattern,
         async (req, res, next) => {
             const { body, params: { ontology } } = req;
 

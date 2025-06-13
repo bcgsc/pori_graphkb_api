@@ -81,6 +81,31 @@ const checkClassPermissions = async (req, res, next) => {
     ));
 };
 
+/**
+ * Check that the user has permissions for a given subgraph route, for both the intended
+ * ontology class and Edge classes. Note that to do this, models and user
+ * need to already be assigned to the request.
+ *
+ * @param {GraphKBRequest} req
+ * @param {ClassDefinition} req.models an array of models for this request
+ *
+ */
+const checkSubgraphPermissions = async (req, res, next) => {
+    const { models, user } = req;
+
+    for (let i = 0; i < models.length; i++) {
+        if (!checkUserAccessFor(user, models[i], PERMISSIONS.READ)) {
+            return res.status(HTTP_STATUS.FORBIDDEN).json(new PermissionError(
+                `The user ${user.name} does not have sufficient permissions to perform a subgraph query on classes ${models[i]}`,
+            ));
+        }
+    }
+    return next();
+};
+
 module.exports = {
-    checkClassPermissions, checkToken, checkUserAccessFor,
+    checkClassPermissions,
+    checkSubgraphPermissions,
+    checkToken,
+    checkUserAccessFor,
 };
