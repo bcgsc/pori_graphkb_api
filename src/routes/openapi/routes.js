@@ -335,6 +335,88 @@ const QUERY = {
     tags: ['General'],
 };
 
+const SUBGRAPHS = {
+    requestBody: {
+        content: {
+            'application/json': {
+                examples: {
+                    '1 - Querying for a subgraph': {
+                        description: 'Get a subgraph of all similar records of record #135:14856.',
+                        value: {
+                            base: ['#135:14856'],
+                            subgraphType: 'similarTo',
+
+                        },
+                    },
+                    '2 - Complete subgraphType': {
+                        description: 'Get the whole ontology graph, no base needed. Use with caution.',
+                        value: {
+                            subgraphType: 'complete',
+
+                        },
+                    },
+                    '3 - Adding some return properties': {
+                        description: 'Properties are added to both nodes and edges default return properties.',
+                        value: {
+                            base: ['#135:14856'],
+                            returnEdgeProperties: ['date(createdAt)'],
+                            returnNodeProperties: ['displayName', 'source.name'],
+                            subgraphType: 'children',
+
+                        },
+                    },
+                    '4 - Overriding some default values': {
+                        description: 'The array of edges is now ommiting CrossReferenceOf class, and maxDepth is decreased.',
+                        value: {
+                            base: ['#135:14856'],
+                            edges: ['AliasOf', 'DeprecatedBy'],
+                            maxDepth: 10,
+                            subgraphType: 'ancestors',
+                        },
+                    },
+                    '5 - Virtualization': {
+                        description: 'Get a virtual subgraph, with some default overrides on virtualization options.',
+                        value: {
+                            base: ['#135:14856'],
+                            subgraphType: 'tree',
+                            subgraph: 'virtual',
+                            vOpt: {
+                                inverted: true,
+                                selfLoopAllowed: false,
+                            },
+                        },
+                    },
+                },
+                schema: {
+                    $ref: '#/components/schemas/SubgraphsQuery',
+                },
+            },
+        },
+        required: false,
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    properties: {
+                        result: {
+                            properties: {
+                                g: { $ref: '#/components/schemas/Subgraph' },
+                                v: { $ref: '#/components/schemas/VSubgraph' },
+                            },
+                            type: 'object',
+                        },
+                    },
+                    required: ['result'],
+                    type: 'object',
+                },
+            },
+        },
+    },
+    summary: 'Traverse an ontology and return a subgraph',
+    tags: ['General'],
+};
+
 const POST_SIGN_LICENSE = {
     responses: {
         200: {
@@ -397,4 +479,5 @@ module.exports = {
     POST_SIGN_LICENSE,
     POST_TOKEN,
     QUERY,
+    SUBGRAPHS,
 };
