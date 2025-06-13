@@ -36,6 +36,10 @@ const composition = async (db, ontology, opt = {}) => {
  * @param {string} ontology - The ontology class
  * @param {Array.<string>} base - Record RIDs to start traversing from
  * @param {Object} opt
+ * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
+ * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth
+ * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
  * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
 const similarity = async (
@@ -44,6 +48,38 @@ const similarity = async (
     base,
     opt = {},
 ) => {
+    // options
+    const {
+        edges = DEFAULT_EDGES,
+        maxDepth = MAX_DEPTH,
+        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
+        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+    } = opt;
+
+    // queryString
+    const queryString = `
+        SELECT
+            ${[...new Set([...returnEdgeProperties, ...returnNodeProperties])].join(',')}
+        FROM (
+            TRAVERSE
+                ${buildTraverseExpr({ edges, treeEdges: [] })}
+            FROM
+                [${base.join(',')}]
+            WHILE
+                @class in [${[...edges, ontology].map((x) => `'${x}'`).join(',')}] AND
+                (in.@class is null OR in.@class = '${ontology}') AND
+                (out.@class is null OR out.@class = '${ontology}') AND
+                deletedAt is null AND
+                $depth <= ${maxDepth}
+        )`;
+    logger.debug(queryString);
+
+    // query
+    const results = await db.query(queryString).all();
+
+    const records = new Map(results.map((r) => [String(r['@rid']), r]));
+    logger.debug(`results: ${records.size}`);
+    return records;
 };
 
 /**
