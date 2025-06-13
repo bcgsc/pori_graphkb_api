@@ -45,6 +45,10 @@ const DEFAULT_NODE_PROPERTIES = [
 // Dose not applied to composition traversal, which don't traverse the graph per se.
 const MAX_DEPTH = 50;
 
+// For paginated queries
+const MAX_SIZE = 1000000;
+const PAGE_SIZE = 5000;
+
 module.exports = {
     DEFAULT_DIRECTIONS,
     DEFAULT_EDGE_PROPERTIES,
@@ -52,4 +56,6 @@ module.exports = {
     DEFAULT_NODE_PROPERTIES,
     DEFAULT_TREEEDGES,
     MAX_DEPTH,
+    MAX_SIZE,
+    PAGE_SIZE,
 };

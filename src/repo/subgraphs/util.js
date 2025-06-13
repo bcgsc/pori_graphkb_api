@@ -3,10 +3,13 @@
  */
 
 const { schema: { models, subclassMapping }, ValidationError } = require('@bcgsc-pori/graphkb-schema');
+const { logger } = require('../logging');
 const {
     DEFAULT_DIRECTIONS,
     DEFAULT_EDGES,
     DEFAULT_TREEEDGES,
+    MAX_SIZE,
+    PAGE_SIZE,
 } = require('./constants');
 
 /**
@@ -103,7 +106,63 @@ const buildTraverseExpr = ({
     return traverseExpr;
 };
 
+/**
+ * Given a query string, query the database using pagination.
+ * Returns an array of db records.
+ *
+ * Leverage RID pagination, which is expected to be faster that skipping.
+ *
+ * @param {Object} db - The database session object
+ * @param {string} queryString - The original query string before pagination
+ * @param {Object} [opt={}]
+ * @param {number} [opt.maxSize=MAX_SIZE] - Total number of records limit
+ * @param {number} [opt.pageSize=PAGE_SIZE] - Page size limit
+ * @returns {Array.<Object>} records - The concatenated selected records
+ */
+const queryWithPagination = async (db, queryString, {
+    maxSize = MAX_SIZE,
+    pageSize = PAGE_SIZE,
+} = {}) => {
+    const records = [];
+
+    // Given a queryString, returns it with added pagination
+    // (woks with more or less basic query strings)
+    const paginate = (initialQueryString, lowerLimit, limit) => {
+        if (/WHERE[^)]*$/.test(initialQueryString)) {
+            return `${initialQueryString} AND @rid > ${lowerLimit} LIMIT ${limit}`;
+        }
+        return `${initialQueryString} WHERE @rid > ${lowerLimit} LIMIT ${limit}`;
+    };
+
+    let lowerRid = '#-1:-1';
+
+    while (true) {
+        // Paginating
+        const limit = maxSize - records.length < pageSize
+            ? maxSize - records.length
+            : pageSize;
+        const paginatedQueryString = paginate(queryString, lowerRid, limit);
+        logger.debug(paginatedQueryString);
+
+        // Query
+        const results = await db.query(paginatedQueryString).all();
+        logger.debug(`page results: ${results.length}`);
+        records.push(...results);
+
+        // Breaking loop
+        if (results.length < pageSize) { break; } // Stop if no more results
+        if (records.length >= maxSize) { break; } // Stop if max limit is reached
+
+        // Increment
+        lowerRid = results[results.length - 1]['@rid'];
+    }
+
+    logger.debug(`paginated records: ${records.length}`);
+    return records;
+};
+
 module.exports = {
     buildTraverseExpr,
     getInheritingClasses,
+    queryWithPagination,
 };

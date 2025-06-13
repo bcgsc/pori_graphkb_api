@@ -10,7 +10,7 @@ const {
     DEFAULT_TREEEDGES,
     MAX_DEPTH,
 } = require('./constants');
-const { buildTraverseExpr } = require('./util');
+const { buildTraverseExpr, queryWithPagination } = require('./util');
 
 /**
  * composition queries
@@ -22,9 +22,65 @@ const { buildTraverseExpr } = require('./util');
  * @param {Object} db - The database session object
  * @param {string} ontology - The ontology class
  * @param {Object} opt
+ * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
+ * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
  * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
 const composition = async (db, ontology, opt = {}) => {
+    // options
+    const {
+        edges = DEFAULT_EDGES,
+        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
+        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+        treeEdges = DEFAULT_TREEEDGES,
+    } = opt;
+
+    // QUERIES
+    const records = new Map();
+
+    // ontology Nodes query
+    const queryStringOntology = `
+        SELECT
+            ${returnNodeProperties.join(',')}
+        FROM
+            ${ontology}
+        WHERE
+            deletedAt is null`;
+    const ontologyRecords = await queryWithPagination(db, queryStringOntology);
+
+    // populating records
+    for (const r of ontologyRecords) {
+        records.set(String(r['@rid']), r);
+    }
+
+    // edges & treeEdges Edges queries
+    const edgeClasses = [...edges, ...treeEdges];
+
+    for (let i = 0; i < edgeClasses.length; i++) {
+        const queryStringEdgeClass = `
+            SELECT
+                ${returnEdgeProperties.join(',')}
+            FROM
+                ${edgeClasses[i]}
+            WHERE
+                deletedAt is null AND
+                in.@class = '${ontology}' AND
+                in.deletedAt is null AND
+                out.@class = '${ontology}' AND
+                out.deletedAt is null`;
+
+        const EdgeClassRecords = await queryWithPagination(db, queryStringEdgeClass);
+
+        // populating records
+        for (const r of EdgeClassRecords) {
+            records.set(String(r['@rid']), r);
+        }
+    }
+
+    logger.debug(`results: ${records.size}`);
+    return records;
 };
 
 /**
