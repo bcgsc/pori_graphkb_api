@@ -2,6 +2,16 @@
  * GRAPH TRAVERSAL FUNCTIONS
  */
 
+const { logger } = require('../logging');
+const {
+    DEFAULT_EDGES,
+    DEFAULT_EDGE_PROPERTIES,
+    DEFAULT_NODE_PROPERTIES,
+    DEFAULT_TREEEDGES,
+    MAX_DEPTH,
+} = require('./constants');
+const { buildTraverseExpr } = require('./util');
+
 /**
  * composition queries
  * Given an ontology class, returns all nodes (ontology) and ontology-connected edges (edges + treeEdges).
@@ -75,6 +85,12 @@ const immediate = async (
  * @param {Array.<string>} base
  * @param {string} direction - The traversal direction (ascending|descending)
  * @param {Object} opt
+ * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
+ * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth
+ * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
+ * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
 const transitive = async (
     db,
@@ -83,6 +99,39 @@ const transitive = async (
     direction,
     opt = {},
 ) => {
+    // options
+    const {
+        edges = DEFAULT_EDGES,
+        maxDepth = MAX_DEPTH,
+        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
+        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+        treeEdges = DEFAULT_TREEEDGES,
+    } = opt;
+
+    // queryString
+    const queryString = `
+        SELECT
+            ${[...new Set([...returnEdgeProperties, ...returnNodeProperties])].join(',')}
+        FROM (
+            TRAVERSE
+                ${buildTraverseExpr({ direction, edges, treeEdges })}
+            FROM
+                [${base.join(',')}]
+            WHILE
+                @class in [${[...edges, ...treeEdges, ontology].map((x) => `'${x}'`).join(',')}] AND
+                (in.@class is null OR in.@class = '${ontology}') AND
+                (out.@class is null OR out.@class = '${ontology}') AND
+                deletedAt is null AND
+                $depth <= ${maxDepth}
+        )`;
+
+    // query
+    logger.debug(queryString);
+    const results = await db.query(queryString).all();
+    const records = new Map(results.map((r) => [String(r['@rid']), r]));
+    logger.debug(`results: ${records.size}`);
+    return records;
+};
 };
 
 module.exports = {

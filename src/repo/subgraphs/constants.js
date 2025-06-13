@@ -15,7 +15,41 @@ const DEFAULT_TREEEDGES = [
     'SubClassOf',
 ];
 
+// Indicate in which default direction to follow treeEdges.
+// Account for the fact that an Edge direction (from --> to) might not means
+// 'from parent to chlid', e.g. -SubClassOf-> means 'from child to parent'.
+// Note: this default direction has to be shared accross all treeEdges for the moment.
+const DEFAULT_DIRECTIONS = {
+    ascending: 'out',
+    descending: 'in',
+};
+
+// Default edge properties on subgraph traversals
+const DEFAULT_EDGE_PROPERTIES = [
+    '@rid',
+    '@class',
+    'in', // incomming node RID
+    'out', // outgoing node RID
+];
+
+// Default node properties on subgraph traversals
+const DEFAULT_NODE_PROPERTIES = [
+    '@rid',
+    '@class',
+    'name', // used for vNode name (virtual graph)
+    'source.sort', // used for prefered record selection (virtual graph)
+];
+
+// Traversal depth limit.
+// Can be overridden using maxDepth option
+// Dose not applied to composition traversal, which don't traverse the graph per se.
+const MAX_DEPTH = 50;
+
 module.exports = {
+    DEFAULT_DIRECTIONS,
+    DEFAULT_EDGE_PROPERTIES,
     DEFAULT_EDGES,
+    DEFAULT_NODE_PROPERTIES,
     DEFAULT_TREEEDGES,
+    MAX_DEPTH,
 };
