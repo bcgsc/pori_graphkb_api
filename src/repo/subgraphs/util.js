@@ -389,10 +389,63 @@ const getComponents = (adj) => {
     return components;
 };
 
+/**
+ * Given the nodes & edges objects of a graph,
+ * returns a representation in the Mermaid flowchart format.
+ *
+ * Both nodes and edges needs to be serializable objects as in
+ * Object.fromEntries(Map<string, Object>)
+ *
+ * @param {Object} opt
+ * @param {Object} [opt.edges={}] - graph's edges|vedges
+ * @param {Object} [opt.nodes] - graph's nodes|vnodes
+ * @param {string} [opt.orientation='BT'] - see Mermaid docs
+ * @param {boolean} [opt.strignify=true] - returns as a string instead of an array
+ * @returns {string[]|string} flowchart
+ */
+const formatToFlowchart = ({
+    edges = {},
+    nodes,
+    orientation = 'BT', // BT|TB|RL|LR
+    strignify = true,
+}) => {
+    // type
+    const flowchart = [`flowchart ${orientation}`];
+
+    // nodes
+    Object.keys(nodes).forEach((k) => {
+        let label = '';
+
+        if (nodes[k].label) {
+            label = nodes[k].label;
+        } else if (nodes[k].name) {
+            label = nodes[k].name;
+        }
+
+        if (label) {
+            flowchart.push(`${k}["${label}"]`);
+        } else {
+            flowchart.push(`${k}`);
+        }
+    });
+
+    // edges
+    Object.values(edges).forEach((v) => {
+        flowchart.push(`${v.out} --> ${v.in}`);
+    });
+
+    // strignify
+    if (strignify) {
+        return flowchart.join('\n');
+    }
+    return flowchart;
+};
+
 module.exports = {
     areActiveRIDs,
     baseValidation,
     buildTraverseExpr,
+    formatToFlowchart,
     getAdjacency,
     getClasses,
     getComponents,
