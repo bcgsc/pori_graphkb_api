@@ -12,8 +12,8 @@ const { getAdjacency, getComponents } = require('./util');
  * from which a virtual node can borrow properties (e.g. id (@rid), name, etc).
  *
  * Preference based on:
- * 1. Absence of incomming 'DeprecatedBy' edge (deprecated)
- * 2. Absence of outgoing 'AliasOf' edge (aliasing)
+ * 1. Absence of outgoing 'DeprecatedBy' edge (not being deprecated)
+ * 2. Absence of outgoing 'AliasOf' edge (not aliasing)
  * 3. Source sort index
  *
  * @param {Array.<string>} rids - The node RIDs we want to pick a prefered record from
@@ -177,7 +177,7 @@ const createVirtualNodes = (graph, { edges = DEFAULT_EDGES } = {}) => {
             aliasing.add(record.out);
         }
         if (record['@class'] === 'DeprecatedBy') {
-            deprecated.add(record.in);
+            deprecated.add(record.out);
         }
     });
 
