@@ -208,9 +208,14 @@ const createVirtualNodes = (graph, { edges = DEFAULT_EDGES } = {}) => {
             graph.nodes,
             { aliasing, deprecated },
         );
+        // sorted records array
+        const fn = (a, b) => String(a['@rid']).localeCompare(String(b['@rid']));
+        const records = [...ridsSet].map((rid) => graph.nodes.get(rid)).sort(fn);
+
+        // vNode
         vNodes.set(id, {
             label: graph.nodes.get(id).name || graph.nodes.get(id).displayName || id,
-            records: [...ridsSet].map((rid) => graph.nodes.get(rid)),
+            records,
         });
     });
 
