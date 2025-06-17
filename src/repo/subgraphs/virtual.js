@@ -36,7 +36,7 @@ const getPreferedRecord = (rids, nodes, {
         // source.sort index
         let sourceSorting;
 
-        if (Object.prototype.hasOwnProperty.call(node, 'source.sort')) {
+        if (typeof node['source.sort'] === 'number') {
             sourceSorting = node['source.sort'];
         } else {
             sourceSorting = 99999;
