@@ -323,15 +323,14 @@ const virtualize = (graph, {
 
     // g_to_v nodes mapping
     output.g_to_v = Object.fromEntries(nodeToVNodeMap); // serializable obj.
-    logger.debug(`{ g_to_v: ${nodeToVNodeMap.size} }`);
+    logger.debug(`v: { g_to_v: ${nodeToVNodeMap.size} }`);
 
     // v_to_g nodes mapping
     const vNodeToNodeMap = getVNodeToNode(vNodes);
     output.v_to_g = Object.fromEntries(vNodeToNodeMap); // serializable obj.
-    logger.debug(`{ v_to_g: ${vNodeToNodeMap.size} }`);
+    logger.debug(`v: { v_to_g: ${vNodeToNodeMap.size} }`);
 
     return output;
-    return {};
 };
 
 module.exports = {
