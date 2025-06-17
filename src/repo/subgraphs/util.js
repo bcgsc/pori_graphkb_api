@@ -178,16 +178,11 @@ const getGraph = (records, {
     records.forEach((r, rid) => {
         if (edgeClasses.includes(r['@class'])) {
             const edge = _.pick(r, returnEdgeProperties);
-
-            // strignify RIDs
-            edge['@rid'] = String(edge['@rid']);
-            edge.in = String(edge.in);
-            edge.out = String(edge.out);
-
             graph.edges.set(rid, edge);
         }
         if (nodeClasses.includes(r['@class'])) {
-            graph.nodes.set(rid, _.pick(r, returnNodeProperties));
+            const node = _.pick(r, returnNodeProperties);
+            graph.nodes.set(rid, node);
         }
     });
 
@@ -320,17 +315,17 @@ const getAdjacency = (graph, { directed = false } = {}) => {
     // Adding nodes based on linked edges
     graph.edges.forEach((edge) => {
         // out => {in}
-        if (!adj.has(edge.out)) {
-            adj.set(edge.out, new Set());
+        if (!adj.has(String(edge.out))) {
+            adj.set(String(edge.out), new Set());
         }
-        adj.get(edge.out).add(edge.in);
+        adj.get(String(edge.out)).add(String(edge.in));
 
         // in => {out}
         if (!directed) {
-            if (!adj.has(edge.in)) {
-                adj.set(edge.in, new Set());
+            if (!adj.has(String(edge.in))) {
+                adj.set(String(edge.in), new Set());
             }
-            adj.get(edge.in).add(edge.out);
+            adj.get(String(edge.in)).add(String(edge.out));
         }
     });
 

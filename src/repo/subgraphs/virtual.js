@@ -134,8 +134,8 @@ const createVirtualNodes = (graph, { edges = DEFAULT_EDGES } = {}) => {
     // Grouping similar nodes, based on similarity edges
     graph.edges.forEach((record) => {
         if (edges.includes(record['@class'])) { // if a similarity edge
-            const inRid = record.in;
-            const outRid = record.out;
+            const inRid = String(record.in);
+            const outRid = String(record.out);
 
             if (!similar.has(outRid) && !similar.has(inRid)) {
                 // A new set of RIDs is created and mapped to both RIDs
@@ -174,10 +174,10 @@ const createVirtualNodes = (graph, { edges = DEFAULT_EDGES } = {}) => {
         }
         // deprecated & aliasing nodes
         if (record['@class'] === 'AliasOf') {
-            aliasing.add(record.out);
+            aliasing.add(String(record.out));
         }
         if (record['@class'] === 'DeprecatedBy') {
-            deprecated.add(record.out);
+            deprecated.add(String(record.out));
         }
     });
 
@@ -251,10 +251,10 @@ const createVirtualEdges = (graph, nodesLookup, {
         if (treeEdges.includes(record['@class'])) {
             // connected vNodes
             let childVNodeId = nodesLookup.get(
-                record[DEFAULT_DIRECTIONS.descending], // record.in
+                String(record[DEFAULT_DIRECTIONS.descending]), // record.in
             );
             let parentVNodeId = nodesLookup.get(
-                record[DEFAULT_DIRECTIONS.ascending], // record.out
+                String(record[DEFAULT_DIRECTIONS.ascending]), // record.out
             );
 
             // Inversion
