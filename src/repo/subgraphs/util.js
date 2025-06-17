@@ -382,6 +382,7 @@ const getComponents = (adj) => {
                     }
                 }
             }
+            component.sort();
             components.push(component);
         }
     }
