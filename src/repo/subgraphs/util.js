@@ -342,6 +342,12 @@ const getAdjacency = (graph, { directed = false } = {}) => {
         }
     });
 
+    // sorting each set
+    adj.forEach((v, k) => {
+        const sortedSet = new Set([...v].sort());
+        adj.set(k, sortedSet);
+    });
+
     return adj;
 };
 
