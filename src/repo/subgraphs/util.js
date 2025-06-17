@@ -34,7 +34,7 @@ const getInheritingClasses = (superCls = 'V', {
     includeAbstractCls = false,
     includeSuperCls = false,
 } = {}) => {
-    const classes = [];
+    let classes = [];
 
     // Recursively get all inherited classes
     const getMapping = (cls) => {
@@ -54,8 +54,10 @@ const getInheritingClasses = (superCls = 'V', {
 
     // Discarding abstract classes, if any
     if (!includeAbstractCls) {
-        return classes.filter((x) => !models[x].isAbstract);
+        classes = classes.filter((x) => !models[x].isAbstract);
     }
+
+    classes.sort();
     return classes;
 };
 
