@@ -208,9 +208,9 @@ const createVirtualNodes = (graph, { edges = DEFAULT_EDGES } = {}) => {
             graph.nodes,
             { aliasing, deprecated },
         );
-        // sorted records array
-        const fn = (a, b) => String(a['@rid']).localeCompare(String(b['@rid']));
-        const records = [...ridsSet].map((rid) => graph.nodes.get(rid)).sort(fn);
+        // linked node records array
+        const records = [...ridsSet].map((rid) => ({ ...graph.nodes.get(rid) })); // obj values copy; important
+        records.sort((a, b) => String(a['@rid']).localeCompare(String(b['@rid'])));
 
         // vNode
         vNodes.set(id, {
