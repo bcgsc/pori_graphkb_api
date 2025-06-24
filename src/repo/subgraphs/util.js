@@ -146,21 +146,26 @@ const baseValidation = async (db, ontology, base) => {
         throw new ValidationError('base parameter must be an array of RID strings.');
     }
 
-    // Check if all RIDs belong to records of the given ontology class
-    const baseClasses = await getClasses(db, base);
+    // Check if all RIDs belong to active database records of the given ontology class
+    const rids = [...new Set(base)]; // unique base records only
+    const queryString = `
+        SELECT
+            @rid
+        FROM
+            :ontology
+        WHERE
+            @rid IN :rids AND
+            deletedAt is null`;
+    const params = { params: { ontology, rids } };
 
-    if (baseClasses.length !== 1 || baseClasses[0] !== ontology) {
+    logger.debug(oneliner(queryString));
+    logger.debug(JSON.stringify(params));
+
+    const records = await db.query(queryString, params).all();
+
+    if (records.length !== rids.length) {
         throw new ValidationError(`
-            All base records must be records of the targetted ontology class (${ontology}).
-        `);
-    }
-
-    // Check if all RIDs belong to active database records
-    const allActive = await areActiveRIDs(db, base);
-
-    if (!allActive) {
-        throw new ValidationError(`
-            All base records must be valid active records (non soft-deleted).
+            All base records must be valid active records (non soft-deleted) from the ${ontology} class).
         `);
     }
 };
