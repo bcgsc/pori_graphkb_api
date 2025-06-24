@@ -21,7 +21,7 @@ Here are all the subgraph types to choose from. If ommitted, the **subgraphType*
 
 A *de facto* 'disambiguation' is performed at every level by traversing similarity Edges (edges) from every Nodes that has been reached following hierarchy Edges (treeEdges).
 
-- **similarTo**
+- **similar**
 
     Given some base records, traverse similarity Edges (edges) in both directions.
 

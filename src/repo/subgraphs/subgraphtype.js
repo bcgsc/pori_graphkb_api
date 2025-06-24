@@ -17,10 +17,10 @@
 const { traverse } = require('./traversal');
 
 /**
- * SimilarTo subgraph
+ * Similar subgraph
  * Given an ontology class and some base records, traverse edges (similarity) in both directions
  */
-const similarTo = async (db, ontology, opt = {}) => {
+const similar = async (db, ontology, opt = {}) => {
     const subgraph = await traverse(db, ontology, {
         ...opt,
         direction: null,
@@ -125,6 +125,6 @@ module.exports = {
     complete,
     descendants,
     parents,
-    similarTo,
+    similar,
     tree,
 };

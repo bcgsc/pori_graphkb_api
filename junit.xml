@@ -1,0 +1,617 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="271" failures="0" errors="0" time="89.44">
+  <testsuite name="CRUD operations" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:47:38" time="38.102" tests="25">
+    <testcase classname="CRUD operations update error on missing changes argument" name="CRUD operations update error on missing changes argument" time="0.026">
+    </testcase>
+    <testcase classname="CRUD operations permisions error cannot create class" name="CRUD operations permisions error cannot create class" time="0">
+    </testcase>
+    <testcase classname="CRUD operations permisions error cannot update class" name="CRUD operations permisions error cannot update class" time="0">
+    </testcase>
+    <testcase classname="CRUD operations permisions error cannot delete class" name="CRUD operations permisions error cannot delete class" time="0">
+    </testcase>
+    <testcase classname="CRUD operations permisions error protected record" name="CRUD operations permisions error protected record" time="0">
+    </testcase>
+    <testcase classname="CRUD operations user create new ok" name="CRUD operations user create new ok" time="0.015">
+    </testcase>
+    <testcase classname="CRUD operations user create new error on duplicate name" name="CRUD operations user create new error on duplicate name" time="0.021">
+    </testcase>
+    <testcase classname="CRUD operations user modify update name error on duplicate" name="CRUD operations user modify update name error on duplicate" time="0.018">
+    </testcase>
+    <testcase classname="CRUD operations user modify update ok" name="CRUD operations user modify update ok" time="2.02">
+    </testcase>
+    <testcase classname="CRUD operations user modify non-paranoid update does not duplicate record" name="CRUD operations user modify non-paranoid update does not duplicate record" time="2.153">
+    </testcase>
+    <testcase classname="CRUD operations user modify delete" name="CRUD operations user modify delete" time="1.985">
+    </testcase>
+    <testcase classname="CRUD operations usergroup create new" name="CRUD operations usergroup create new" time="0">
+    </testcase>
+    <testcase classname="CRUD operations usergroup update existing" name="CRUD operations usergroup update existing" time="0">
+    </testcase>
+    <testcase classname="CRUD operations usergroup delete" name="CRUD operations usergroup delete" time="0">
+    </testcase>
+    <testcase classname="CRUD operations edges create new ok" name="CRUD operations edges create new ok" time="0.076">
+    </testcase>
+    <testcase classname="CRUD operations edges create new error on src = tgt" name="CRUD operations edges create new error on src = tgt" time="0.027">
+    </testcase>
+    <testcase classname="CRUD operations edges create new error on no src (out) vertex" name="CRUD operations edges create new error on no src (out) vertex" time="0.026">
+    </testcase>
+    <testcase classname="CRUD operations edges create new error on no tgt (in) vertex" name="CRUD operations edges create new error on no tgt (in) vertex" time="0.023">
+    </testcase>
+    <testcase classname="CRUD operations edges create new allows null source" name="CRUD operations edges create new allows null source" time="0.04">
+    </testcase>
+    <testcase classname="CRUD operations edges modify delete duplicates immediate vertices and creates history links" name="CRUD operations edges modify delete duplicates immediate vertices and creates history links" time="0.066">
+    </testcase>
+    <testcase classname="CRUD operations edges modify update is not allowed" name="CRUD operations edges modify update is not allowed" time="0.038">
+    </testcase>
+    <testcase classname="CRUD operations vertices create new ok" name="CRUD operations vertices create new ok" time="0.017">
+    </testcase>
+    <testcase classname="CRUD operations vertices create new missing required property" name="CRUD operations vertices create new missing required property" time="0.009">
+    </testcase>
+    <testcase classname="CRUD operations vertices modify update copies node and creates history link" name="CRUD operations vertices modify update copies node and creates history link" time="2.589">
+    </testcase>
+    <testcase classname="CRUD operations vertices modify delete also deletes linked edges" name="CRUD operations vertices modify delete also deletes linked edges" time="2.063">
+    </testcase>
+    <testcase classname="CRUD operations vertices modify regular user can modify unprotected admin record" name="CRUD operations vertices modify regular user can modify unprotected admin record" time="0">
+    </testcase>
+    <testcase classname="CRUD operations vertices modify regular user cannot modify admin protected record" name="CRUD operations vertices modify regular user cannot modify admin protected record" time="0">
+    </testcase>
+    <testcase classname="CRUD operations statements enforces psuedo-unique contraint by select" name="CRUD operations statements enforces psuedo-unique contraint by select" time="0.087">
+    </testcase>
+    <testcase classname="CRUD operations statements creates non-default displayNameTemplate" name="CRUD operations statements creates non-default displayNameTemplate" time="0.072">
+    </testcase>
+    <testcase classname="CRUD operations statements UPDATE updates the displayNameTemplate when excluded from changes" name="CRUD operations statements UPDATE updates the displayNameTemplate when excluded from changes" time="2.127">
+    </testcase>
+    <testcase classname="CRUD operations statements UPDATE uses the displayNameTemplate when included in changes" name="CRUD operations statements UPDATE uses the displayNameTemplate when included in changes" time="2.114">
+    </testcase>
+    <testcase classname="CRUD operations statements UPDATE adds the subject to conditions when updated and conditions not given" name="CRUD operations statements UPDATE adds the subject to conditions when updated and conditions not given" time="2.104">
+    </testcase>
+    <testcase classname="CRUD operations statements UPDATE adds the subject to conditions when updated and conditions given without" name="CRUD operations statements UPDATE adds the subject to conditions when updated and conditions given without" time="2.166">
+    </testcase>
+    <testcase classname="CRUD operations statements UPDATE does not allow excluding the subject from conditions" name="CRUD operations statements UPDATE does not allow excluding the subject from conditions" time="2.104">
+    </testcase>
+  </testsuite>
+  <testsuite name="api crud routes" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:17" time="8.958" tests="30">
+    <testcase classname="api crud routes /token login with username/password" name="api crud routes /token login with username/password" time="0.084">
+    </testcase>
+    <testcase classname="api crud routes /token error on missing username" name="api crud routes /token error on missing username" time="0.016">
+    </testcase>
+    <testcase classname="api crud routes /token error on missing password" name="api crud routes /token error on missing password" time="0.012">
+    </testcase>
+    <testcase classname="api crud routes /:model create new record post/create create new" name="api crud routes /:model create new record post/create create new" time="0.026">
+    </testcase>
+    <testcase classname="api crud routes /:model create new record post/create error on query params given" name="api crud routes /:model create new record post/create error on query params given" time="0.044">
+    </testcase>
+    <testcase classname="api crud routes /:model create new record post/create error on missing required property" name="api crud routes /:model create new record post/create error on missing required property" time="0.028">
+    </testcase>
+    <testcase classname="api crud routes /:model create new record post/create error on missing token" name="api crud routes /:model create new record post/create error on missing token" time="0.036">
+    </testcase>
+    <testcase classname="api crud routes /:model create new record post/create error on duplicate record conflict" name="api crud routes /:model create new record post/create error on duplicate record conflict" time="0.024">
+    </testcase>
+    <testcase classname="api crud routes /:model create new record post/create create record with embedded property" name="api crud routes /:model create new record post/create create record with embedded property" time="0.022">
+    </testcase>
+    <testcase classname="api crud routes /:model create new linked record create record with link property" name="api crud routes /:model create new linked record create record with link property" time="0.071">
+    </testcase>
+    <testcase classname="api crud routes /:model create new linked record create record with embedded class property" name="api crud routes /:model create new linked record create record with embedded class property" time="0.076">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid patch/update regenerates displayName on update if not given in changes" name="api crud routes /:model/:rid patch/update regenerates displayName on update if not given in changes" time="0.132">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid patch/update use displayName on update if given in changes" name="api crud routes /:model/:rid patch/update use displayName on update if given in changes" time="0.118">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid patch/update update a linkset property" name="api crud routes /:model/:rid patch/update update a linkset property" time="0.109">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid patch/update update a required and indexed property" name="api crud routes /:model/:rid patch/update update a required and indexed property" time="0.121">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid patch/update update an embedded property" name="api crud routes /:model/:rid patch/update update an embedded property" time="0.106">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid patch/update error on update non-existant rid" name="api crud routes /:model/:rid patch/update error on update non-existant rid" time="0.12">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid patch/update error on update conflict" name="api crud routes /:model/:rid patch/update error on update conflict" time="0.116">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid delete delete the current user" name="api crud routes /:model/:rid delete delete the current user" time="0.045">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid delete error on delete non-existant record" name="api crud routes /:model/:rid delete error on delete non-existant record" time="0.04">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid delete error on malformed rid" name="api crud routes /:model/:rid delete error on malformed rid" time="0.036">
+    </testcase>
+    <testcase classname="api crud routes /:model/:rid delete error query params given" name="api crud routes /:model/:rid delete error query params given" time="0.041">
+    </testcase>
+    <testcase classname="api crud routes /license GET signed user can see the license" name="api crud routes /license GET signed user can see the license" time="0.03">
+    </testcase>
+    <testcase classname="api crud routes /license GET unsigned user can see the license" name="api crud routes /license GET unsigned user can see the license" time="0.026">
+    </testcase>
+    <testcase classname="api crud routes /license POST create a new license" name="api crud routes /license POST create a new license" time="0.027">
+    </testcase>
+    <testcase classname="api crud routes /license POST error on non-admin user" name="api crud routes /license POST error on non-admin user" time="0.027">
+    </testcase>
+    <testcase classname="api crud routes /license POST /sign new sign ok" name="api crud routes /license POST /sign new sign ok" time="0.03">
+    </testcase>
+    <testcase classname="api crud routes /license POST /sign updates the timestamp when the user re-signs" name="api crud routes /license POST /sign updates the timestamp when the user re-signs" time="0.028">
+    </testcase>
+    <testcase classname="api crud routes /license middleware check access to data routes denies when the user has not signed" name="api crud routes /license middleware check access to data routes denies when the user has not signed" time="0.03">
+    </testcase>
+    <testcase classname="api crud routes /license middleware check access to data routes allows when the user has signed" name="api crud routes /license middleware check access to data routes allows when the user has signed" time="0.031">
+    </testcase>
+  </testsuite>
+  <testsuite name="api read-only routes" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:26" time="8.559" tests="33">
+    <testcase classname="api read-only routes /stats default to only active records" name="api read-only routes /stats default to only active records" time="0.055">
+    </testcase>
+    <testcase classname="api read-only routes /stats include deleted records when history flag is true" name="api read-only routes /stats include deleted records when history flag is true" time="0.043">
+    </testcase>
+    <testcase classname="api read-only routes /stats error on bad std option" name="api read-only routes /stats error on bad std option" time="0.023">
+    </testcase>
+    <testcase classname="api read-only routes /version GET without Auth" name="api read-only routes /version GET without Auth" time="0.004">
+    </testcase>
+    <testcase classname="api read-only routes /query search statements by keyword count ignores limit" name="api read-only routes /query search statements by keyword count ignores limit" time="0.036">
+    </testcase>
+    <testcase classname="api read-only routes /query search statements by keyword get from related variant reference" name="api read-only routes /query search statements by keyword get from related variant reference" time="0.019">
+    </testcase>
+    <testcase classname="api read-only routes /query search statements by keyword multiple keywords are co-required" name="api read-only routes /query search statements by keyword multiple keywords are co-required" time="0.013">
+    </testcase>
+    <testcase classname="api read-only routes /query search statements by keyword error on no body" name="api read-only routes /query search statements by keyword error on no body" time="0.015">
+    </testcase>
+    <testcase classname="api read-only routes /query search statements by keyword error on bad std option" name="api read-only routes /query search statements by keyword error on bad std option" time="0.013">
+    </testcase>
+    <testcase classname="api read-only routes /query empty target array is bad request" name="api read-only routes /query empty target array is bad request" time="0.02">
+    </testcase>
+    <testcase classname="api read-only routes /query count ignores limit" name="api read-only routes /query count ignores limit" time="0.015">
+    </testcase>
+    <testcase classname="api read-only routes /query apply skip" name="api read-only routes /query apply skip" time="0.012">
+    </testcase>
+    <testcase classname="api read-only routes /query uses property name query parameter" name="api read-only routes /query uses property name query parameter" time="0.014">
+    </testcase>
+    <testcase classname="api read-only routes /query aggregates if count flag is set" name="api read-only routes /query aggregates if count flag is set" time="0.012">
+    </testcase>
+    <testcase classname="api read-only routes /query query iterable property by single value" name="api read-only routes /query query iterable property by single value" time="0.013">
+    </testcase>
+    <testcase classname="api read-only routes /query set count flag true with t" name="api read-only routes /query set count flag true with t" time="0.011">
+    </testcase>
+    <testcase classname="api read-only routes /query error on property validation failure" name="api read-only routes /query error on property validation failure" time="0.009">
+    </testcase>
+    <testcase classname="api read-only routes /query error on validation failure of standard option: neighbors" name="api read-only routes /query error on validation failure of standard option: neighbors" time="0.01">
+    </testcase>
+    <testcase classname="api read-only routes /query history is excluded by default" name="api read-only routes /query history is excluded by default" time="0.613">
+    </testcase>
+    <testcase classname="api read-only routes /query containstext is case non-sensitive" name="api read-only routes /query containstext is case non-sensitive" time="0.013">
+    </testcase>
+    <testcase classname="api read-only routes /query deeply nested return properties" name="api read-only routes /query deeply nested return properties" time="0.022">
+    </testcase>
+    <testcase classname="api read-only routes /:model/:rid error on invalid rid" name="api read-only routes /:model/:rid error on invalid rid" time="0.016">
+    </testcase>
+    <testcase classname="api read-only routes /:model/:rid ok with rid with hash prefix" name="api read-only routes /:model/:rid ok with rid with hash prefix" time="0.014">
+    </testcase>
+    <testcase classname="api read-only routes /:model/:rid ok with rid without hash prefix" name="api read-only routes /:model/:rid ok with rid without hash prefix" time="0.01">
+    </testcase>
+    <testcase classname="api read-only routes /:model/:rid error on non-existant rid" name="api read-only routes /:model/:rid error on non-existant rid" time="0.021">
+    </testcase>
+    <testcase classname="api read-only routes /:model/:rid error on query param" name="api read-only routes /:model/:rid error on query param" time="0.008">
+    </testcase>
+    <testcase classname="api read-only routes /query target recordslist ok for 2 existing records" name="api read-only routes /query target recordslist ok for 2 existing records" time="0.011">
+    </testcase>
+    <testcase classname="api read-only routes /query target recordslist fails for properly formatted non-existant cluster RID" name="api read-only routes /query target recordslist fails for properly formatted non-existant cluster RID" time="0.016">
+    </testcase>
+    <testcase classname="api read-only routes /query target recordslist errors on missing non-existant RID on a valid cluster" name="api read-only routes /query target recordslist errors on missing non-existant RID on a valid cluster" time="0.011">
+    </testcase>
+    <testcase classname="api read-only routes /query target recordslist error on bad neighbors argument" name="api read-only routes /query target recordslist error on bad neighbors argument" time="0.008">
+    </testcase>
+    <testcase classname="api read-only routes /query target recordslist error on malformed RID" name="api read-only routes /query target recordslist error on malformed RID" time="0.011">
+    </testcase>
+    <testcase classname="api read-only routes /query target recordslist errors on deleted records" name="api read-only routes /query target recordslist errors on deleted records" time="0.014">
+    </testcase>
+    <testcase classname="api read-only routes /query target recordslist includes deleted records when history true" name="api read-only routes /query target recordslist includes deleted records when history true" time="0.013">
+    </testcase>
+  </testsuite>
+  <testsuite name="query builder" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:35" time="7.636" tests="19">
+    <testcase classname="query builder paginate basic query limit" name="query builder paginate basic query limit" time="0.006">
+    </testcase>
+    <testcase classname="query builder paginate basic query skip" name="query builder paginate basic query skip" time="0.004">
+    </testcase>
+    <testcase classname="query builder paginate basic query skip and limit" name="query builder paginate basic query skip and limit" time="0.007">
+    </testcase>
+    <testcase classname="query builder selectCounts defaults to all classes" name="query builder selectCounts defaults to all classes" time="0.061">
+    </testcase>
+    <testcase classname="query builder selectCounts with source subgrouping" name="query builder selectCounts with source subgrouping" time="0.006">
+    </testcase>
+    <testcase classname="query builder getUserByName ok" name="query builder getUserByName ok" time="0.003">
+    </testcase>
+    <testcase classname="query builder getUserByName error on not found" name="query builder getUserByName error on not found" time="0.003">
+    </testcase>
+    <testcase classname="query builder selectByKeyword get from related variant reference" name="query builder selectByKeyword get from related variant reference" time="0.012">
+    </testcase>
+    <testcase classname="query builder selectByKeyword multiple keywords are co-required" name="query builder selectByKeyword multiple keywords are co-required" time="0.055">
+    </testcase>
+    <testcase classname="query builder custom projection" name="query builder custom projection" time="0.01">
+    </testcase>
+    <testcase classname="query builder select for embedded iterable" name="query builder select for embedded iterable" time="0.019">
+    </testcase>
+    <testcase classname="query builder similarTo get gene from related gene" name="query builder similarTo get gene from related gene" time="0.009">
+    </testcase>
+    <testcase classname="query builder similarTo get variant by related gene" name="query builder similarTo get variant by related gene" time="0.011">
+    </testcase>
+    <testcase classname="query builder similarTo select statements by loose variant match" name="query builder similarTo select statements by loose variant match" time="0.011">
+    </testcase>
+    <testcase classname="query builder selectFromList throws error on bad record ID" name="query builder selectFromList throws error on bad record ID" time="0.002">
+    </testcase>
+    <testcase classname="query builder selectFromList returns in the original order" name="query builder selectFromList returns in the original order" time="0.013">
+    </testcase>
+    <testcase classname="query builder fetchDisplayName PositionalVariant" name="query builder fetchDisplayName PositionalVariant" time="0.01">
+    </testcase>
+    <testcase classname="query builder fetchDisplayName CategoryVariant" name="query builder fetchDisplayName CategoryVariant" time="0.013">
+    </testcase>
+    <testcase classname="query builder fetchDisplayName Statement" name="query builder fetchDisplayName Statement" time="0.011">
+    </testcase>
+    <testcase classname="query builder select with query builder select on related edge properties" name="query builder select with query builder select on related edge properties" time="0">
+    </testcase>
+    <testcase classname="query builder select with query builder select on related uni-directional edge properties" name="query builder select with query builder select on related uni-directional edge properties" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="service routes" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:42" time="7.627" tests="7">
+    <testcase classname="service routes /parse parsed standard hgvs" name="service routes /parse parsed standard hgvs" time="0.027">
+    </testcase>
+    <testcase classname="service routes /parse fail on missing required body attribute content" name="service routes /parse fail on missing required body attribute content" time="0.023">
+    </testcase>
+    <testcase classname="service routes /parse allows missing feature when requireFeatures flag is false" name="service routes /parse allows missing feature when requireFeatures flag is false" time="0.006">
+    </testcase>
+    <testcase classname="service routes /parse error on missing features when requireFeatures flag is default or true" name="service routes /parse error on missing features when requireFeatures flag is default or true" time="0.03">
+    </testcase>
+    <testcase classname="service routes /parse error on unexpected attribute" name="service routes /parse error on unexpected attribute" time="0.01">
+    </testcase>
+    <testcase classname="service routes /extensions parse pubmed record" name="service routes /extensions parse pubmed record" time="0.011">
+    </testcase>
+    <testcase classname="service routes /extensions bad pubmed ID" name="service routes /extensions bad pubmed ID" time="0.013">
+    </testcase>
+    <testcase classname="service routes /extensions test clinical trial" name="service routes /extensions test clinical trial" time="0">
+    </testcase>
+    <testcase classname="service routes /extensions test entrez gene" name="service routes /extensions test entrez gene" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="checkClassPermissions" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:50" time="1.238" tests="64">
+    <testcase classname="checkClassPermissions users create admin calls next" name="checkClassPermissions users create admin calls next" time="0.003">
+    </testcase>
+    <testcase classname="checkClassPermissions users create manager throws error" name="checkClassPermissions users create manager throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions users create regular throws error" name="checkClassPermissions users create regular throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users create readonly throws error" name="checkClassPermissions users create readonly throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users read admin calls next" name="checkClassPermissions users read admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users read manager calls next" name="checkClassPermissions users read manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users read regular calls next" name="checkClassPermissions users read regular calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users read readonly calls next" name="checkClassPermissions users read readonly calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users update admin calls next" name="checkClassPermissions users update admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users update manager throws error" name="checkClassPermissions users update manager throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions users update regular throws error" name="checkClassPermissions users update regular throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions users update readonly throws error" name="checkClassPermissions users update readonly throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions users delete admin calls next" name="checkClassPermissions users delete admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users delete manager throws error" name="checkClassPermissions users delete manager throws error" time="0.007">
+    </testcase>
+    <testcase classname="checkClassPermissions users delete regular throws error" name="checkClassPermissions users delete regular throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions users delete readonly throws error" name="checkClassPermissions users delete readonly throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups create admin calls next" name="checkClassPermissions usergroups create admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups create manager throws error" name="checkClassPermissions usergroups create manager throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups create regular throws error" name="checkClassPermissions usergroups create regular throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups create readonly throws error" name="checkClassPermissions usergroups create readonly throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups read admin calls next" name="checkClassPermissions usergroups read admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups read manager calls next" name="checkClassPermissions usergroups read manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups read regular calls next" name="checkClassPermissions usergroups read regular calls next" time="0">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups read readonly calls next" name="checkClassPermissions usergroups read readonly calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups update admin calls next" name="checkClassPermissions usergroups update admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups update manager throws error" name="checkClassPermissions usergroups update manager throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups update regular throws error" name="checkClassPermissions usergroups update regular throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups update readonly throws error" name="checkClassPermissions usergroups update readonly throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups delete admin calls next" name="checkClassPermissions usergroups delete admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups delete manager throws error" name="checkClassPermissions usergroups delete manager throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups delete regular throws error" name="checkClassPermissions usergroups delete regular throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions usergroups delete readonly throws error" name="checkClassPermissions usergroups delete readonly throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary create admin calls next" name="checkClassPermissions vocabulary create admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary create manager calls next" name="checkClassPermissions vocabulary create manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary create regular throws error" name="checkClassPermissions vocabulary create regular throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary create readonly throws error" name="checkClassPermissions vocabulary create readonly throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary read admin calls next" name="checkClassPermissions vocabulary read admin calls next" time="0.003">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary read manager calls next" name="checkClassPermissions vocabulary read manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary read regular calls next" name="checkClassPermissions vocabulary read regular calls next" time="0">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary read readonly calls next" name="checkClassPermissions vocabulary read readonly calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary update admin calls next" name="checkClassPermissions vocabulary update admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary update manager calls next" name="checkClassPermissions vocabulary update manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary update regular throws error" name="checkClassPermissions vocabulary update regular throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary update readonly throws error" name="checkClassPermissions vocabulary update readonly throws error" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary delete admin calls next" name="checkClassPermissions vocabulary delete admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary delete manager calls next" name="checkClassPermissions vocabulary delete manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary delete regular throws error" name="checkClassPermissions vocabulary delete regular throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions vocabulary delete readonly throws error" name="checkClassPermissions vocabulary delete readonly throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source create admin calls next" name="checkClassPermissions source create admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source create manager calls next" name="checkClassPermissions source create manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source create regular calls next" name="checkClassPermissions source create regular calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source create readonly throws error" name="checkClassPermissions source create readonly throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source read admin calls next" name="checkClassPermissions source read admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source read manager calls next" name="checkClassPermissions source read manager calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source read regular calls next" name="checkClassPermissions source read regular calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source read readonly calls next" name="checkClassPermissions source read readonly calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source update admin calls next" name="checkClassPermissions source update admin calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source update manager calls next" name="checkClassPermissions source update manager calls next" time="0.002">
+    </testcase>
+    <testcase classname="checkClassPermissions source update regular calls next" name="checkClassPermissions source update regular calls next" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source update readonly throws error" name="checkClassPermissions source update readonly throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source delete admin calls next" name="checkClassPermissions source delete admin calls next" time="0.003">
+    </testcase>
+    <testcase classname="checkClassPermissions source delete manager throws error" name="checkClassPermissions source delete manager throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source delete regular throws error" name="checkClassPermissions source delete regular throws error" time="0.001">
+    </testcase>
+    <testcase classname="checkClassPermissions source delete readonly throws error" name="checkClassPermissions source delete readonly throws error" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="migrate" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:51" time="1.238" tests="14">
+    <testcase classname="migrate getCurrentVersion" name="migrate getCurrentVersion" time="0.003">
+    </testcase>
+    <testcase classname="migrate getLoadVersion" name="migrate getLoadVersion" time="0.002">
+    </testcase>
+    <testcase classname="migrate requiresMigration compatible versions do not require migration" name="migrate requiresMigration compatible versions do not require migration" time="0.005">
+    </testcase>
+    <testcase classname="migrate requiresMigration minor version difference requires migration" name="migrate requiresMigration minor version difference requires migration" time="0.002">
+    </testcase>
+    <testcase classname="migrate requiresMigration major version difference requires migration" name="migrate requiresMigration major version difference requires migration" time="0.002">
+    </testcase>
+    <testcase classname="migrate migrate 1.6 to 1.7.0" name="migrate migrate 1.6 to 1.7.0" time="0.009">
+    </testcase>
+    <testcase classname="migrate migrate 1.6 to 1.7.1" name="migrate migrate 1.6 to 1.7.1" time="0.004">
+    </testcase>
+    <testcase classname="migrate migrate 1.7 to 1.8" name="migrate migrate 1.7 to 1.8" time="0.003">
+    </testcase>
+    <testcase classname="migrate migrate 1.8 to 1.9" name="migrate migrate 1.8 to 1.9" time="0.015">
+    </testcase>
+    <testcase classname="migrate migrate compatible no migration" name="migrate migrate compatible no migration" time="0.002">
+    </testcase>
+    <testcase classname="migrate migrate error on no transition" name="migrate migrate error on no transition" time="0.005">
+    </testcase>
+    <testcase classname="migrate migrate incompatible check only" name="migrate migrate incompatible check only" time="0.002">
+    </testcase>
+    <testcase classname="migrate migrate 1.6 to 1.9" name="migrate migrate 1.6 to 1.9" time="0.014">
+    </testcase>
+    <testcase classname="migrate migrate 2.0 to latest" name="migrate migrate 2.0 to latest" time="0.072">
+    </testcase>
+  </testsuite>
+  <testsuite name="validateKeyCloakToken" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:53" time="1.201" tests="5">
+    <testcase classname="validateKeyCloakToken error on no roles" name="validateKeyCloakToken error on no roles" time="0.019">
+    </testcase>
+    <testcase classname="validateKeyCloakToken error on missing roles array" name="validateKeyCloakToken error on missing roles array" time="0.002">
+    </testcase>
+    <testcase classname="validateKeyCloakToken eror on only wrong roles" name="validateKeyCloakToken eror on only wrong roles" time="0.002">
+    </testcase>
+    <testcase classname="validateKeyCloakToken error on bad token key" name="validateKeyCloakToken error on bad token key" time="0.002">
+    </testcase>
+    <testcase classname="validateKeyCloakToken ok for valid token" name="validateKeyCloakToken ok for valid token" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="fetchDisplayName" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:54" time="1.167" tests="6">
+    <testcase classname="fetchDisplayName create regular" name="fetchDisplayName create regular" time="0">
+    </testcase>
+    <testcase classname="fetchDisplayName create category variant" name="fetchDisplayName create category variant" time="0.01">
+    </testcase>
+    <testcase classname="fetchDisplayName create fusion category variant" name="fetchDisplayName create fusion category variant" time="0.009">
+    </testcase>
+    <testcase classname="fetchDisplayName create statement template" name="fetchDisplayName create statement template" time="0">
+    </testcase>
+    <testcase classname="fetchDisplayName create protein substitution using explicit hgvsType" name="fetchDisplayName create protein substitution using explicit hgvsType" time="0.007">
+    </testcase>
+    <testcase classname="fetchDisplayName create positional variant using vocabulary shortName" name="fetchDisplayName create positional variant using vocabulary shortName" time="0.007">
+    </testcase>
+    <testcase classname="fetchDisplayName create positional variant truncation" name="fetchDisplayName create positional variant truncation" time="0.009">
+    </testcase>
+    <testcase classname="fetchDisplayName create positional variant using vocabulary name" name="fetchDisplayName create positional variant using vocabulary name" time="0.007">
+    </testcase>
+  </testsuite>
+  <testsuite name="WrapperQuery.parseRecord" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:55" time="1.133" tests="17">
+    <testcase classname="WrapperQuery.parseRecord select basic record" name="WrapperQuery.parseRecord select basic record" time="0.004">
+    </testcase>
+    <testcase classname="WrapperQuery.parseRecord select record with embedded properties" name="WrapperQuery.parseRecord select record with embedded properties" time="0.004">
+    </testcase>
+    <testcase classname="WrapperQuery.parse multiple keyword search params" name="WrapperQuery.parse multiple keyword search params" time="0.14">
+    </testcase>
+    <testcase classname="WrapperQuery.parse parse edge query" name="WrapperQuery.parse parse edge query" time="0.001">
+    </testcase>
+    <testcase classname="WrapperQuery.parse parses a simple single Comparison" name="WrapperQuery.parse parses a simple single Comparison" time="0">
+    </testcase>
+    <testcase classname="WrapperQuery.parse parses a simple single Comparison including history" name="WrapperQuery.parse parses a simple single Comparison including history" time="0">
+    </testcase>
+    <testcase classname="WrapperQuery.parse add size check for equals comparison of iterables" name="WrapperQuery.parse add size check for equals comparison of iterables" time="0.001">
+    </testcase>
+    <testcase classname="WrapperQuery.parse specify custom operator for iterables" name="WrapperQuery.parse specify custom operator for iterables" time="0.001">
+    </testcase>
+    <testcase classname="WrapperQuery.parse parses embedded attribute traversal" name="WrapperQuery.parse parses embedded attribute traversal" time="0.004">
+    </testcase>
+    <testcase classname="WrapperQuery.parse list attributes uses contains if the input value is not also a list" name="WrapperQuery.parse list attributes uses contains if the input value is not also a list" time="0">
+    </testcase>
+    <testcase classname="WrapperQuery.parse orderBy parses a single order column" name="WrapperQuery.parse orderBy parses a single order column" time="0.001">
+    </testcase>
+    <testcase classname="WrapperQuery.parse orderBy descending order" name="WrapperQuery.parse orderBy descending order" time="0.002">
+    </testcase>
+    <testcase classname="WrapperQuery.parse orderBy parses a multiple ordering columns" name="WrapperQuery.parse orderBy parses a multiple ordering columns" time="0">
+    </testcase>
+    <testcase classname="WrapperQuery.parse subquery link in subquery" name="WrapperQuery.parse subquery link in subquery" time="0.001">
+    </testcase>
+    <testcase classname="WrapperQuery.parse subquery link in neighborhood subquery" name="WrapperQuery.parse subquery link in neighborhood subquery" time="0.002">
+    </testcase>
+    <testcase classname="WrapperQuery.parse top level treeQuery target ridList" name="WrapperQuery.parse top level treeQuery target ridList" time="0.002">
+    </testcase>
+    <testcase classname="WrapperQuery.parse top level treeQuery target ridList without history" name="WrapperQuery.parse top level treeQuery target ridList without history" time="0.001">
+    </testcase>
+    <testcase classname="WrapperQuery.parse top level treeQuery custom edges" name="WrapperQuery.parse top level treeQuery custom edges" time="0.001">
+    </testcase>
+    <testcase classname="WrapperQuery.parse top level treeQuery error on invalid edge class name" name="WrapperQuery.parse top level treeQuery error on invalid edge class name" time="0">
+    </testcase>
+    <testcase classname="WrapperQuery.parse top level treeQuery throw error on filters given" name="WrapperQuery.parse top level treeQuery throw error on filters given" time="0">
+    </testcase>
+    <testcase classname="WrapperQuery.parse top level treeQuery error on modelName for target" name="WrapperQuery.parse top level treeQuery error on modelName for target" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="getPreferedRecord" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:56" time="1.064" tests="12">
+    <testcase classname="getPreferedRecord only one record" name="getPreferedRecord only one record" time="0.002">
+    </testcase>
+    <testcase classname="getPreferedRecord based on source.sort only" name="getPreferedRecord based on source.sort only" time="0.001">
+    </testcase>
+    <testcase classname="getPreferedRecord with deprecated records" name="getPreferedRecord with deprecated records" time="0">
+    </testcase>
+    <testcase classname="getPreferedRecord with aliasing and deprecated records" name="getPreferedRecord with aliasing and deprecated records" time="0">
+    </testcase>
+    <testcase classname="getPreferedRecord aliasing over deprecated" name="getPreferedRecord aliasing over deprecated" time="0.001">
+    </testcase>
+    <testcase classname="createVirtualNodes get all virtual nodes from a graph virtualization" name="createVirtualNodes get all virtual nodes from a graph virtualization" time="0.006">
+    </testcase>
+    <testcase classname="getNodeToVNode get the mapping between nodes and virtual nodes" name="getNodeToVNode get the mapping between nodes and virtual nodes" time="0.007">
+    </testcase>
+    <testcase classname="getVNodeToNode get the mapping between virtual nodes and nodes" name="getVNodeToNode get the mapping between virtual nodes and nodes" time="0.002">
+    </testcase>
+    <testcase classname="createVirtualEdges get all virtual edges from a graph virtualization" name="createVirtualEdges get all virtual edges from a graph virtualization" time="0.002">
+    </testcase>
+    <testcase classname="virtualize get a virtual graph representation" name="virtualize get a virtual graph representation" time="0.008">
+    </testcase>
+    <testcase classname="virtualize get a virtual graph, without self loop" name="virtualize get a virtual graph, without self loop" time="0.004">
+    </testcase>
+    <testcase classname="virtualize get an inverted virtual graph" name="virtualize get an inverted virtual graph" time="0.006">
+    </testcase>
+  </testsuite>
+  <testsuite name="create (createEdge)" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:57" time="1.143" tests="2">
+    <testcase classname="create (createEdge) throws permission error when user cannot create node types" name="create (createEdge) throws permission error when user cannot create node types" time="0.004">
+    </testcase>
+    <testcase classname="create (createEdge) throws error when user creates a loop" name="create (createEdge) throws error when user creates a loop" time="0.005">
+    </testcase>
+  </testsuite>
+  <testsuite name="getAdjacency" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:48:58" time="1.067" tests="13">
+    <testcase classname="getAdjacency undirected adjacency list" name="getAdjacency undirected adjacency list" time="0.005">
+    </testcase>
+    <testcase classname="getAdjacency directed adjacency list" name="getAdjacency directed adjacency list" time="0.001">
+    </testcase>
+    <testcase classname="getComponents disconnected components" name="getComponents disconnected components" time="0.002">
+    </testcase>
+    <testcase classname="formatToFlowchart convert a graph into the Mermaid flowchart format; array" name="formatToFlowchart convert a graph into the Mermaid flowchart format; array" time="0.001">
+    </testcase>
+    <testcase classname="formatToFlowchart convert a graph into the Mermaid flowchart format; string" name="formatToFlowchart convert a graph into the Mermaid flowchart format; string" time="0.001">
+    </testcase>
+    <testcase classname="getInheritingClasses getting inherited classes" name="getInheritingClasses getting inherited classes" time="0.001">
+    </testcase>
+    <testcase classname="getInheritingClasses getting inherited classes, including abstract classes" name="getInheritingClasses getting inherited classes, including abstract classes" time="0.001">
+    </testcase>
+    <testcase classname="getInheritingClasses getting inherited classes, including the original super class" name="getInheritingClasses getting inherited classes, including the original super class" time="0.001">
+    </testcase>
+    <testcase classname="buildTraverseExpr traverse expression for traversal query; no direction" name="buildTraverseExpr traverse expression for traversal query; no direction" time="0.001">
+    </testcase>
+    <testcase classname="buildTraverseExpr traverse expression for traversal query; ascending" name="buildTraverseExpr traverse expression for traversal query; ascending" time="0">
+    </testcase>
+    <testcase classname="buildTraverseExpr traverse expression for traversal query; descending" name="buildTraverseExpr traverse expression for traversal query; descending" time="0.001">
+    </testcase>
+    <testcase classname="buildTraverseExpr traverse expression for traversal query; without the edges" name="buildTraverseExpr traverse expression for traversal query; without the edges" time="0.005">
+    </testcase>
+    <testcase classname="getGraph format records into a graph object" name="getGraph format records into a graph object" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="groupRecordsBy" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:49:00" time="0.929" tests="11">
+    <testcase classname="groupRecordsBy groups single level" name="groupRecordsBy groups single level" time="0.003">
+    </testcase>
+    <testcase classname="groupRecordsBy error on no aggregate and non-unique grouping" name="groupRecordsBy error on no aggregate and non-unique grouping" time="0.022">
+    </testcase>
+    <testcase classname="groupRecordsBy uses the whole record when nestedProperty is null" name="groupRecordsBy uses the whole record when nestedProperty is null" time="0.001">
+    </testcase>
+    <testcase classname="groupRecordsBy groups 2+ levels" name="groupRecordsBy groups 2+ levels" time="0.001">
+    </testcase>
+    <testcase classname="groupRecordsBy no aggregate" name="groupRecordsBy no aggregate" time="0.001">
+    </testcase>
+    <testcase classname="trimRecords removes protected records (default ok)" name="trimRecords removes protected records (default ok)" time="0.005">
+    </testcase>
+    <testcase classname="trimRecords removes protected records (explicit group)" name="trimRecords removes protected records (explicit group)" time="0.003">
+    </testcase>
+    <testcase classname="trimRecords removes protected edges (default ok)" name="trimRecords removes protected edges (default ok)" time="0.002">
+    </testcase>
+    <testcase classname="trimRecords removes protected edges (explicit group)" name="trimRecords removes protected edges (explicit group)" time="0.007">
+    </testcase>
+    <testcase classname="trimRecords allows protected edges (explicit group)" name="trimRecords allows protected edges (explicit group)" time="0.003">
+    </testcase>
+    <testcase classname="trimRecords removes nested protected records" name="trimRecords removes nested protected records" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="remove (delete edge)" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:49:00" time="1.072" tests="1">
+    <testcase classname="remove (delete edge) throws permission error when user cannot delete node types" name="remove (delete edge) throws permission error when user cannot delete node types" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="nonSpecificProjection" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:49:02" time="1.055" tests="6">
+    <testcase classname="nonSpecificProjection linkDepth 0" name="nonSpecificProjection linkDepth 0" time="0.003">
+    </testcase>
+    <testcase classname="nonSpecificProjection linkDepth 1" name="nonSpecificProjection linkDepth 1" time="0.005">
+    </testcase>
+    <testcase classname="nonSpecificProjection linkDepth 2" name="nonSpecificProjection linkDepth 2" time="0.016">
+    </testcase>
+    <testcase classname="nonSpecificProjection linkDepth 1 with edges" name="nonSpecificProjection linkDepth 1 with edges" time="0.008">
+    </testcase>
+    <testcase classname="propsToProjection deeply nested projection" name="propsToProjection deeply nested projection" time="0.014">
+    </testcase>
+    <testcase classname="parsePropertyList deeply nested projection" name="parsePropertyList deeply nested projection" time="0.01">
+    </testcase>
+  </testsuite>
+  <testsuite name="hasRecordAccess" errors="0" failures="0" skipped="0" timestamp="2025-06-24T19:49:03" time="0.553" tests="6">
+    <testcase classname="hasRecordAccess user with no groups" name="hasRecordAccess user with no groups" time="0.002">
+    </testcase>
+    <testcase classname="hasRecordAccess record with no groups" name="hasRecordAccess record with no groups" time="0.001">
+    </testcase>
+    <testcase classname="hasRecordAccess record with no groups but admin user" name="hasRecordAccess record with no groups but admin user" time="0">
+    </testcase>
+    <testcase classname="hasRecordAccess record with different group" name="hasRecordAccess record with different group" time="0">
+    </testcase>
+    <testcase classname="hasRecordAccess record with different group and admin user" name="hasRecordAccess record with different group and admin user" time="0.001">
+    </testcase>
+    <testcase classname="hasRecordAccess record with the correct group" name="hasRecordAccess record with the correct group" time="0">
+    </testcase>
+  </testsuite>
+</testsuites>

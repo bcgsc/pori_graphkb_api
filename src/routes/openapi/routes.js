@@ -344,7 +344,7 @@ const SUBGRAPHS = {
                         description: 'Get a subgraph of all similar records of record #135:14856.',
                         value: {
                             base: ['#135:14856'],
-                            subgraphType: 'similarTo',
+                            subgraphType: 'similar',
 
                         },
                     },

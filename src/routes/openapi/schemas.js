@@ -363,7 +363,7 @@ const SubgraphsQuery = {
         subgraphType: {
             description: 'The type of the returned subgraph. Decides which type of graph traversal to performe.',
             enum: [
-                'similarTo',
+                'similar',
                 'children',
                 'descendants',
                 'parents',
