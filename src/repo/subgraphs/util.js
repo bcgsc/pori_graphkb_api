@@ -22,6 +22,21 @@ const {
 } = require('./constants');
 
 /**
+ * Given a multiline string, returns a new string formatted on one line
+ *
+ * @param {string} s - The string to format
+ * @returns {string} The formatted string
+ */
+const oneliner = (s) => {
+    const oneline = s
+        .split('\n') // Split into lines
+        .map((line) => line.trim()) // Trim each line
+        .filter(Boolean) // Remove empty lines
+        .join(' '); // Join with a space
+    return oneline;
+};
+
+/**
  * Given a class name, returns all inheriting classes (from schema)
  *
  * @param {string} [superCls='V'] - The class acting as super class
@@ -446,5 +461,6 @@ module.exports = {
     getComponents,
     getGraph,
     getInheritingClasses,
+    oneliner,
     queryWithPagination,
 };
