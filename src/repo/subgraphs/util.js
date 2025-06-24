@@ -77,50 +77,6 @@ const getInheritingClasses = (superCls = 'V', {
 };
 
 /**
- * Given an array of RIDs, returns an array of distinct classes these records belong to.
- *
- * @param {Object} db - The database session object
- * @param {Array.<string>} rids - Some record RIDs
- * @returns {Array.<string>} classes - The corresponding classes
- */
-const getClasses = async (db, rids) => {
-    const queryString = `
-        SELECT
-            DISTINCT(@class)
-        FROM
-            [${rids.join(',')}]
-        WHERE
-            deletedAt is null`;
-
-    logger.debug(queryString);
-    const records = await db.query(queryString).all();
-
-    return records.map((x) => x['@class']);
-};
-
-/**
- * Given an array of RIDs, returns false is some are inactive or non-existent,
- * otherwise true.
- *
- * @param {Object} db - The database session object
- * @param {Array.<string>} rids - Some record RIDs
- * @returns {boolean}
- */
-const areActiveRIDs = async (db, rids) => {
-    const ids = [...new Set(rids)];
-    const queryString = `
-        SELECT
-            @rid,
-            deletedAt
-        FROM [${ids.join(',')}]`;
-
-    logger.debug(queryString);
-    const records = await db.query(queryString).all();
-
-    return ids.length === records.filter((x) => x.deletedAt === null).length;
-};
-
-/**
  * Given an ontology class and a base of record RIDs, check if these RIDs are valid,
  * active records (not soft-deleted), that all belong to the given ontology class.
  * Throw an error if not.
@@ -457,12 +413,10 @@ const formatToFlowchart = ({
 };
 
 module.exports = {
-    areActiveRIDs,
     baseValidation,
     buildTraverseExpr,
     formatToFlowchart,
     getAdjacency,
-    getClasses,
     getComponents,
     getGraph,
     getInheritingClasses,
