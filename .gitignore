@@ -13,6 +13,7 @@ id_rsa*
 out
 external_data
 jsdoc/
+junit.xml
 xunit.xml
 isolate*.log
 .audit.json
