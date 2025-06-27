@@ -5,7 +5,7 @@ const DEFAULT_EDGES = [
     'DeprecatedBy',
     'ElementOf',
     'GeneralizationOf',
-    // 'Infers', // discarded as it has never used between nodes of an ontology class
+    // 'Infers', // discarded as it has never been used between nodes of an ontology class
     // 'OppositeOf', // discarded as we don't want to follow these edges in a subgraph context
     // 'TargetOf', // discarded as it has never been used between nodes of the same ontology class
 ];
