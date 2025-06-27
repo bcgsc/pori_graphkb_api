@@ -43,7 +43,7 @@ const DEFAULT_NODE_PROPERTIES = [
 // Traversal depth limit.
 // Can be overridden using maxDepth option
 // Dose not applied to composition traversal, which don't traverse the graph per se.
-const MAX_DEPTH = 50;
+const MAX_DEPTH = 100;
 
 // For paginated queries
 const MAX_SIZE = 1000000;
