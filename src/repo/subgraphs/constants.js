@@ -24,20 +24,24 @@ const DEFAULT_DIRECTIONS = {
     descending: 'in',
 };
 
-// Default edge properties on subgraph traversals
+// Default node & edge properties on subgraph traversals
 const DEFAULT_EDGE_PROPERTIES = [
     '@rid',
     '@class',
     'in', // incomming node RID
     'out', // outgoing node RID
 ];
-
-// Default node properties on subgraph traversals
 const DEFAULT_NODE_PROPERTIES = [
     '@rid',
     '@class',
     'name', // used for vNode name (virtual graph)
     'source.sort', // used for prefered record selection (virtual graph)
+];
+const DEFAULT_PROPERTIES = [
+    ...new Set([
+        ...DEFAULT_EDGE_PROPERTIES,
+        ...DEFAULT_NODE_PROPERTIES,
+    ]),
 ];
 
 // Traversal depth limit.
@@ -51,9 +55,10 @@ const PAGE_SIZE = 5000;
 
 module.exports = {
     DEFAULT_DIRECTIONS,
-    DEFAULT_EDGE_PROPERTIES,
     DEFAULT_EDGES,
+    DEFAULT_EDGE_PROPERTIES,
     DEFAULT_NODE_PROPERTIES,
+    DEFAULT_PROPERTIES,
     DEFAULT_TREEEDGES,
     MAX_DEPTH,
     MAX_SIZE,
