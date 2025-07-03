@@ -15,8 +15,6 @@ const { parsePropertyList } = require('../query_builder/projection');
 const { logger } = require('../logging');
 const {
     DEFAULT_DIRECTIONS,
-    DEFAULT_EDGE_PROPERTIES,
-    DEFAULT_NODE_PROPERTIES,
     DEFAULT_EDGES,
     DEFAULT_TREEEDGES,
     MAX_SIZE,
@@ -171,15 +169,14 @@ const baseValidation = async (db, ontology, base) => {
  * Given some graph records (mixed Nodes & Edges),
  * returns segregated mappings of RIDs to their corresponding records, for both Edges & Nodes.
  *
- * Also perform the removal of unwanted properties since both nodes & edges properties
+ * Also perform the removal of unwanted properties since all nodes & edges properties
  * get returned for all records on traversal.
  *
  * @param {Map<string, Object>} records - The graph records, mapped by RID
  * @param {Object} [opt={}]
- * @param {Array.<string>} [edgeClasses=getInheritingClasses('E')] - Selected Edge classes
- * @param {Array.<string>} [nodeClasses=getInheritingClasses('V')] - Selected Node classes
- * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
- * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.edgeClasses=getInheritingClasses('E')] - Selected Edge classes
+ * @param {Array.<string>} [opt.nodeClasses=getInheritingClasses('V')] - Selected Node classes
+ * @param {Map<string, Array.<string>>} [opt.propsPerClass=new Map()] - Each class mapped to their props
  * @returns {Object} graph - The corresponding graph nodes and edges
  *   @property {Map<string, Object>} graph.edges - Mapping between RIDs and edges records
  *   @property {Map<string, Object>} graph.nodes - Mapping between RIDs and nodes records
@@ -187,19 +184,18 @@ const baseValidation = async (db, ontology, base) => {
 const getGraph = (records, {
     edgeClasses = getInheritingClasses('E'),
     nodeClasses = getInheritingClasses('V'),
-    returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
-    returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+    propsPerClass = new Map(),
 } = {}) => {
     const graph = { edges: new Map(), nodes: new Map() };
 
     records.forEach((r, rid) => {
+        const props = propsPerClass.get(r['@class']);
+
         if (edgeClasses.includes(r['@class'])) {
-            const edge = _.pick(r, returnEdgeProperties);
-            graph.edges.set(rid, edge);
+            graph.edges.set(rid, _.pick(r, props));
         }
         if (nodeClasses.includes(r['@class'])) {
-            const node = _.pick(r, returnNodeProperties);
-            graph.nodes.set(rid, node);
+            graph.nodes.set(rid, _.pick(r, props));
         }
     });
 
@@ -208,21 +204,27 @@ const getGraph = (records, {
 
 /**
  * Helper function for building the traverse string of a larger query string.
+ * Returns both the traversal SQL expression along with its parameters
  *
  * @param {Object} [opt={}]
  * @param {string|null} [opt.direction=null] - The direction
  * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - The similarity Edges to follow in both directions
+ * @param {string} [opt.prefix='t_'] - Prefix for parameter names, so they are conflic-free from other source
  * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - The hierarchy Edges to follow in the given direction
- * @param {boolean} [opt.withEdges=true] - Returning traversed Edge
- * @returns {string} traverseExpr - The traverse expression
+ * @param {boolean} [opt.withEdges=true] - Returning also the traversed Edges
+ * @returns {Object} obj
+ *   @property {string} obj.expr - The traverse expression
+ *   @property {Object} obj.params - The query parameters
  */
 const buildTraverseExpr = ({
     direction = null,
     edges = DEFAULT_EDGES,
+    prefix = 't_',
     treeEdges = DEFAULT_TREEEDGES,
     withEdges = true,
 } = {}) => {
-    let traverseExpr = '';
+    let expr = '';
+    const params = {};
 
     if (!['ascending', 'descending'].includes(direction) && direction !== null) {
         throw new ValidationError(
@@ -231,35 +233,48 @@ const buildTraverseExpr = ({
     }
 
     // Expression for traversing similarity edges in both directions
-    if (edges.length !== 0) {
+    for (let i = 0; i < edges.length; i++) {
+        const p = `${prefix}edge${i}`;
+        params[p] = edges[i];
+
+        if (i !== 0) {
+            expr += ','; // for concatenation with previous string, if any
+        }
+
         if (withEdges) {
-            // both() & bothE()
-            traverseExpr += `${edges.map((x) => `both('${x}'),bothE('${x}')`).join(',')}`;
+            expr += `both(:${p}),bothE(:${p})`;
         } else {
-            // both()
-            traverseExpr += `${edges.map((x) => `both('${x}')`).join(',')}`;
+            expr += `both(:${p})`;
         }
     }
 
     // Expression for traversing hierarchy edges (treeEdges) in a the given direction
     if (direction) {
         if (edges.length !== 0 && treeEdges.length !== 0) {
-            traverseExpr += ','; // needed for concatenation with previous string, if any
+            expr += ','; // for concatenation with previous string, if any
         }
-        if (treeEdges.length !== 0) {
-            const d = DEFAULT_DIRECTIONS[direction]; // ascending|descending => in|out
+
+        const d = DEFAULT_DIRECTIONS[direction]; // ascending|descending => in|out
+
+        for (let i = 0; i < treeEdges.length; i++) {
+            const p = `${prefix}treeEdge${i}`;
+            params[p] = treeEdges[i];
+
+            if (i !== 0) {
+                expr += ','; // for concatenation with previous string, if any
+            }
 
             if (withEdges) {
                 // in()|out() & inE()|outE()
-                traverseExpr += `${treeEdges.map((x) => `${d}('${x}'),${d}E('${x}')`).join(',')}`;
+                expr += `${d}(:${p}),${d}E(:${p})`;
             } else {
                 // in()|out()
-                traverseExpr += `${treeEdges.map((x) => `${d}('${x}')`).join(',')}`;
+                expr += `${d}(:${p})`;
             }
         }
     }
 
-    return traverseExpr;
+    return { expr, params };
 };
 
 /**
@@ -271,25 +286,42 @@ const buildTraverseExpr = ({
  * @param {Object} db - The database session object
  * @param {string} queryString - The original query string before pagination
  * @param {Object} [opt={}]
+ * @param {number} [opt.prefix='_p'] - Params names prefix
  * @param {number} [opt.maxSize=MAX_SIZE] - Total number of records limit
  * @param {number} [opt.pageSize=PAGE_SIZE] - Page size limit
+ * @param {number} [opt.withPlaceholders=false] - Paginating params placeholders already in query string
  * @returns {Array.<Object>} records - The concatenated selected records
  */
-const queryWithPagination = async (db, queryString, {
-    maxSize = MAX_SIZE,
-    pageSize = PAGE_SIZE,
-} = {}) => {
+const queryWithPagination = async (
+    db,
+    queryString,
+    params = {},
+    {
+        prefix = 'p_',
+        maxSize = MAX_SIZE,
+        pageSize = PAGE_SIZE,
+        withPlaceholders = false,
+    } = {},
+) => {
     const records = [];
 
-    // Given a queryString, returns it with added pagination
-    // (woks with more or less basic query strings)
-    const paginate = (initialQueryString, lowerLimit, limit) => {
-        if (/WHERE[^)]*$/.test(initialQueryString)) {
-            return `${initialQueryString} AND @rid > ${lowerLimit} LIMIT ${limit}`;
-        }
-        return `${initialQueryString} WHERE @rid > ${lowerLimit} LIMIT ${limit}`;
-    };
+    // paginated query string
+    const paginatedQueryString = [queryString];
 
+    if (!withPlaceholders) {
+        // Adding lowerBound & limit placeholders
+        // Since it won't work on all query strings, the query string can also be given with these
+        // placeholders already in place
+        paginatedQueryString.push(
+            /WHERE[^)]*$/.test(queryString)
+                ? 'AND'
+                : 'WHERE',
+            `@rid > :${prefix}lowerBound LIMIT :${prefix}limit`,
+        );
+    }
+
+    // paginated params
+    const paginatedParams = { ...params };
     let lowerRid = '#-1:-1';
 
     while (true) {
@@ -297,11 +329,15 @@ const queryWithPagination = async (db, queryString, {
         const limit = maxSize - records.length < pageSize
             ? maxSize - records.length
             : pageSize;
-        const paginatedQueryString = paginate(queryString, lowerRid, limit);
-        logger.debug(paginatedQueryString);
+
+        // updating paginated params
+        paginatedParams.params[`${prefix}lowerBound`] = lowerRid;
+        paginatedParams.params[`${prefix}limit`] = limit;
+        logger.debug(paginatedQueryString.join(' '));
+        logger.debug(JSON.stringify(paginatedParams));
 
         // Query
-        const results = await db.query(paginatedQueryString).all();
+        const results = await db.query(paginatedQueryString.join(' '), paginatedParams).all();
         logger.debug(`page results: ${results.length}`);
         records.push(...results);
 

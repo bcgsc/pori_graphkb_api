@@ -7,8 +7,7 @@ const { ValidationError } = require('@bcgsc-pori/graphkb-schema');
 const { logger } = require('../logging');
 const {
     DEFAULT_EDGES,
-    DEFAULT_EDGE_PROPERTIES,
-    DEFAULT_NODE_PROPERTIES,
+    DEFAULT_PROPERTIES,
     DEFAULT_TREEEDGES,
     MAX_DEPTH,
 } = require('./constants');
@@ -18,6 +17,7 @@ const {
     getAdjacency,
     getComponents,
     getGraph,
+    getPropsPerClass,
     queryWithPagination,
 } = require('./util');
 const { virtualize } = require('./virtual');
@@ -33,8 +33,7 @@ const { virtualize } = require('./virtual');
  * @param {string} ontology - The ontology class
  * @param {Object} opt
  * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
- * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
- * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnProperties=DEFAULT_PROPERTIES]
  * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
  * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
@@ -42,8 +41,7 @@ const composition = async (db, ontology, opt = {}) => {
     // options
     const {
         edges = DEFAULT_EDGES,
-        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
-        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+        returnProperties = DEFAULT_PROPERTIES,
         treeEdges = DEFAULT_TREEEDGES,
     } = opt;
 
@@ -51,42 +49,37 @@ const composition = async (db, ontology, opt = {}) => {
     const records = new Map();
 
     // ontology Nodes query
-    const queryStringOntology = `
-        SELECT
-            ${returnNodeProperties.join(',')}
+    const ontologyRecords = await queryWithPagination(
+        db,
+        `SELECT
+            ${returnProperties.join(',')}
         FROM
-            ${ontology}
+            :ontology
         WHERE
-            deletedAt is null`;
-    const ontologyRecords = await queryWithPagination(db, queryStringOntology);
-
-    // populating records
-    for (const r of ontologyRecords) {
-        records.set(String(r['@rid']), r);
-    }
+            deletedAt is null`,
+        { params: { ontology } },
+    );
+    ontologyRecords.forEach((r) => records.set(String(r['@rid']), r));
 
     // edges & treeEdges Edges queries
     const edgeClasses = [...edges, ...treeEdges];
 
     for (let i = 0; i < edgeClasses.length; i++) {
-        const queryStringEdgeClass = `
-            SELECT
-                ${returnEdgeProperties.join(',')}
+        const EdgeClassRecords = await queryWithPagination(
+            db,
+            `SELECT
+                ${returnProperties.join(',')}
             FROM
                 ${edgeClasses[i]}
             WHERE
                 deletedAt is null AND
-                in.@class = '${ontology}' AND
+                in.@class = :ontology AND
                 in.deletedAt is null AND
-                out.@class = '${ontology}' AND
-                out.deletedAt is null`;
-
-        const EdgeClassRecords = await queryWithPagination(db, queryStringEdgeClass);
-
-        // populating records
-        for (const r of EdgeClassRecords) {
-            records.set(String(r['@rid']), r);
-        }
+                out.@class = :ontology AND
+                out.deletedAt is null`,
+            { params: { ontology } },
+        );
+        EdgeClassRecords.forEach((r) => records.set(String(r['@rid']), r));
     }
 
     logger.debug(`results: ${records.size}`);
@@ -104,8 +97,7 @@ const composition = async (db, ontology, opt = {}) => {
  * @param {Object} opt
  * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
  * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth
- * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
- * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnProperties=DEFAULT_PROPERTIES]
  * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
 const similarity = async (
@@ -118,30 +110,41 @@ const similarity = async (
     const {
         edges = DEFAULT_EDGES,
         maxDepth = MAX_DEPTH,
-        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
-        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+        returnProperties = DEFAULT_PROPERTIES,
     } = opt;
 
-    // queryString
+    // traverse expression w/ params
+    const { expr, params: tParams } = buildTraverseExpr({ edges, treeEdges: [] });
+
+    // queryString & params
     const queryString = `
         SELECT
-            ${[...new Set([...returnEdgeProperties, ...returnNodeProperties])].join(',')}
+            ${returnProperties.join(',')}
         FROM (
             TRAVERSE
-                ${buildTraverseExpr({ edges, treeEdges: [] })}
+                ${expr}
             FROM
                 [${base.join(',')}]
             WHILE
-                @class in [${[...edges, ontology].map((x) => `'${x}'`).join(',')}] AND
-                (in.@class is null OR in.@class = '${ontology}') AND
-                (out.@class is null OR out.@class = '${ontology}') AND
+                @class IN :cls AND
+                (in.@class is null OR in.@class = :ontology) AND
+                (out.@class is null OR out.@class = :ontology) AND
                 deletedAt is null AND
-                $depth <= ${maxDepth}
+                $depth <= :depth
         )`;
     logger.debug(queryString);
+    const params = {
+        params: {
+            cls: [...edges, ontology],
+            depth: maxDepth, // important renaming of maxDepth
+            ontology,
+            ...tParams,
+        },
+    };
+    logger.debug(JSON.stringify(params));
 
     // query
-    const results = await db.query(queryString).all();
+    const results = await db.query(queryString, params).all();
 
     const records = new Map(results.map((r) => [String(r['@rid']), r]));
     logger.debug(`results: ${records.size}`);
@@ -162,13 +165,12 @@ const similarity = async (
  *
  * @param {Object} db - The database session object
  * @param {string} ontology - The ontology class to be traversed
- * @param {Array.<string>} base
+ * @param {Array.<string>} base - Record RIDs to start traversing from
  * @param {string} direction - The traversal direction (ascending|descending)
  * @param {Object} opt
  * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
  * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth
- * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
- * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnProperties=DEFAULT_PROPERTIES]
  * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
  * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
@@ -183,12 +185,11 @@ const immediate = async (
     const {
         edges = DEFAULT_EDGES,
         maxDepth = MAX_DEPTH,
-        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
-        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+        returnProperties = DEFAULT_PROPERTIES,
         treeEdges = DEFAULT_TREEEDGES,
     } = opt;
 
-    // 1st traversal; get base similarity
+    // 1st TRAVERSAL; get base similarity
     const t1 = await similarity(
         db,
         ontology,
@@ -196,42 +197,63 @@ const immediate = async (
         {
             edges,
             maxDepth,
-            returnEdgeProperties,
-            returnNodeProperties,
+            returnProperties,
         },
     );
 
-    // 2nd traversal; get 1st generation (children|parents)
+    // 2nd TRAVERSAL; get 1st generation (children|parents)
+    // traverse expression w/ params
+    const { expr, params: tParams } = buildTraverseExpr({ direction, edges: [], treeEdges });
+    // base; node records from 1st traversal
+    const t2Base = Array.from(t1.entries())
+        .filter(([, v]) => v['@class'] === ontology)
+        .map((x) => x[0])
+        .join(',');
+    // queryString & params
     const queryString = `
         SELECT
-            ${[...new Set([...returnEdgeProperties, ...returnNodeProperties])].join(',')}
+            ${returnProperties.join(',')}
         FROM (
             TRAVERSE
-                ${buildTraverseExpr({ direction, edges: [], treeEdges })}
+                ${expr}
             FROM
-                [${[...t1.keys()].join(',')}]
+                [${t2Base}]
             WHILE
-                @class in [${[...edges, ...treeEdges, ontology].map((x) => `'${x}'`).join(',')}] AND
-                (in.@class is null OR in.@class = '${ontology}') AND
-                (out.@class is null OR out.@class = '${ontology}') AND
+                @class IN :cls AND
+                (in.@class is null OR in.@class = :ontology) AND
+                (out.@class is null OR out.@class = :ontology) AND
                 deletedAt is null AND
                 $depth <= 1
         )`;
     logger.debug(queryString);
-    const results = await db.query(queryString).all();
+    const params = {
+        params: {
+            cls: [...edges, ontology],
+            ontology,
+            ...tParams,
+        },
+    };
+    logger.debug(JSON.stringify(params));
+    // query & results
+    const results = await db.query(queryString, params).all();
     const t2 = new Map(results.map((r) => [String(r['@rid']), r]));
     logger.debug(`results: ${t2.size}`);
 
-    // 3rd traversal; get similarity again
+    // 3rd TRAVERSAL; get similarity again
+    // base; node records from 2nd traversal
+    const t3Base = Array.from(t2.entries())
+        .filter(([, v]) => v['@class'] === ontology)
+        .map((x) => x[0])
+        .join(',');
+    // traversal
     const t3 = await similarity(
         db,
         ontology,
-        [...t2.keys()], // base
+        t3Base, // base
         {
             edges,
             maxDepth,
-            returnEdgeProperties,
-            returnNodeProperties,
+            returnProperties,
         },
     );
 
@@ -250,13 +272,12 @@ const immediate = async (
  *
  * @param {Object} db - The database session object
  * @param {string} ontology - The ontology class to be traversed
- * @param {Array.<string>} base
+ * @param {Array.<string>} base - Record RIDs to start traversing from
  * @param {string} direction - The traversal direction (ascending|descending)
  * @param {Object} opt
  * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
  * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth
- * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
- * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnProperties=DEFAULT_PROPERTIES]
  * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
  * @returns {Map<string, Object>} records - The selected records, mapped by RID
  */
@@ -271,31 +292,43 @@ const transitive = async (
     const {
         edges = DEFAULT_EDGES,
         maxDepth = MAX_DEPTH,
-        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES,
-        returnNodeProperties = DEFAULT_NODE_PROPERTIES,
+        returnProperties = DEFAULT_PROPERTIES,
         treeEdges = DEFAULT_TREEEDGES,
     } = opt;
 
-    // queryString
+    // traverse expression w/ params
+    const { expr, params: tParams } = buildTraverseExpr({ direction, edges, treeEdges });
+
+    // queryString & params
     const queryString = `
         SELECT
-            ${[...new Set([...returnEdgeProperties, ...returnNodeProperties])].join(',')}
+            ${returnProperties.join(',')}
         FROM (
             TRAVERSE
-                ${buildTraverseExpr({ direction, edges, treeEdges })}
+                ${expr}
             FROM
                 [${base.join(',')}]
             WHILE
-                @class in [${[...edges, ...treeEdges, ontology].map((x) => `'${x}'`).join(',')}] AND
-                (in.@class is null OR in.@class = '${ontology}') AND
-                (out.@class is null OR out.@class = '${ontology}') AND
+                @class in :cls AND
+                (in.@class is null OR in.@class = :ontology) AND
+                (out.@class is null OR out.@class = :ontology) AND
                 deletedAt is null AND
-                $depth <= ${maxDepth}
+                $depth <= :depth
         )`;
+    logger.debug(queryString);
+    const params = {
+        params: {
+            cls: [...edges, ...treeEdges, ontology],
+            depth: maxDepth, // important renaming of maxDepth
+            ontology,
+            ...tParams,
+        },
+    };
+    logger.debug(JSON.stringify(params));
 
     // query
-    logger.debug(queryString);
     const results = await db.query(queryString).all();
+
     const records = new Map(results.map((r) => [String(r['@rid']), r]));
     logger.debug(`results: ${records.size}`);
     return records;
@@ -329,8 +362,7 @@ const transitive = async (
  * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - Similarity edge classes
  * @param {boolean} [opt.firstGenerationOnly=false] - Limits hierarchy TreeEdges traversal depth to 1
  * @param {number} [opt.maxDepth=MAX_DEPTH] - The maximum traversal depth on a traversal path
- * @param {Array.<string>} [opt.returnEdgeProperties=DEFAULT_EDGE_PROPERTIES]
- * @param {Array.<string>} [opt.returnNodeProperties=DEFAULT_NODE_PROPERTIES]
+ * @param {Array.<string>} [opt.returnProperties=DEFAULT_PROPERTIES]
  * @param {boolean} [opt.subgraph='real'] - Returned subgraph format(s)
  * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - Hierarchy edge classes
  * @param {Object} [vOpt={}] - Virtualization options
@@ -347,8 +379,7 @@ const traverse = async (
         edges = DEFAULT_EDGES,
         firstGenerationOnly = false,
         maxDepth = MAX_DEPTH,
-        returnEdgeProperties = DEFAULT_EDGE_PROPERTIES, // Has no effect on a virtual subgraph
-        returnNodeProperties = DEFAULT_NODE_PROPERTIES, // On a virtual subgraph, only affect associated records
+        returnProperties = DEFAULT_PROPERTIES,
         subgraph = 'real',
         treeEdges = DEFAULT_TREEEDGES,
         vOpt = {},
@@ -364,17 +395,16 @@ const traverse = async (
     }
     await baseValidation(db, ontology, base);
 
-    // make sure minimal default properties are present/added
-    DEFAULT_EDGE_PROPERTIES.forEach((x) => {
-        if (!returnEdgeProperties.includes(x)) {
-            returnEdgeProperties.push(x);
+    // Make sure minimal default properties are present/added
+    // All user-defined returnProperties are additions to defaults
+    DEFAULT_PROPERTIES.forEach((x) => {
+        if (!returnProperties.includes(x)) {
+            returnProperties.push(x);
         }
     });
-    DEFAULT_NODE_PROPERTIES.forEach((x) => {
-        if (!returnNodeProperties.includes(x)) {
-            returnNodeProperties.push(x);
-        }
-    });
+    // Make sure all returnProperties are valid.
+    // Needed for both SQL sanitation and properties filtering on query results.
+    const propsPerClass = getPropsPerClass([...edges, ...treeEdges, ontology], returnProperties);
 
     // additional checks
     if (typeof maxDepth !== 'number' || maxDepth === 0) {
@@ -399,8 +429,7 @@ const traverse = async (
                     {
                         edges,
                         maxDepth,
-                        returnEdgeProperties,
-                        returnNodeProperties,
+                        returnProperties,
                         treeEdges,
                     },
                 );
@@ -415,8 +444,7 @@ const traverse = async (
                     {
                         edges,
                         maxDepth,
-                        returnEdgeProperties,
-                        returnNodeProperties,
+                        returnProperties,
                         treeEdges,
                     },
                 );
@@ -431,8 +459,7 @@ const traverse = async (
                 ontology,
                 {
                     edges,
-                    returnEdgeProperties,
-                    returnNodeProperties,
+                    returnProperties,
                     treeEdges,
                 },
             );
@@ -441,7 +468,7 @@ const traverse = async (
 
         case 'split':
             // tree-like subgraph. Direction is splitted from base
-            // TRANSITIVE directed traversal for ancestors
+            // 1. TRANSITIVE directed traversal for ancestors
             results = await transitive(
                 db,
                 ontology,
@@ -450,15 +477,13 @@ const traverse = async (
                 {
                     edges,
                     maxDepth,
-                    returnEdgeProperties,
-                    returnNodeProperties,
+                    returnProperties,
                     treeEdges,
                 },
             );
             results.forEach((v, k) => { records.set(k, v); });
 
-            // TRANSITIVE directed traversal for descendants
-            // duplicates need to be addressed downstream
+            // 2. TRANSITIVE directed traversal for descendants
             results = await transitive(
                 db,
                 ontology,
@@ -467,8 +492,7 @@ const traverse = async (
                 {
                     edges,
                     maxDepth,
-                    returnEdgeProperties,
-                    returnNodeProperties,
+                    returnProperties,
                     treeEdges,
                 },
             );
@@ -485,8 +509,7 @@ const traverse = async (
                 {
                     edges,
                     maxDepth,
-                    returnEdgeProperties,
-                    returnNodeProperties,
+                    returnProperties,
                 },
             );
             results.forEach((v, k) => { records.set(k, v); });
@@ -501,8 +524,7 @@ const traverse = async (
     const graph = getGraph(records, {
         edgeClasses: [...edges, ...treeEdges],
         nodeClasses: [ontology],
-        returnEdgeProperties,
-        returnNodeProperties,
+        propsPerClass,
     });
     logger.debug(`g: { edges: ${graph.edges.size}, nodes: ${graph.nodes.size} }`);
 
