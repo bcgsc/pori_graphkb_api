@@ -387,13 +387,15 @@ const traverse = async (
 ) => {
     // INPUTS
     // a valid base is required for most traversals
-    if (!base && direction !== 'both') {
-        throw new ValidationError(`
-            Some base records (base parameter) are required to perform the traversal from.
-            Consider a complete queryType to traverse the whole ${ontology} ontology.
-        `);
+    if (!base) {
+        if (direction !== 'both') {
+            throw new ValidationError(`
+                Some base records (base parameter) are required to perform the traversal from.
+            `);
+        }
+    } else {
+        await baseValidation(db, ontology, base);
     }
-    await baseValidation(db, ontology, base);
 
     // Make sure minimal default properties are present/added
     // All user-defined returnProperties are additions to defaults
