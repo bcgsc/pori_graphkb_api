@@ -207,7 +207,7 @@ const immediate = async (
     // base; node records from 1st traversal
     const t2Base = Array.from(t1.entries())
         .filter(([, v]) => v['@class'] === ontology)
-        .map((x) => x[0])
+        .map((x) => x[0]) // RID
         .join(',');
     // queryString & params
     const queryString = `
@@ -243,8 +243,7 @@ const immediate = async (
     // base; node records from 2nd traversal
     const t3Base = Array.from(t2.entries())
         .filter(([, v]) => v['@class'] === ontology)
-        .map((x) => x[0])
-        .join(',');
+        .map((x) => x[0]); // RID
     // traversal
     const t3 = await similarity(
         db,
