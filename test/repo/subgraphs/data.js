@@ -4,6 +4,13 @@
 
 const { RID } = require('orientjs');
 
+const {
+    DEFAULT_EDGES,
+    DEFAULT_EDGE_PROPERTIES,
+    DEFAULT_NODE_PROPERTIES,
+    DEFAULT_TREEEDGES,
+} = require('../../../src/repo/subgraphs/constants');
+
 /**
  * SAMPLE GRAPH FOR TESTING SUBGRAPHS FUNCTIONALITIES
  */
@@ -85,6 +92,13 @@ const RECORDS = [
 const RECORDS_MAP = new Map(
     RECORDS.map((x) => [String(x['@rid']), x]),
 );
+const PROPS_PER_CLASS = new Map([
+    ...[...DEFAULT_EDGES, ...DEFAULT_TREEEDGES].map((x) => [x, [
+        ...DEFAULT_EDGE_PROPERTIES,
+        'source.sort', // adding 'source.sort' since it is avail. on the models; no other way around it
+    ]]),
+    ['Disease', DEFAULT_NODE_PROPERTIES],
+]);
 
 // GRAPH
 const NODES = new Map(
@@ -268,6 +282,7 @@ module.exports = {
     GRAPH,
     NODE_TO_VNODE_MAP,
     NODES,
+    PROPS_PER_CLASS,
     RECORDS,
     RECORDS_MAP,
     RIDs,
