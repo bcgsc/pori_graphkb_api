@@ -1,4 +1,11 @@
 /* eslint-disable import/extensions */
+const _ = require('lodash');
+
+const {
+    DEFAULT_EDGES,
+    DEFAULT_PROPERTIES,
+    DEFAULT_TREEEDGES,
+} = require('../../../src/repo/subgraphs/constants');
 const {
     buildTraverseExpr,
     formatToFlowchart,
@@ -6,6 +13,8 @@ const {
     getComponents,
     getGraph,
     getInheritingClasses,
+    getPropsPerClass,
+    oneliner,
 } = require('../../../src/repo/subgraphs/util');
 
 const {
@@ -15,6 +24,7 @@ const {
     EDGES,
     GRAPH,
     NODES,
+    PROPS_PER_CLASS,
     RECORDS_MAP,
 } = require('./data');
 
@@ -129,14 +139,21 @@ describe('getInheritingClasses', () => {
 describe('buildTraverseExpr', () => {
     const edges = ['A', 'B'];
     const treeEdges = ['C', 'D'];
+    const expectedParams = {
+        t_edge0: 'A',
+        t_edge1: 'B',
+        t_treeEdge0: 'C',
+        t_treeEdge1: 'D',
+    };
 
     test('traverse expression for traversal query; no direction', () => {
-        const result = buildTraverseExpr({ edges, treeEdges });
+        const result = buildTraverseExpr({ edges, prefix: 't_', treeEdges });
         const expected = `
-            both('A'),bothE('A'),
-            both('B'),bothE('B')
+            both(:t_edge0),bothE(:t_edge0),
+            both(:t_edge1),bothE(:t_edge1)
         `;
-        expect(result).toBe(expected.replace(/\s+/g, ''));
+        expect(result.expr).toBe(oneliner(expected, false));
+        expect(result.params).toEqual(_.pick(expectedParams, ['t_edge0', 't_edge1']));
     });
 
     test('traverse expression for traversal query; ascending', () => {
@@ -146,12 +163,13 @@ describe('buildTraverseExpr', () => {
             treeEdges,
         });
         const expected = `
-            both('A'),bothE('A'),
-            both('B'),bothE('B'),
-            out('C'),outE('C'),
-            out('D'),outE('D')
+            both(:t_edge0),bothE(:t_edge0),
+            both(:t_edge1),bothE(:t_edge1),
+            out(:t_treeEdge0),outE(:t_treeEdge0),
+            out(:t_treeEdge1),outE(:t_treeEdge1)
         `;
-        expect(result).toBe(expected.replace(/\s+/g, ''));
+        expect(result.expr).toBe(oneliner(expected, false));
+        expect(result.params).toEqual(expectedParams);
     });
 
     test('traverse expression for traversal query; descending', () => {
@@ -161,12 +179,13 @@ describe('buildTraverseExpr', () => {
             treeEdges,
         });
         const expected = `
-            both('A'),bothE('A'),
-            both('B'),bothE('B'),
-            in('C'),inE('C'),
-            in('D'),inE('D')
+            both(:t_edge0),bothE(:t_edge0),
+            both(:t_edge1),bothE(:t_edge1),
+            in(:t_treeEdge0),inE(:t_treeEdge0),
+            in(:t_treeEdge1),inE(:t_treeEdge1)
         `;
-        expect(result).toBe(expected.replace(/\s+/g, ''));
+        expect(result.expr).toBe(oneliner(expected, false));
+        expect(result.params).toEqual(expectedParams);
     });
 
     test('traverse expression for traversal query; without the edges', () => {
@@ -177,18 +196,47 @@ describe('buildTraverseExpr', () => {
             withEdges: false,
         });
         const expected = `
-            both('A'),both('B'),
-            in('C'),in('D')
+            both(:t_edge0),
+            both(:t_edge1),
+            in(:t_treeEdge0),
+            in(:t_treeEdge1)
         `;
-        expect(result).toBe(expected.replace(/\s+/g, ''));
+        expect(result.expr).toBe(oneliner(expected, false));
+        expect(result.params).toEqual(expectedParams);
+    });
+});
+
+describe('getPropsPerClass', () => {
+    test('return expected props on each class', () => {
+        const result = getPropsPerClass(
+            [
+                ...DEFAULT_EDGES,
+                ...DEFAULT_TREEEDGES,
+                'Disease',
+            ],
+            DEFAULT_PROPERTIES,
+        );
+        expect(result).toEqual(PROPS_PER_CLASS);
     });
 });
 
 describe('getGraph', () => {
     test('format records into a graph object', () => {
-        const graph = getGraph(RECORDS_MAP);
+        const graph = getGraph(RECORDS_MAP, { propsPerClass: PROPS_PER_CLASS });
         expect(graph.nodes).toEqual(NODES);
         expect(graph.edges).toEqual(EDGES);
         expect(graph).toEqual(GRAPH);
+    });
+
+    test('removes unwanted properties', () => {
+        const propsPerClass = PROPS_PER_CLASS;
+        propsPerClass.set('Disease', propsPerClass.get('Disease').filter((x) => x !== 'name'));
+
+        const graph = getGraph(RECORDS_MAP, { propsPerClass });
+
+        const r1 = [...graph.nodes.values()][0];
+        const r1Props = Object.keys(r1);
+        expect(r1Props.includes('name')).toBe(false);
+        expect(r1Props.includes('source.sort')).toBe(true);
     });
 });
