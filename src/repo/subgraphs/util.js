@@ -406,7 +406,7 @@ const getAdjacency = (graph, { directed = false } = {}) => {
  * If the graph is disconnected, then more than one component is returned.
  *
  * @param {Map<string, Set<string>>} adj - An adjacency list. Must be symetric
- * @returns {string[][]} - The corresponding connected components
+ * @returns {Array.<Array.<string>>} - The corresponding connected components
  */
 const getComponents = (adj) => {
     const visited = new Set();
@@ -449,7 +449,7 @@ const getComponents = (adj) => {
  * @param {Object} [opt.nodes] - graph's nodes|vnodes
  * @param {string} [opt.orientation='BT'] - see Mermaid docs
  * @param {boolean} [opt.strignify=true] - returns as a string instead of an array
- * @returns {string[]|string} flowchart
+ * @returns {Array.<string>|string} flowchart
  */
 const formatToFlowchart = ({
     edges = {},
