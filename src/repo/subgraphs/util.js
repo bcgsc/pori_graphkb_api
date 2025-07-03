@@ -1,3 +1,4 @@
+/* eslint-disable multiline-ternary */
 /* eslint-disable no-constant-condition */
 /**
  * SUBGRAPHS UTILITY FUNCTIONS
@@ -64,14 +65,15 @@ const getPropsPerClass = (cls, returnProperties) => {
  * Given a multiline string, returns a new string formatted on one line
  *
  * @param {string} s - The string to format
+ * @param {boolean} [joinWithSpace=true] - If a space gets added or not when replacing a new line
  * @returns {string} The formatted string
  */
-const oneliner = (s) => {
+const oneliner = (s, joinWithSpace = true) => {
     const oneline = s
         .split('\n') // Split into lines
         .map((line) => line.trim()) // Trim each line
         .filter(Boolean) // Remove empty lines
-        .join(' '); // Join with a space
+        .join(joinWithSpace ? ' ' : ''); // Join with or without a space
     return oneline;
 };
 
