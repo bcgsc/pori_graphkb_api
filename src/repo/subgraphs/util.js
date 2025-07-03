@@ -10,6 +10,8 @@ const {
     ValidationError,
     util: { looksLikeRID },
 } = require('@bcgsc-pori/graphkb-schema');
+
+const { parsePropertyList } = require('../query_builder/projection');
 const { logger } = require('../logging');
 const {
     DEFAULT_DIRECTIONS,
@@ -20,6 +22,45 @@ const {
     MAX_SIZE,
     PAGE_SIZE,
 } = require('./constants');
+
+/**
+ * Given an array of class names and an array of properties,
+ * returns a mapping of allowed properties per class.
+ *
+ * Also make sure that all returnProperties are allowed on at least one of
+ * the selected classes, otherwise throw an error (for SQL sanitation).
+ *
+ * Leverage the Query Builder and its parsePropertyList() function.
+ *
+ * @param {Array.<string>} cls - The record classes
+ * @param {Array.<string>} returnProperties - The record's properties we're interested in
+ * @returns {Map<string, Array.<string>>} Mapping of allowed properties per class
+ */
+const getPropsPerClass = (cls, returnProperties) => {
+    const propsPerClass = new Map();
+    const allowedProps = new Set();
+
+    // filtering props per class
+    cls.forEach((cl) => {
+        propsPerClass.set(cl, []);
+        returnProperties.forEach((prop) => {
+            try {
+                parsePropertyList(cl, [prop]);
+                propsPerClass.get(cl).push(prop);
+                allowedProps.add(prop); // flag this prop as allowed on at least one class
+            } catch (err) {}
+        });
+    });
+
+    // make sure all props are allowed (for SQL sanitation).
+    [...new Set(returnProperties)].forEach((prop) => {
+        if (!allowedProps.has(prop)) {
+            throw new ValidationError(`property ${prop} does not exist or cannot be accessed on any of these models: ${cls.join(', ')}`);
+        }
+    });
+
+    return propsPerClass;
+};
 
 /**
  * Given a multiline string, returns a new string formatted on one line
@@ -420,6 +461,7 @@ module.exports = {
     getComponents,
     getGraph,
     getInheritingClasses,
+    getPropsPerClass,
     oneliner,
     queryWithPagination,
 };
