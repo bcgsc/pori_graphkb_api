@@ -227,7 +227,7 @@ const immediate = async (
     logger.debug(queryString);
     const params = {
         params: {
-            cls: [...edges, ontology],
+            cls: [...treeEdges, ontology],
             ontology,
         },
     };
