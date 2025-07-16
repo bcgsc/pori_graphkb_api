@@ -1,6 +1,4 @@
 /* eslint-disable import/extensions */
-const _ = require('lodash');
-
 const {
     DEFAULT_EDGES,
     DEFAULT_PROPERTIES,
