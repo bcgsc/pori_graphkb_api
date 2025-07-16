@@ -16,21 +16,24 @@ const {
  */
 
 // INITIAL RECORDS
+// RID objects we'll need later
 const RIDs = new Map([
+    // for nodes
     ...Array.from({ length: 26 }, (_, i) => i + 1).map(
         (x) => [`#1:${x}`, new RID({ cluster: 1, position: x })],
     ),
+    // for similarity edges
     ...Array.from({ length: 11 }, (_, i) => i + 1).map(
         (x) => [`#2:${x}`, new RID({ cluster: 2, position: x })],
     ),
+    // for hierarchy edges
     ...Array.from({ length: 15 }, (_, i) => i + 1).map(
         (x) => [`#3:${x}`, new RID({ cluster: 3, position: x })],
     ),
 ]);
-const RECORDS = [
-    // NODES
+const NODE_RECORDS = [
     // 1st component
-    { '@rid': RIDs.get('#1:1'), '@class': 'Disease', name: 'A', 'source.sort': null },
+    { '@rid': RIDs.get('#1:1'), '@class': 'Disease', name: 'A', 'source.sort': undefined },
     { '@rid': RIDs.get('#1:2'), '@class': 'Disease', name: 'B', 'source.sort': 0 },
     { '@rid': RIDs.get('#1:3'), '@class': 'Disease', name: 'C', 'source.sort': 1 },
     { '@rid': RIDs.get('#1:4'), '@class': 'Disease', name: 'D', 'source.sort': 1 },
@@ -58,20 +61,21 @@ const RECORDS = [
     // 3rd component
     { '@rid': RIDs.get('#1:25'), '@class': 'Disease', name: 'Y', 'source.sort': 99999 },
     { '@rid': RIDs.get('#1:26'), '@class': 'Disease', name: 'Z', 'source.sort': 99999 },
-    // EDGES
+];
+const EDGE_RECORDS = [
     // Similarity edges
     { '@rid': RIDs.get('#2:1'), '@class': 'AliasOf', out: RIDs.get('#1:1'), in: RIDs.get('#1:2') }, // A -AliasOf-> B
-    { '@rid': RIDs.get('#2:3'), '@class': 'AliasOf', out: RIDs.get('#1:6'), in: RIDs.get('#1:7') }, // F -AliasOf-> G
-    { '@rid': RIDs.get('#2:6'), '@class': 'AliasOf', out: RIDs.get('#1:12'), in: RIDs.get('#1:11') }, // L -AliasOf-> K
-    { '@rid': RIDs.get('#2:8'), '@class': 'AliasOf', out: RIDs.get('#1:19'), in: RIDs.get('#1:20') }, // S -AliasOf-> T
-    { '@rid': RIDs.get('#2:10'), '@class': 'AliasOf', out: RIDs.get('#1:22'), in: RIDs.get('#1:23') }, // V -AliasOf-> W
-    { '@rid': RIDs.get('#2:12'), '@class': 'AliasOf', out: RIDs.get('#1:25'), in: RIDs.get('#1:26') }, // Y -AliasOf-> Z
-    { '@rid': RIDs.get('#2:4'), '@class': 'CrossReferenceOf', out: RIDs.get('#1:7'), in: RIDs.get('#1:8') }, // G -CrossReferenceOf-> H
-    { '@rid': RIDs.get('#2:7'), '@class': 'CrossReferenceOf', out: RIDs.get('#1:16'), in: RIDs.get('#1:17') }, // P -CrossReferenceOf-> Q
     { '@rid': RIDs.get('#2:2'), '@class': 'DeprecatedBy', out: RIDs.get('#1:3'), in: RIDs.get('#1:2') }, // C -DeprecatedBy-> B
+    { '@rid': RIDs.get('#2:3'), '@class': 'AliasOf', out: RIDs.get('#1:6'), in: RIDs.get('#1:7') }, // F -AliasOf-> G
+    { '@rid': RIDs.get('#2:4'), '@class': 'CrossReferenceOf', out: RIDs.get('#1:7'), in: RIDs.get('#1:8') }, // G -CrossReferenceOf-> H
     { '@rid': RIDs.get('#2:5'), '@class': 'DeprecatedBy', out: RIDs.get('#1:9'), in: RIDs.get('#1:8') }, // I -DeprecatedBy-> H
+    { '@rid': RIDs.get('#2:6'), '@class': 'AliasOf', out: RIDs.get('#1:12'), in: RIDs.get('#1:11') }, // L -AliasOf-> K
+    { '@rid': RIDs.get('#2:7'), '@class': 'CrossReferenceOf', out: RIDs.get('#1:16'), in: RIDs.get('#1:17') }, // P -CrossReferenceOf-> Q
+    { '@rid': RIDs.get('#2:8'), '@class': 'AliasOf', out: RIDs.get('#1:19'), in: RIDs.get('#1:20') }, // S -AliasOf-> T
     { '@rid': RIDs.get('#2:9'), '@class': 'DeprecatedBy', out: RIDs.get('#1:21'), in: RIDs.get('#1:20') }, // U -DeprecatedBy-> T
+    { '@rid': RIDs.get('#2:10'), '@class': 'AliasOf', out: RIDs.get('#1:22'), in: RIDs.get('#1:23') }, // V -AliasOf-> W
     { '@rid': RIDs.get('#2:11'), '@class': 'DeprecatedBy', out: RIDs.get('#1:23'), in: RIDs.get('#1:24') }, // W -DeprecatedBy-> X
+    { '@rid': RIDs.get('#2:12'), '@class': 'AliasOf', out: RIDs.get('#1:25'), in: RIDs.get('#1:26') }, // Y -AliasOf-> Z
     // Hierarchy edges
     { '@rid': RIDs.get('#3:1'), '@class': 'SubClassOf', out: RIDs.get('#1:3'), in: RIDs.get('#1:1') }, // C -SubClassOf-> A; will generate a self-referencing vNode
     { '@rid': RIDs.get('#3:2'), '@class': 'SubClassOf', out: RIDs.get('#1:7'), in: RIDs.get('#1:3') }, // G -SubClassOf-> C
@@ -89,25 +93,26 @@ const RECORDS = [
     { '@rid': RIDs.get('#3:14'), '@class': 'SubClassOf', out: RIDs.get('#1:23'), in: RIDs.get('#1:20') }, // W -SubClassOf-> T
     { '@rid': RIDs.get('#3:15'), '@class': 'SubClassOf', out: RIDs.get('#1:24'), in: RIDs.get('#1:20') }, // X -SubClassOf-> T
 ];
+const RECORDS = [...NODE_RECORDS, ...EDGE_RECORDS];
 const RECORDS_MAP = new Map(
     RECORDS.map((x) => [String(x['@rid']), x]),
 );
 const PROPS_PER_CLASS = new Map([
     ...[...DEFAULT_EDGES, ...DEFAULT_TREEEDGES].map((x) => [x, [
         ...DEFAULT_EDGE_PROPERTIES,
-        'source.sort', // adding 'source.sort' since it is avail. on the models; no other way around it
+        'source.sort', // adding 'source.sort' since it is avail. on the models although not a default
     ]]),
     ['Disease', DEFAULT_NODE_PROPERTIES],
 ]);
 
 // GRAPH
 const NODES = new Map(
-    RECORDS.slice(0, 26).map(
+    NODE_RECORDS.map(
         (x) => [String(x['@rid']), x],
     ),
 );
 const EDGES = new Map(
-    RECORDS.slice(26, 53).map(
+    EDGE_RECORDS.map(
         (x) => [String(x['@rid']), x],
     ),
 );
@@ -278,8 +283,10 @@ module.exports = {
     ADJACENCY,
     ADJACENCY_DIRECTED,
     COMPONENTS,
+    EDGE_RECORDS,
     EDGES,
     GRAPH,
+    NODE_RECORDS,
     NODE_TO_VNODE_MAP,
     NODES,
     PROPS_PER_CLASS,
