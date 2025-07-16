@@ -113,8 +113,8 @@ const similarity = async (
         returnProperties = DEFAULT_PROPERTIES,
     } = opt;
 
-    // traverse expression w/ params
-    const { expr, params: tParams } = buildTraverseExpr({ edges, treeEdges: [] });
+    // traverse expression
+    const expr = buildTraverseExpr({ edges, treeEdges: [] });
 
     // queryString & params
     const queryString = `
@@ -138,7 +138,6 @@ const similarity = async (
             cls: [...edges, ontology],
             depth: maxDepth, // important renaming of maxDepth
             ontology,
-            ...tParams,
         },
     };
     logger.debug(JSON.stringify(params));
@@ -203,7 +202,7 @@ const immediate = async (
 
     // 2nd TRAVERSAL; get 1st generation (children|parents)
     // traverse expression w/ params
-    const { expr, params: tParams } = buildTraverseExpr({ direction, edges: [], treeEdges });
+    const expr = buildTraverseExpr({ direction, edges: [], treeEdges });
     // base; node records from 1st traversal
     const t2Base = Array.from(t1.entries())
         .filter(([, v]) => v['@class'] === ontology)
@@ -230,7 +229,6 @@ const immediate = async (
         params: {
             cls: [...edges, ontology],
             ontology,
-            ...tParams,
         },
     };
     logger.debug(JSON.stringify(params));
@@ -295,8 +293,8 @@ const transitive = async (
         treeEdges = DEFAULT_TREEEDGES,
     } = opt;
 
-    // traverse expression w/ params
-    const { expr, params: tParams } = buildTraverseExpr({ direction, edges, treeEdges });
+    // traverse expression
+    const expr = buildTraverseExpr({ direction, edges, treeEdges });
 
     // queryString & params
     const queryString = `
@@ -320,13 +318,12 @@ const transitive = async (
             cls: [...edges, ...treeEdges, ontology],
             depth: maxDepth, // important renaming of maxDepth
             ontology,
-            ...tParams,
         },
     };
     logger.debug(JSON.stringify(params));
 
     // query
-    const results = await db.query(queryString).all();
+    const results = await db.query(queryString, params).all();
 
     const records = new Map(results.map((r) => [String(r['@rid']), r]));
     logger.debug(`results: ${records.size}`);

@@ -221,22 +221,17 @@ const getGraph = (records, {
  * @param {Object} [opt={}]
  * @param {string|null} [opt.direction=null] - The direction
  * @param {Array.<string>} [opt.edges=DEFAULT_EDGES] - The similarity Edges to follow in both directions
- * @param {string} [opt.prefix='t_'] - Prefix for parameter names, so they are conflic-free from other source
  * @param {Array.<string>} [opt.treeEdges=DEFAULT_TREEEDGES] - The hierarchy Edges to follow in the given direction
  * @param {boolean} [opt.withEdges=true] - Returning also the traversed Edges
- * @returns {Object} obj
- *   @property {string} obj.expr - The traverse expression
- *   @property {Object} obj.params - The query parameters
+ * @returns {string} expr - The traverse expression
  */
 const buildTraverseExpr = ({
     direction = null,
     edges = DEFAULT_EDGES,
-    prefix = 't_',
     treeEdges = DEFAULT_TREEEDGES,
     withEdges = true,
 } = {}) => {
     let expr = '';
-    const params = {};
 
     if (!['ascending', 'descending'].includes(direction) && direction !== null) {
         throw new ValidationError(
@@ -246,17 +241,16 @@ const buildTraverseExpr = ({
 
     // Expression for traversing similarity edges in both directions
     for (let i = 0; i < edges.length; i++) {
-        const p = `${prefix}edge${i}`;
-        params[p] = edges[i];
+        const c = `'${edges[i]}'`; // inside quotes
 
         if (i !== 0) {
             expr += ','; // for concatenation with previous string, if any
         }
 
         if (withEdges) {
-            expr += `both(:${p}),bothE(:${p})`;
+            expr += `both(${c}),bothE(${c})`;
         } else {
-            expr += `both(:${p})`;
+            expr += `both(${c})`;
         }
     }
 
@@ -269,8 +263,7 @@ const buildTraverseExpr = ({
         const d = DEFAULT_DIRECTIONS[direction]; // ascending|descending => in|out
 
         for (let i = 0; i < treeEdges.length; i++) {
-            const p = `${prefix}treeEdge${i}`;
-            params[p] = treeEdges[i];
+            const c = `'${treeEdges[i]}'`; // inside quotes
 
             if (i !== 0) {
                 expr += ','; // for concatenation with previous string, if any
@@ -278,15 +271,15 @@ const buildTraverseExpr = ({
 
             if (withEdges) {
                 // in()|out() & inE()|outE()
-                expr += `${d}(:${p}),${d}E(:${p})`;
+                expr += `${d}(${c}),${d}E(${c})`;
             } else {
                 // in()|out()
-                expr += `${d}(:${p})`;
+                expr += `${d}(${c})`;
             }
         }
     }
 
-    return { expr, params };
+    return expr;
 };
 
 /**
