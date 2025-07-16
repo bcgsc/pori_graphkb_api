@@ -1,6 +1,9 @@
+/* eslint-disable no-nested-ternary */
 const uuidV4 = require('uuid/v4');
 
+const { EDGE_RECORDS, NODE_RECORDS, RECORDS } = require('../repo/subgraphs/data');
 const { getUserByName, create, update } = require('../../src/repo/commands');
+const { logger } = require('../../src/repo/logging');
 const { connectDB } = require('../../src/repo');
 const { createConfig } = require('../../src');
 
@@ -151,6 +154,7 @@ const createSeededDb = async () => {
             user: admin,
         }),
     ]);
+
     await session.close();
     return {
         records: {
@@ -170,6 +174,119 @@ const createSeededDb = async () => {
     };
 };
 
+/**
+ * Creates a RO DB to be used in testing subgraphs traversal queries.
+ * Based on records in test/repo/subgraphs/data.js
+ */
+const createSeededDbForSubgraphs = async () => {
+    // new DB & session
+    const db = await createEmptyDb();
+    const { pool, admin } = db;
+    const session = await pool.acquire();
+
+    /** sources based on RECORDS['source.sort']
+     * so there is as many source as there is sorting priorities
+    */
+    const sources = new Map();
+    const sourcesToRid = new Map();
+
+    RECORDS.forEach((r) => {
+        let s;
+
+        if (typeof r['source.sort'] === 'number') {
+            s = r['source.sort'];
+        } else {
+            s = 99999;
+        }
+
+        if (!sources.has(String(s))) {
+            sources.set(String(s), { name: String(s), sort: s });
+        }
+    });
+
+    for (const [k, v] of sources) {
+        const src = await create(
+            session,
+            { content: { name: v.name, sort: v.sort }, modelName: 'Source', user: admin },
+        );
+        sourcesToRid.set(k, src);
+    }
+
+    // helper function for creating new records
+    const createRecord = async (opt) => create(
+        session,
+        { ...opt, user: admin },
+    );
+
+    /** create node records */
+    const vertexPayloads = [];
+    const dataRidToVertexIndex = new Map();
+    NODE_RECORDS.forEach((r) => {
+        const {
+            '@class': modelName,
+            '@rid': dataRid,
+            'source.sort': source,
+            ...rest
+        } = r;
+
+        let src;
+
+        if (typeof source === 'number') {
+            src = source;
+        } else {
+            src = 99999;
+        }
+
+        const i = vertexPayloads.length;
+        dataRidToVertexIndex.set(dataRid, i);
+
+        vertexPayloads.push({
+            content: {
+                ...rest,
+                source: sourcesToRid.get(String(src)),
+                sourceId: String(src),
+            },
+            modelName,
+        });
+    });
+    const V = await Promise.all(vertexPayloads.map(createRecord));
+
+    /** create edge records */
+    const edgesPayloads = [];
+    EDGE_RECORDS.forEach((r) => {
+        const {
+            '@class': modelName,
+            '@rid': rid,
+            in: inNode,
+            out: outNode,
+            ...rest
+        } = r;
+
+        edgesPayloads.push({
+            content: {
+                ...rest,
+                in: V[dataRidToVertexIndex.get(inNode)]['@rid'],
+                out: V[dataRidToVertexIndex.get(outNode)]['@rid'],
+            },
+            modelName,
+        });
+    });
+    const E = await Promise.all(edgesPayloads.map(createRecord));
+
+    for (let i = 0; i < E.length; i++) {
+        logger.debug(`created edge ${E[i]['@rid']}`);
+    }
+
+    await session.close();
+    return {
+        records: {
+            e: E,
+            v: V, // not including Source vertices
+        },
+        ...db,
+    };
+};
+
 const tearDownDb = async ({ server, conf }) => {
     if (server) {
         await server.dropDatabase({
@@ -181,5 +298,9 @@ const tearDownDb = async ({ server, conf }) => {
 };
 
 module.exports = {
-    clearDB, createEmptyDb, createSeededDb, tearDownDb,
+    clearDB,
+    createEmptyDb,
+    createSeededDb,
+    createSeededDbForSubgraphs,
+    tearDownDb,
 };
