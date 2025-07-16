@@ -20,6 +20,48 @@ const {
     VNODES,
 } = require('./data');
 
+describe('createVirtualEdges', () => {
+    test('get all virtual edges from a graph virtualization', () => {
+        const result = createVirtualEdges(GRAPH, NODE_TO_VNODE_MAP);
+
+        // number of virtual nodes
+        expect(result.size).toEqual(VEDGES.size);
+
+        // each virtual node object
+        result.forEach((value, key) => {
+            expect(value).toEqual(VEDGES.get(key));
+        });
+    });
+});
+
+describe('createVirtualNodes', () => {
+    test('get all virtual nodes from a graph virtualization', () => {
+        const result = createVirtualNodes(GRAPH);
+        // number of virtual nodes
+        expect(result.size).toEqual(VNODES.size);
+
+        // each virtual node object
+        result.forEach((value, key) => {
+            expect(VNODES.has(key)).toBe(true);
+            expect(value.records).toEqual(VNODES.get(key).records);
+        });
+    });
+});
+
+describe('getNodeToVNode', () => {
+    test('get the mapping between nodes and virtual nodes', () => {
+        const result = getNodeToVNode(VNODES);
+
+        // number of keys
+        expect(result.size).toEqual(NODE_TO_VNODE_MAP.size);
+
+        // each key-value pair
+        result.forEach((value, key) => {
+            expect(value).toBe(NODE_TO_VNODE_MAP.get(key));
+        });
+    });
+});
+
 describe('getPreferedRecord', () => {
     test('only one record', () => {
         expect(getPreferedRecord(
@@ -60,34 +102,6 @@ describe('getPreferedRecord', () => {
     });
 });
 
-describe('createVirtualNodes', () => {
-    test('get all virtual nodes from a graph virtualization', () => {
-        const result = createVirtualNodes(GRAPH);
-        // number of virtual nodes
-        expect(result.size).toEqual(VNODES.size);
-
-        // each virtual node object
-        result.forEach((value, key) => {
-            expect(VNODES.has(key)).toBe(true);
-            expect(value.records).toEqual(VNODES.get(key).records);
-        });
-    });
-});
-
-describe('getNodeToVNode', () => {
-    test('get the mapping between nodes and virtual nodes', () => {
-        const result = getNodeToVNode(VNODES);
-
-        // number of keys
-        expect(result.size).toEqual(NODE_TO_VNODE_MAP.size);
-
-        // each key-value pair
-        result.forEach((value, key) => {
-            expect(value).toBe(NODE_TO_VNODE_MAP.get(key));
-        });
-    });
-});
-
 describe('getVNodeToNode', () => {
     test('get the mapping between virtual nodes and nodes', () => {
         const result = getVNodeToNode(VNODES);
@@ -98,20 +112,6 @@ describe('getVNodeToNode', () => {
         // each key-value pair
         result.forEach((value, key) => {
             expect(value).toEqual(VNODE_TO_NODE_MAP.get(key));
-        });
-    });
-});
-
-describe('createVirtualEdges', () => {
-    test('get all virtual edges from a graph virtualization', () => {
-        const result = createVirtualEdges(GRAPH, NODE_TO_VNODE_MAP);
-
-        // number of virtual nodes
-        expect(result.size).toEqual(VEDGES.size);
-
-        // each virtual node object
-        result.forEach((value, key) => {
-            expect(value).toEqual(VEDGES.get(key));
         });
     });
 });
