@@ -191,13 +191,23 @@ const getGraph = (records, {
     const graph = { edges: new Map(), nodes: new Map() };
 
     records.forEach((r, rid) => {
-        const props = propsPerClass.get(r['@class']);
+        let props;
 
+        // props per class
+        if (propsPerClass.has(r['@class'])) {
+            props = propsPerClass.get(r['@class']);
+        } else {
+            const p = getPropsPerClass([r['@class']], Object.keys(r));
+            props = p.get(r['@class']);
+            propsPerClass.set(r['@class'], props);
+        }
+
+        // segregated edges|nodes records with props
         if (edgeClasses.includes(r['@class'])) {
-            graph.edges.set(rid, _.pick(r, props));
+            graph.edges.set(String(rid), _.pick(r, props));
         }
         if (nodeClasses.includes(r['@class'])) {
-            graph.nodes.set(rid, _.pick(r, props));
+            graph.nodes.set(String(rid), _.pick(r, props));
         }
     });
 
