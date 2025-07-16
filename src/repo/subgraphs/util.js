@@ -307,7 +307,7 @@ const buildTraverseExpr = ({
 const queryWithPagination = async (
     db,
     queryString,
-    params = {},
+    params = { params: {} },
     {
         prefix = 'p_',
         maxSize = MAX_SIZE,
