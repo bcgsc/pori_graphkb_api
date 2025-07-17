@@ -73,9 +73,10 @@ const getInheritingClasses = (superCls = 'V', {
  *
  * @param {Array.<string>} cls - The record classes
  * @param {Array.<string>} returnProperties - The record's properties we're interested in
+ * @param {boolean} removeSourceSort - Removing 'source.sort' column on edges
  * @returns {Map<string, Array.<string>>} Mapping of allowed properties per class
  */
-const getPropsPerClass = (cls, returnProperties) => {
+const getPropsPerClass = (cls, returnProperties, removeSourceSort = true) => {
     const propsPerClass = new Map();
     const allowedProps = new Set();
 
@@ -90,6 +91,15 @@ const getPropsPerClass = (cls, returnProperties) => {
             } catch (err) {}
         });
     });
+
+    // Forcefully remove 'source.sort' for edges since it's unlikely needed
+    if (removeSourceSort) {
+        propsPerClass.forEach((v, k) => {
+            if (getInheritingClasses('E').includes(k)) {
+                propsPerClass.set(k, v.filter((el) => el !== 'source.sort'));
+            }
+        });
+    }
 
     // make sure all props are allowed (for SQL sanitation).
     [...new Set(returnProperties)].forEach((prop) => {

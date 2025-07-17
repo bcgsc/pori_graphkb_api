@@ -100,7 +100,6 @@ const RECORDS_MAP = new Map(
 const PROPS_PER_CLASS = new Map([
     ...[...DEFAULT_EDGES, ...DEFAULT_TREEEDGES].map((x) => [x, [
         ...DEFAULT_EDGE_PROPERTIES,
-        'source.sort', // adding 'source.sort' since it is avail. on the models although not a default
     ]]),
     ['Disease', DEFAULT_NODE_PROPERTIES],
 ]);
