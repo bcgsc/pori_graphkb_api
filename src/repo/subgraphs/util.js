@@ -23,6 +23,46 @@ const {
 } = require('./constants');
 
 /**
+ * Given a class name, returns all inheriting classes (from schema)
+ *
+ * @param {string} [superCls='V'] - The class acting as super class
+ * @param {Object} [opt={}]
+ * @param {boolean} [opt.includeAbstractCls=false] - Including abstract classes in the returned classes
+ * @param {boolean} [opt.includeSuperCls=false] - Including the super class in the returned classes
+ * @returns {Array.<string>} classes - An array of class names
+ */
+const getInheritingClasses = (superCls = 'V', {
+    includeAbstractCls = false,
+    includeSuperCls = false,
+} = {}) => {
+    let classes = [];
+
+    // Recursively get all inherited classes
+    const getMapping = (cls) => {
+        if (subclassMapping[cls]) {
+            subclassMapping[cls].forEach((x) => {
+                classes.push(x);
+                return getMapping(x);
+            });
+        }
+    };
+    getMapping(superCls);
+
+    // Including the super class itself
+    if (includeSuperCls) {
+        classes.push(superCls);
+    }
+
+    // Discarding abstract classes, if any
+    if (!includeAbstractCls) {
+        classes = classes.filter((x) => !models[x].isAbstract);
+    }
+
+    classes.sort();
+    return classes;
+};
+
+/**
  * Given an array of class names and an array of properties,
  * returns a mapping of allowed properties per class.
  *
@@ -75,46 +115,6 @@ const oneliner = (s, joinWithSpace = true) => {
         .filter(Boolean) // Remove empty lines
         .join(joinWithSpace ? ' ' : ''); // Join with or without a space
     return oneline;
-};
-
-/**
- * Given a class name, returns all inheriting classes (from schema)
- *
- * @param {string} [superCls='V'] - The class acting as super class
- * @param {Object} [opt={}]
- * @param {boolean} [opt.includeAbstractCls=false] - Including abstract classes in the returned classes
- * @param {boolean} [opt.includeSuperCls=false] - Including the super class in the returned classes
- * @returns {Array.<string>} classes - An array of class names
- */
-const getInheritingClasses = (superCls = 'V', {
-    includeAbstractCls = false,
-    includeSuperCls = false,
-} = {}) => {
-    let classes = [];
-
-    // Recursively get all inherited classes
-    const getMapping = (cls) => {
-        if (subclassMapping[cls]) {
-            subclassMapping[cls].forEach((x) => {
-                classes.push(x);
-                return getMapping(x);
-            });
-        }
-    };
-    getMapping(superCls);
-
-    // Including the super class itself
-    if (includeSuperCls) {
-        classes.push(superCls);
-    }
-
-    // Discarding abstract classes, if any
-    if (!includeAbstractCls) {
-        classes = classes.filter((x) => !models[x].isAbstract);
-    }
-
-    classes.sort();
-    return classes;
 };
 
 /**
