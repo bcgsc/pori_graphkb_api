@@ -30,7 +30,13 @@ const ABOUT_FILE = path.join(__dirname, './docs/intro.md');
  * @default
 */
 const QUERY_ABOUT = path.join(__dirname, './docs/query.md');
+const SUBGRAPHS_ABOUT = path.join(__dirname, './docs/subgraphs.md');
 
 module.exports = {
-    ABOUT_FILE, DEFAULT_QUERY_LIMIT, MAX_JUMPS, MAX_QUERY_LIMIT, QUERY_ABOUT,
+    ABOUT_FILE,
+    DEFAULT_QUERY_LIMIT,
+    MAX_JUMPS,
+    MAX_QUERY_LIMIT,
+    QUERY_ABOUT,
+    SUBGRAPHS_ABOUT,
 };

@@ -8,6 +8,14 @@
 const { schema } = require('@bcgsc-pori/graphkb-schema');
 
 const {
+    DEFAULT_EDGE_PROPERTIES,
+    DEFAULT_EDGES,
+    DEFAULT_NODE_PROPERTIES,
+    DEFAULT_TREEEDGES,
+    MAX_DEPTH,
+} = require('../../repo/subgraphs/constants');
+
+const {
     constants: {
         OPERATORS, DIRECTIONS, SIMILARITY_EDGES, TREE_EDGES,
     },
@@ -302,6 +310,183 @@ const Query = {
     },
 };
 
+const SubgraphsQuery = {
+    description: 'The SubgraphsQuery object as the body payload of a subgraphs query',
+    properties: {
+        base: {
+            description: 'Record RIDs to start traversing from',
+            items: {
+                type: 'string',
+            },
+            type: 'array',
+        },
+        edges: {
+            default: DEFAULT_EDGES,
+            description: 'Similarity edge classes',
+            items: {
+                enum: EDGE_MODEL_NAMES,
+                type: 'string',
+            },
+            type: 'array',
+        },
+        maxDepth: {
+            default: MAX_DEPTH,
+            description: 'The maximum traversal depth',
+            type: 'number',
+        },
+        returnEdgeProperties: {
+            default: DEFAULT_EDGE_PROPERTIES,
+            description: 'Properties to return on edge records, in addition of the default ones',
+            items: {
+                type: 'string',
+            },
+            type: 'array',
+        },
+        returnNodeProperties: {
+            default: DEFAULT_NODE_PROPERTIES,
+            description: 'Properties to return on node records, in addition of the default ones',
+            items: {
+                type: 'string',
+            },
+            type: 'array',
+        },
+        subgraph: {
+            default: 'real',
+            description: 'Whether returning the actual \'real\' subgraph, a virtualized version, or both',
+            enum: [
+                'real',
+                'virtual',
+                'both',
+            ],
+            type: 'string',
+        },
+        subgraphType: {
+            description: 'The type of the returned subgraph. Decides which type of graph traversal to performe.',
+            enum: [
+                'similar',
+                'children',
+                'descendants',
+                'parents',
+                'ancestors',
+                'tree',
+                'complete',
+            ],
+            type: 'string',
+        },
+        treeEdges: {
+            default: DEFAULT_TREEEDGES,
+            description: 'Hierarchy edge classes',
+            items: {
+                enum: EDGE_MODEL_NAMES,
+                type: 'string',
+            },
+            type: 'array',
+        },
+        vOpt: {
+            description: 'Options specific to the virtualization process',
+            properties: {
+                inverted: {
+                    default: false,
+                    description: 'Returning an inverted graph (child->parent, not parent->child)',
+                    type: 'boolean',
+                },
+                selfLoopAllowed: {
+                    default: true,
+                    description: 'Allowing self-referencing vNodes',
+                    type: 'boolean',
+                },
+            },
+            type: 'object',
+        },
+    },
+    type: 'object',
+};
+
+const Subgraph = {
+    description: 'The subgraph object as one of result\'s property returned from a subgraphs query',
+    properties: {
+        adjacency: {
+            description: 'The subgraph\'s adjacency list',
+            type: 'object',
+        },
+        components: {
+            description: 'The subgraph\'s connected components',
+            type: 'array',
+        },
+        edges: {
+            additionalProperties: true,
+            properties: DEFAULT_EDGE_PROPERTIES,
+            required: DEFAULT_EDGE_PROPERTIES,
+            type: 'object',
+        },
+        nodes: {
+            additionalProperties: true,
+            properties: DEFAULT_NODE_PROPERTIES,
+            required: DEFAULT_NODE_PROPERTIES,
+            type: 'object',
+        },
+    },
+    required: ['edges', 'nodes', 'adjacency', 'components'],
+    type: 'object',
+};
+
+const VSubgraph = {
+    description: 'The virtual subgraph object as one of result\'s property returned from a subgraphs query',
+    properties: {
+        adjacency: {
+            description: 'The subgraph\'s adjacency list',
+            type: 'object',
+        },
+        components: {
+            description: 'The subgraph\'s connected components',
+            type: 'array',
+        },
+        edges: {
+            additionalProperties: false,
+            properties: ['in', 'out'],
+            required: ['in', 'out'],
+            type: 'object',
+        },
+        g_to_v: {
+            description: 'The mapping from node RIDs to virtual node IDs',
+            type: 'object',
+        },
+        nodes: {
+            additionalProperties: true,
+            properties: {
+                label: {
+                    type: 'string',
+                },
+                records: {
+                    items: {
+                        additionalProperties: true,
+                        properties: DEFAULT_NODE_PROPERTIES,
+                        required: DEFAULT_NODE_PROPERTIES,
+                        type: 'object',
+                    },
+                    minItems: 1,
+                    type: 'array',
+                },
+            },
+            required: ['label', 'records'],
+            type: 'object',
+        },
+        v_to_g: {
+            description: 'The mapping from virtual node IDs to node RIDs',
+            type: 'object',
+        },
+    },
+    required: [
+        'adjacency',
+        'components',
+        'edges',
+        'g_to_v',
+        'nodes',
+        'v_to_g',
+    ],
+    type: 'object',
+};
+
 const Clause = {
     oneOf: [
         {
@@ -370,10 +555,13 @@ module.exports = {
     RecordList,
     SimilarityQuery,
     SourceLink,
+    Subgraph,
+    SubgraphsQuery,
     SubQuery,
     TreeQuery,
     UserLink,
     VocabularyLink,
+    VSubgraph,
     count: { default: 'false', description: 'return a count of the resulting records instead of the records themselves', type: 'boolean' },
     dependency,
     deprecated,
