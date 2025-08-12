@@ -520,10 +520,10 @@ const displayNameSearch = ({
 }) => {
     const model = schemaDefn.get(target);
     const params = {
-        kw: `%${keyword}%`
+        kw: `%${keyword}%`,
     };
     return {
-        params, query: `SELECT DISTINCT * FROM ${model.name} WHERE displayName LIKE :kw AND deletedAt IS NULL`
+        params, query: `SELECT DISTINCT * FROM ${model.name} WHERE displayName LIKE :kw AND deletedAt IS NULL`,
     };
 };
 
@@ -556,7 +556,7 @@ class FixedSubquery {
         } if (queryType === 'keyword') {
             return new this(queryType, keywordSearch, { ...opt, subQueryParser });
         } if (queryType === 'displayName') {
-            return new this(queryType, displayNameSearch, opt)
+            return new this(queryType, displayNameSearch, opt);
         } if (queryType === 'edge') {
             return new this(queryType, edgeQuery, { ...opt, subQueryParser });
         }
