@@ -197,7 +197,7 @@ const DisplayNameQuery = {
     },
     required: ['queryType', 'target', 'keyword'],
     type: 'object',
-}
+};
 
 const SimilarityQuery = {
     description: 'Expand some query or list of records based on following edges indicating equivalence or similarity',
