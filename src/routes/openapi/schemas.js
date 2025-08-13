@@ -169,6 +169,7 @@ const SubQuery = {
 const FixedSubQuery = {
     anyOf: [
         { $ref: `${PREFIX}/KeywordQuery` },
+        { $ref: `${PREFIX}/DisplayNameQuery` },
         { $ref: `${PREFIX}/NeighborhoodQuery` },
         { $ref: `${PREFIX}/TreeQuery` },
         { $ref: `${PREFIX}/SimilarityQuery` },
@@ -186,6 +187,17 @@ const KeywordQuery = {
     required: ['queryType', 'target', 'keyword'],
     type: 'object',
 };
+
+const DisplayNameQuery = {
+    description: 'Search by displayName',
+    properties: {
+        keyword: { type: 'string' },
+        queryType: { enum: ['displayName'], type: 'string' },
+        target: { enum: NODE_MODEL_NAMES, type: 'string' },
+    },
+    required: ['queryType', 'target', 'keyword'],
+    type: 'object',
+}
 
 const SimilarityQuery = {
     description: 'Expand some query or list of records based on following edges indicating equivalence or similarity',
@@ -548,6 +560,7 @@ module.exports = {
     FeatureLink,
     FixedSubQuery,
     KeywordQuery,
+    DisplayNameQuery,
     NeighborhoodQuery,
     OntologyLink,
     Query,

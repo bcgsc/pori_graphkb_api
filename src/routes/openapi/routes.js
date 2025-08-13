@@ -257,11 +257,19 @@ const QUERY = {
                         },
                     },
                     'keyword search': {
-                        description: 'Get statements by keyword search. This will looks for substrings matching the keyword and return the related statements',
+                        description: 'Get statements by keyword search. This will look for substrings matching the keyword and return the related statements',
                         value: {
                             keyword: 'kras',
                             queryType: 'keyword',
                             target: 'Statement',
+                        },
+                    },
+                    'displayName search': {
+                        description: 'Get records by displayName search. This will look for displayNames matching the searched keyword and return the related records',
+                        value: {
+                            keyword: 'SMAD4:p.D537X',
+                            queryType: 'displayName',
+                            target: 'Variant',
                         },
                     },
                     'match variants by gene': {
