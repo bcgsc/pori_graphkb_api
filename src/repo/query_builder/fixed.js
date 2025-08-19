@@ -26,6 +26,7 @@ const {
     TREE_EDGES,
 } = require('./constants');
 const { castRangeInt } = require('./util');
+const { getQueryableProps } = require('./util');
 
 const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
 
@@ -519,6 +520,16 @@ const displayNameSearch = ({
     keyword,
 }) => {
     const model = schemaDefn.get(target);
+    const props = getQueryableProps(target);
+
+    if (!keyword) {
+        throw new ValidationError('Missing required keyword parameter');
+    }
+
+    if (!Object.hasOwn(props, 'displayName')) {
+        throw new ValidationError(`${target} class has no displayName`);
+    }
+
     const params = {
         kw: `%${keyword}%`,
     };

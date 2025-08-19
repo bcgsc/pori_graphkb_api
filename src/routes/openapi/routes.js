@@ -265,9 +265,9 @@ const QUERY = {
                         },
                     },
                     'displayName search': {
-                        description: 'Get records by displayName search. This will look for displayNames matching the searched keyword and return the related records',
+                        description: 'Get records by displayName search. This will look for displayNames matching the searched name and return the related records (even with incomplete protein positions for variants)',
                         value: {
-                            keyword: 'SMAD4:p.D537X',
+                            keyword: 'SMAD4:p.D5',
                             queryType: 'displayName',
                             target: 'Variant',
                         },
