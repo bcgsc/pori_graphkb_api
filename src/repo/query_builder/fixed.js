@@ -26,7 +26,6 @@ const {
     TREE_EDGES,
 } = require('./constants');
 const { castRangeInt } = require('./util');
-const { getQueryableProps } = require('./util');
 
 const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
 
@@ -520,14 +519,9 @@ const displayNameSearch = ({
     keyword,
 }) => {
     const model = schemaDefn.get(target);
-    const props = getQueryableProps(target);
 
     if (!keyword) {
         throw new ValidationError('Missing required keyword parameter');
-    }
-
-    if (!Object.hasOwn(props, 'displayName')) {
-        throw new ValidationError(`${target} class has no displayName`);
     }
 
     const params = {
@@ -571,7 +565,7 @@ class FixedSubquery {
         } if (queryType === 'edge') {
             return new this(queryType, edgeQuery, { ...opt, subQueryParser });
         }
-        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
+        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo, keyword, displayName, edge]`);
     }
 }
 
