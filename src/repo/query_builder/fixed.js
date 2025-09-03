@@ -514,6 +514,24 @@ const keywordSearch = ({
     return { params, query: `SELECT DISTINCT * FROM (${query}) WHERE deletedAt IS NULL` };
 };
 
+const displayNameSearch = ({
+    target,
+    keyword,
+}) => {
+    const model = schemaDefn.get(target);
+
+    if (!keyword) {
+        throw new ValidationError('Missing required keyword parameter');
+    }
+
+    const params = {
+        kw: `%${keyword}%`,
+    };
+    return {
+        params, query: `SELECT DISTINCT * FROM ${model.name} WHERE displayName LIKE :kw AND deletedAt IS NULL`,
+    };
+};
+
 class FixedSubquery {
     constructor(queryType, queryBuilder, opt = {}) {
         this.queryType = queryType;
@@ -542,10 +560,12 @@ class FixedSubquery {
             return new this(queryType, similarTo, opt);
         } if (queryType === 'keyword') {
             return new this(queryType, keywordSearch, { ...opt, subQueryParser });
+        } if (queryType === 'displayName') {
+            return new this(queryType, displayNameSearch, opt);
         } if (queryType === 'edge') {
             return new this(queryType, edgeQuery, { ...opt, subQueryParser });
         }
-        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo]`);
+        throw new ValidationError(`Unrecognized query type (${queryType}) expected one of [ancestors, descendants, neighborhood, similarTo, keyword, displayName, edge]`);
     }
 }
 
