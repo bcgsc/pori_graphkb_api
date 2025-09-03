@@ -23,10 +23,12 @@ const {
 const {
     MAX_QUERY_LIMIT, MAX_JUMPS,
 } = require('./constants');
+const { getQueryableProps } = require('../../repo/query_builder/util');
 
 const PREFIX = '#/components/schemas';
 const NODE_MODEL_NAMES = schema.getModels().filter((m) => !m.isEdge).map((m) => m.name);
 const EDGE_MODEL_NAMES = schema.getModels().filter((m) => m.isEdge && !m.isAbstract).map((m) => m.name);
+const MODELS_WITH_DISPLAYNAME = NODE_MODEL_NAMES.filter((m) => Object.hasOwn(getQueryableProps(m), 'displayName'));
 
 const dependency = {
     $ref: `${PREFIX}/RecordLink`,
@@ -169,6 +171,7 @@ const SubQuery = {
 const FixedSubQuery = {
     anyOf: [
         { $ref: `${PREFIX}/KeywordQuery` },
+        { $ref: `${PREFIX}/DisplayNameQuery` },
         { $ref: `${PREFIX}/NeighborhoodQuery` },
         { $ref: `${PREFIX}/TreeQuery` },
         { $ref: `${PREFIX}/SimilarityQuery` },
@@ -182,6 +185,17 @@ const KeywordQuery = {
         keyword: { type: 'string' },
         queryType: { enum: ['keyword'], type: 'string' },
         target: { enum: NODE_MODEL_NAMES, type: 'string' },
+    },
+    required: ['queryType', 'target', 'keyword'],
+    type: 'object',
+};
+
+const DisplayNameQuery = {
+    description: 'Search by displayName',
+    properties: {
+        keyword: { type: 'string' },
+        queryType: { enum: ['displayName'], type: 'string' },
+        target: { enum: MODELS_WITH_DISPLAYNAME, type: 'string' },
     },
     required: ['queryType', 'target', 'keyword'],
     type: 'object',
@@ -548,6 +562,7 @@ module.exports = {
     FeatureLink,
     FixedSubQuery,
     KeywordQuery,
+    DisplayNameQuery,
     NeighborhoodQuery,
     OntologyLink,
     Query,
