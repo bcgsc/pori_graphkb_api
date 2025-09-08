@@ -194,6 +194,73 @@ describeWithAuth('api read-only routes', () => {
         });
     });
 
+    describe('/query search records by displayName', () => {
+        test('count ignores limit', async () => {
+            const response = await request({
+                body: {
+                    count: true,
+                    keyword: 'KRAS',
+                    limit: 1,
+                    queryType: 'displayName',
+                    target: 'Variant',
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            });
+            expect(response.statusCode).toBe(HTTP_STATUS.OK);
+            expect(response.body).toHaveProperty('result');
+            expect(response.body).toEqual({ metadata: { records: 1 }, result: [{ count: 2 }] });
+        });
+
+        test('get from related variant reference', async () => {
+            const response = await request({
+                body: {
+                    keyword: 'KRAS',
+                    queryType: 'displayName',
+                    target: 'Variant',
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            });
+            expect(response.statusCode).toBe(HTTP_STATUS.OK);
+            expect(response.body).toHaveProperty('result');
+            expect(response.body.result).toHaveProperty('length', 2);
+        });
+
+        test('error on no body', async () => {
+            try {
+                await request({
+                    headers: { Authorization: mockToken },
+                    method: 'POST',
+                    uri,
+                });
+            } catch ({ response }) {
+                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
+
+        test('error on bad std option', async () => {
+            try {
+                await request({
+                    body: {
+                        history: 'k', keyword: 'kras', queryType: 'displayName', target: 'Variant',
+                    },
+                    headers: { Authorization: mockToken },
+                    method: 'POST',
+                    uri,
+                });
+            } catch ({ response }) {
+                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
+                return;
+            }
+            throw new Error('Did not throw expected error');
+        });
+    });
+
     describe('/query', () => {
         test('empty target array is bad request', async () => {
             try {

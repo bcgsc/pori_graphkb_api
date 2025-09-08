@@ -19,6 +19,7 @@ const {
 const { connectDB } = require('./repo');
 const { getLoadVersion } = require('./repo/migrate/version');
 const { addExtensionRoutes } = require('./extensions');
+const { addSubgraphRoutes } = require('./routes/subgraphs');
 const { generateSwaggerSpec, registerSpecEndpoints } = require('./routes/openapi');
 const { addResourceRoutes } = require('./routes/resource');
 const { addPostToken } = require('./routes/auth');
@@ -193,6 +194,7 @@ class AppServer {
             }
         }
         addExtensionRoutes(this);
+        addSubgraphRoutes(this);
 
         // catch any other errors
         addErrorRoute(this);

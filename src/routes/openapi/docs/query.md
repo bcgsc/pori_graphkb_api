@@ -32,6 +32,7 @@ which take a series of custom inputs where the `queryType` is set to one of the 
 
 - similarTo
 - keyword
+- displayName
 - neighborhood
 - ancestors
 - descendants

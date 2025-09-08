@@ -21,14 +21,17 @@ const {
     POST_SIGN_LICENSE,
     POST_LICENSE,
     GET_LICENSE,
+    SUBGRAPHS,
 } = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
 const { GENERAL_QUERY_PARAMS, BASIC_HEADER_PARAMS, ONTOLOGY_QUERY_PARAMS } = require('./params');
 const {
-    ABOUT_FILE, QUERY_ABOUT,
+    ABOUT_FILE, QUERY_ABOUT, SUBGRAPHS_ABOUT,
 } = require('./constants');
 const { generatePropertiesMd } = require('./returnProperties');
+
+const { MAX_DEPTH: SUBGRAPHS_MAX_DEPTH } = require('../../repo/subgraphs/constants');
 
 const SCHEMA_PREFIX = '#/components/schemas';
 
@@ -101,6 +104,7 @@ const STUB = {
             },
         },
         '/stats': { get: GET_STATS },
+        '/subgraphs/{ontology}': { post: SUBGRAPHS },
         '/token': { post: POST_TOKEN },
         '/version': { get: GET_VERSION },
     },
@@ -315,6 +319,8 @@ const generateSwaggerSpec = (schema, metadata) => {
         fs.readFileSync(ABOUT_FILE).toString(),
         fs.readFileSync(QUERY_ABOUT).toString()
             .replace('MODEL_PROPERTY_LIST_INSERT', generatePropertiesMd()),
+        fs.readFileSync(SUBGRAPHS_ABOUT).toString()
+            .replace('MAX_DEPTH', SUBGRAPHS_MAX_DEPTH),
     ]).join('\n\n');
     docs.info.description = about;
 
