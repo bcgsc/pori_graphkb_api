@@ -603,6 +603,16 @@ const migrate3xFrom14xto15x = async (db) => {
     }
 };
 
+const migrate4xFrom0xto1x = async (db) => {
+    const className = 'EvidenceLevel';
+    const propertyName = 'preclinical';
+
+    const dbClass = await db.class.get(className);
+    logger.info(`adding the property ${className}.${propertyName}`);
+    const prop = schema.models[className].properties[propertyName];
+    await createPropertyInDb(prop, dbClass);
+};
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -662,6 +672,7 @@ const migrate = async (db, opt = {}) => {
         ['3.14.0', '3.15.0', migrate3xFrom14xto15x],
         ['3.15.0', '3.16.0', async () => {}], // no db migration required
         ['3.16.0', '4.0.0', async () => {}], // no db migration required
+        ['4.0.0', '4.1.0', migrate4xFrom0xto1x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
