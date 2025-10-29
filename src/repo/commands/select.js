@@ -231,7 +231,13 @@ const fetchDisplayName = async (db, modelName, content) => {
         const records = await select(
             db,
             parse({
-                returnProperties: ['displayName', '@class', '@rid', 'name'],
+                returnProperties: [
+                    '@class',
+                    '@rid',
+                    'displayName',
+                    'name',
+                    'preclinical', // for EvidenceLevel
+                ],
                 target: links,
             }),
         );
@@ -245,6 +251,7 @@ const fetchDisplayName = async (db, modelName, content) => {
             ...content,
             conditions: content.conditions.map((rid) => recordsById[recId(rid)]),
             evidence: content.evidence.map((rid) => recordsById[recId(rid)]),
+            evidenceLevel: content.evidenceLevel.map((rid) => recordsById[recId(rid)]),
             relevance: recordsById[recId(content.relevance)],
             subject: recordsById[recId(content.subject)],
         };
