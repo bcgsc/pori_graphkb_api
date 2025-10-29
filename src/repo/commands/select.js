@@ -221,7 +221,12 @@ const fetchDisplayName = async (db, modelName, content) => {
             return notation;
         }
     } if (model.name === 'Statement') {
-        const links = [...content.conditions, ...content.evidence, content.relevance];
+        const links = [
+            ...content.conditions,
+            ...content.evidence,
+            ...content.evidenceLevel,
+            content.relevance,
+        ];
 
         const records = await select(
             db,
