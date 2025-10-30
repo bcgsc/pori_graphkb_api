@@ -14,7 +14,7 @@
   "description": "GraphKB (Knowledge Base) REST API server",
   "dependencies": {
     "@bcgsc-pori/graphkb-parser": "^2.1.0",
-    "@bcgsc-pori/graphkb-schema": "^4.0.0",
+    "@bcgsc-pori/graphkb-schema": "~4.0.0",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
