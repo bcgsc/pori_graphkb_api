@@ -221,10 +221,13 @@ const fetchDisplayName = async (db, modelName, content) => {
             return notation;
         }
     } if (model.name === 'Statement') {
+        const evidenceLevel = content.evidenceLevel && Array.isArray(content.evidenceLevel)
+            ? content.evidenceLevel
+            : []; 
         const links = [
             ...content.conditions,
             ...content.evidence,
-            ...content.evidenceLevel,
+            ...evidenceLevel,
             content.relevance,
         ];
 
@@ -236,7 +239,7 @@ const fetchDisplayName = async (db, modelName, content) => {
                     '@rid',
                     'displayName',
                     'name',
-                    'preclinical', // for EvidenceLevel
+                    'preclinical', // for EvidenceLevel, since schema v4.1.0
                 ],
                 target: links,
             }),
@@ -247,11 +250,14 @@ const fetchDisplayName = async (db, modelName, content) => {
         for (const record of records) {
             recordsById[record['@rid']] = record;
         }
+
         const templateContent = {
             ...content,
             conditions: content.conditions.map((rid) => recordsById[recId(rid)]),
             evidence: content.evidence.map((rid) => recordsById[recId(rid)]),
-            evidenceLevel: content.evidenceLevel.map((rid) => recordsById[recId(rid)]),
+            evidenceLevel: content.evidenceLevel && Array.isArray(content.evidenceLevel)
+                ? content.evidenceLevel.map((rid) => recordsById[recId(rid)])
+                : undefined,
             relevance: recordsById[recId(content.relevance)],
             subject: recordsById[recId(content.subject)],
         };
