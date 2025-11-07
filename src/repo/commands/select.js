@@ -223,7 +223,7 @@ const fetchDisplayName = async (db, modelName, content) => {
     } if (model.name === 'Statement') {
         const evidenceLevel = content.evidenceLevel && Array.isArray(content.evidenceLevel)
             ? content.evidenceLevel
-            : []; 
+            : [];
         const links = [
             ...content.conditions,
             ...content.evidence,
