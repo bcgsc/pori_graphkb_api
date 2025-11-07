@@ -604,13 +604,25 @@ const migrate3xFrom14xto15x = async (db) => {
 };
 
 const migrate4xFrom0xto1x = async (db) => {
-    const className = 'EvidenceLevel';
-    const propertyName = 'preclinical';
+    // EvidenceLevel.preclinical property
+    for (const [className, propertyName] of [
+        ['EvidenceLevel', 'preclinical'],
+    ]) {
+        const dbClass = await db.class.get(className);
+        logger.info(`adding the property ${className}.${propertyName}`);
+        const prop = schema.models[className].properties[propertyName];
+        await createPropertyInDb(prop, dbClass);
+    }
 
-    const dbClass = await db.class.get(className);
-    logger.info(`adding the property ${className}.${propertyName}`);
-    const prop = schema.models[className].properties[propertyName];
-    await createPropertyInDb(prop, dbClass);
+    // ClinicalTrial.active index
+    for (const [className, indexName] of [
+        ['ClinicalTrial', 'ClinicalTrial.active'],
+    ]) {
+        logger.info(`adding the index ${indexName}`);
+        const idx = schema.models[className].indices
+            .filter((el) => el.name === 'ClinicalTrial.active')[0];
+        await db.index.create(idx);
+    }
 };
 
 const logMigration = async (db, name, url, version) => {
