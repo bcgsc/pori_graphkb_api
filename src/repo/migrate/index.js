@@ -603,6 +603,28 @@ const migrate3xFrom14xto15x = async (db) => {
     }
 };
 
+const migrate4xFrom0xto1x = async (db) => {
+    // EvidenceLevel.preclinical property
+    for (const [className, propertyName] of [
+        ['EvidenceLevel', 'preclinical'],
+    ]) {
+        const dbClass = await db.class.get(className);
+        logger.info(`adding the property ${className}.${propertyName}`);
+        const prop = schema.models[className].properties[propertyName];
+        await createPropertyInDb(prop, dbClass);
+    }
+
+    // ClinicalTrial.active index
+    for (const [className, indexName] of [
+        ['ClinicalTrial', 'ClinicalTrial.active'],
+    ]) {
+        logger.info(`adding the index ${indexName}`);
+        const idx = schema.models[className].indices
+            .filter((el) => el.name === 'ClinicalTrial.active')[0];
+        await db.index.create(idx);
+    }
+};
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -662,6 +684,7 @@ const migrate = async (db, opt = {}) => {
         ['3.14.0', '3.15.0', migrate3xFrom14xto15x],
         ['3.15.0', '3.16.0', async () => {}], // no db migration required
         ['3.16.0', '4.0.0', async () => {}], // no db migration required
+        ['4.0.0', '4.1.0', migrate4xFrom0xto1x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
