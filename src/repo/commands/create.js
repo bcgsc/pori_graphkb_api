@@ -135,7 +135,7 @@ const create = async (db, { modelName, content, user }) => {
             // displayName exists but has not been filled
             record.displayName = await fetchDisplayName(db, model.name, record);
         } else if (!content.displayNameTemplate && modelProperties.displayNameTemplate) {
-            // displayName exists but has not been filled
+            // displayNameTemplate exists but has not been customized on recond content
             record.displayNameTemplate = await fetchDisplayName(db, model.name, record);
         }
         const result = await db.insert().into(model.name).set(omitDBAttributes(record)).one();

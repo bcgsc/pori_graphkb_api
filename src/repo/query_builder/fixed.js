@@ -525,10 +525,10 @@ const displayNameSearch = ({
     }
 
     const params = {
-        kw: `%${keyword}%`,
+        kw: `%${keyword}%`.toLowerCase(),
     };
     return {
-        params, query: `SELECT DISTINCT * FROM ${model.name} WHERE displayName LIKE :kw AND deletedAt IS NULL`,
+        params, query: `SELECT DISTINCT * FROM ${model.name} WHERE displayName.toLowerCase() LIKE :kw AND deletedAt IS NULL`,
     };
 };
 
