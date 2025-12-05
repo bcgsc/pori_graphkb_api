@@ -229,6 +229,7 @@ const fetchDisplayName = async (db, modelName, content) => {
             ...content.evidence,
             ...evidenceLevel,
             content.relevance,
+            content.subject,
         ];
 
         const records = await select(
