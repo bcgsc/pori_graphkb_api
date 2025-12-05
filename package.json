@@ -61,6 +61,7 @@
     "start": "NODE_ENV=development node bin/server.js",
     "start:prod": "NODE_ENV=production node bin/server.js",
     "start:staging": "NODE_ENV=production node bin/server.js",
+    "start:stagingdb": "NODE_ENV=staging node bin/server.js",
     "start:dev": "NODE_ENV=development node bin/server.js",
     "start:test": "NODE_ENV=test node bin/server.js",
     "start:local": "NODE_ENV=local node bin/server.js",
