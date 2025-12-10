@@ -40,3 +40,5 @@ jobs:
       - run: npm install @bcgsc-pori/graphkb-parser
       - run: npm install @bcgsc-pori/graphkb-schema
       - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
