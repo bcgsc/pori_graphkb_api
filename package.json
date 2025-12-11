@@ -1,7 +1,7 @@
 {
   "name": "@bcgsc-pori/graphkb-api",
   "main": "server.js",
-  "version": "3.17.2",
+  "version": "3.17.3",
   "private": false,
   "repository": {
     "type": "git",
