@@ -1,5 +1,8 @@
 {
   "name": "@bcgsc-pori/graphkb-api",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "server.js",
   "version": "3.17.3",
   "private": false,
