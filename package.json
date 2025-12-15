@@ -1,7 +1,10 @@
 {
   "name": "@bcgsc-pori/graphkb-api",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "server.js",
-  "version": "3.17.2",
+  "version": "3.17.3",
   "private": false,
   "repository": {
     "type": "git",
@@ -14,7 +17,7 @@
   "description": "GraphKB (Knowledge Base) REST API server",
   "dependencies": {
     "@bcgsc-pori/graphkb-parser": "^2.1.0",
-    "@bcgsc-pori/graphkb-schema": "~4.1.0",
+    "@bcgsc-pori/graphkb-schema": "~4.1.1",
     "ajv": "^6.10.2",
     "body-parser": "^1.18.3",
     "compression": "^1.7.4",
