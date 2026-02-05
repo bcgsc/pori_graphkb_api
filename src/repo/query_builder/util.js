@@ -4,7 +4,7 @@ const {
     util,
     schema,
 } = require('@bcgsc-pori/graphkb-schema');
-const { MAX_LIMIT, MAX_NEIGHBORS } = require('./constants');
+const { MAX_LIMIT, MAX_NEIGHBORS, SEPARATOR_CHARS } = require('./constants');
 
 /**
  * Format a value as an Integer. Throw an error if it is not an integer or does not
@@ -133,10 +133,20 @@ const displayQuery = ({ query: statement, params = {} }) => {
     return result;
 };
 
+/**
+ * Check if a keywork contains any seperatorChars
+ *
+ * @param {string} kw a kerword to test for seperatorChars
+ * @param {string} sep a string of all seperatorChars to test against
+ * @returns {boolean}
+ */
+const hasSeperatorChars = (kw, sep = SEPARATOR_CHARS) => [...kw].some((chr) => sep.includes(chr));
+
 module.exports = {
     castBoolean,
     castRangeInt,
     checkStandardOptions,
     displayQuery,
     getQueryableProps,
+    hasSeperatorChars,
 };
