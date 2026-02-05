@@ -149,7 +149,7 @@ describeWithAuth('api read-only routes', () => {
         test('multiple keywords are co-required', async () => {
             const response = await request({
                 body: {
-                    keyword: 'kras,resistance',
+                    keyword: 'kras resistance',
                     queryType: 'keyword',
                     target: 'Statement',
                 },
