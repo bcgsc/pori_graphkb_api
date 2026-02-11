@@ -53,6 +53,32 @@ const checkUserAccessFor = (user, modelName, operationPermission) => {
 };
 
 /**
+ * Check if the user has access with restriction
+ * Restriction is hardcoded
+ *
+ * Returns true if limited access.
+ * Returns false if either full access or no access at all.
+ */
+const checkUserRestriction = (user, modelName, operationPermission) => {
+    let accessWithoutRestrictions = false;
+
+    for (const group of user.groups) {
+        // Default to no permissions
+        const groupPermission = group.permissions[modelName] === undefined
+            ? PERMISSIONS.NONE
+            : group.permissions[modelName];
+
+        if (operationPermission & groupPermission) {
+            // Access comes with some restrictions if granted from group 'manager'
+            if (group.name === 'manager') {
+                accessWithoutRestrictions = true;
+            }
+        }
+    }
+    return accessWithoutRestrictions;
+};
+
+/**
  * Check that the user has permissions for the intended operation on a given route
  * Note that to do this, model and user need to already be assigned to the request
  *
@@ -72,6 +98,11 @@ const checkClassPermissions = async (req, res, next) => {
         UPDATE: PERMISSIONS.UPDATE,
     };
     const operationPermission = mapping[operation];
+
+    // Hardcoded  restriction
+    if (model.name === 'User') {
+        const restricted = checkUserRestriction(user, model.name, operationPermission);
+    }
 
     if (checkUserAccessFor(user, model.name, operationPermission)) {
         return next();
