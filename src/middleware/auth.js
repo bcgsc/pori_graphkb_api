@@ -102,6 +102,11 @@ const checkClassPermissions = async (req, res, next) => {
     // Hardcoded  restriction
     if (model.name === 'User') {
         const restricted = checkUserRestriction(user, model.name, operationPermission);
+
+        // TODO: DO SOMETHING WITH restricted
+        if (restricted) {
+            logger.info('restricted access:', restricted);
+        }
     }
 
     if (checkUserAccessFor(user, model.name, operationPermission)) {
