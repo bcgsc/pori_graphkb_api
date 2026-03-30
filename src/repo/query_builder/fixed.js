@@ -24,9 +24,8 @@ const {
     MIN_WORD_SIZE,
     SIMILARITY_EDGES,
     TREE_EDGES,
-    SEPARATOR_CHARS,
 } = require('./constants');
-const { castRangeInt, hasSeparatorChars, splitIntoKeywords } = require('./util');
+const { castRangeInt, splitIntoKeywords } = require('./util');
 
 const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
 
