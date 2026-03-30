@@ -142,6 +142,25 @@ const displayQuery = ({ query: statement, params = {} }) => {
  */
 const hasSeparatorChars = (kw, sep = SEPARATOR_CHARS) => [...kw].some((chr) => sep.includes(chr));
 
+/**
+ * Split a string into an array of keywords based on separatorChars and whitespaces
+ * Also convert to lowercase
+ *
+ * @param {string} s a string to split into an array of keywords
+ * @param {string} sep a string of all separatorChars
+ * @returns {Array.<string>}
+ */
+const splitIntoKeywords = (s, sep = SEPARATOR_CHARS) => {
+    const pattern = new RegExp(
+        // the regex itself needs some escaping. also adding whitespace support
+        `[\\s${sep.replace(/[-\\\]^[]/g, '\\$&')}]+`,
+    );
+    return s
+        .trim()
+        .split(pattern)
+        .map((word) => word.toLowerCase());
+};
+
 module.exports = {
     castBoolean,
     castRangeInt,
@@ -149,4 +168,5 @@ module.exports = {
     displayQuery,
     getQueryableProps,
     hasSeparatorChars,
+    splitIntoKeywords,
 };

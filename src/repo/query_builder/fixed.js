@@ -26,7 +26,7 @@ const {
     TREE_EDGES,
     SEPARATOR_CHARS,
 } = require('./constants');
-const { castRangeInt, hasSeparatorChars } = require('./util');
+const { castRangeInt, hasSeparatorChars, splitIntoKeywords } = require('./util');
 
 const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
 
@@ -454,15 +454,6 @@ const keywordSearch = ({
     if (![OPERATORS.CONTAINSTEXT, OPERATORS.EQ].includes(operator)) {
         throw new ValidationError(`Invalid operator (${operator}). Keyword search only accepts = or CONTAINSTEXT`);
     }
-    if (
-        operator === OPERATORS.CONTAINSTEXT
-        && hasSeparatorChars(keyword)
-        && !['CategoryVariant', 'PositionalVariant', 'Variant'].includes(model.name)
-    ) {
-        throw new ValidationError(
-            `Invalid character(s) in keyword (${keyword}). ${operator} operator cannot be used in conjunction with the separatorChars ( ${SEPARATOR_CHARS} ) used by the indexes`,
-        );
-    }
     if (model.isEdge) {
         throw new ValidationError(`Cannot keyword search edge classes (${target})`);
     }
@@ -472,7 +463,7 @@ const keywordSearch = ({
 
     // remove any duplicate words
     const wordList = operator === OPERATORS.CONTAINSTEXT
-        ? keyword.split(/\s+/).map((word) => word.trim().toLowerCase())
+        ? splitIntoKeywords(keyword)
         : [keyword.trim().toLowerCase()];
 
     if (wordList.length < 1) {
