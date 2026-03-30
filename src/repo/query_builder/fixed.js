@@ -457,7 +457,7 @@ const keywordSearch = ({
     if (
         operator === OPERATORS.CONTAINSTEXT
         && hasSeparatorChars(keyword)
-        && !['CategoryVariant', 'PositionalVariant'].includes(model.name)
+        && !['CategoryVariant', 'PositionalVariant', 'Variant'].includes(model.name)
     ) {
         throw new ValidationError(
             `Invalid character(s) in keyword (${keyword}). ${operator} operator cannot be used in conjunction with the separatorChars ( ${SEPARATOR_CHARS} ) used by the indexes`,

@@ -27,19 +27,25 @@ describe('Comparison', () => {
 
     // Variant
     const VariantComparison = new Comparison({
-        name: 'PositionalVariant',
+        name: 'Variant',
         operator: 'CONTAINSTEXT',
         prop: 'displayName',
-        value: 'gene:p.123del',
+        value: 'abc:def',
     });
 
-    test('PositionalVariant special case: not to throw error', () => {
+    test('Variant special case: not to throw error', () => {
         expect(() => VariantComparison.validate()).not.toThrow(ValidationError);
     });
 
     test('CategoryVariant special case: not to throw error', () => {
         VariantComparison.name = 'CategoryVariant';
         VariantComparison.value = 'gene1:gene2 fusion';
+        expect(() => VariantComparison.validate()).not.toThrow(ValidationError);
+    });
+
+    test('PositionalVariant special case: not to throw error', () => {
+        VariantComparison.name = 'PositionalVariant';
+        VariantComparison.value = 'gene:p.123del';
         expect(() => VariantComparison.validate()).not.toThrow(ValidationError);
     });
 });

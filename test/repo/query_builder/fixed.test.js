@@ -21,6 +21,15 @@ describe('keywordSearch', () => {
         })).not.toThrow(ValidationError);
     });
 
+    test('CategoryVariant special case: not to throw error', () => {
+        expect(() => keywordSearch({
+            keyword: 'gene1:gene2 fusion',
+            operator: 'CONTAINSTEXT',
+            paramIndex: 0,
+            target: 'CategoryVariant',
+        })).not.toThrow(ValidationError);
+    });
+
     test('PositionalVariant special case: not to throw error', () => {
         expect(() => keywordSearch({
             keyword: 'gene:p.123del',
@@ -30,12 +39,12 @@ describe('keywordSearch', () => {
         })).not.toThrow(ValidationError);
     });
 
-    test('CategoryVariant special case: not to throw error', () => {
+    test('Variant special case: not to throw error', () => {
         expect(() => keywordSearch({
-            keyword: 'gene1:gene2 fusion',
+            keyword: 'abc:def',
             operator: 'CONTAINSTEXT',
             paramIndex: 0,
-            target: 'CategoryVariant',
+            target: 'Variant',
         })).not.toThrow(ValidationError);
     });
 });
