@@ -5,7 +5,7 @@ const { ValidationError, schema, util } = require('@bcgsc-pori/graphkb-schema');
 
 const { OPERATORS, PARAM_PREFIX, SEPARATOR_CHARS } = require('./constants');
 const { FixedSubquery } = require('./fixed');
-const { getQueryableProps, hasSeperatorChars } = require('./util');
+const { getQueryableProps, hasSeparatorChars } = require('./util');
 
 const NUMBER_ONLY_OPERATORS = [OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE];
 
@@ -93,9 +93,9 @@ class Comparison {
                     'CONTAINSTEXT should not be used in conjunction with whitespaces',
                 );
             }
-            if (hasSeperatorChars(v)) {
+            if (hasSeparatorChars(v)) {
                 throw new ValidationError(
-                    `CONTAINSTEXT should not be used in conjunction with index seperator characters ( ${
+                    `CONTAINSTEXT should not be used in conjunction with index separator characters ( ${
                         SEPARATOR_CHARS
                     } )`,
                 );

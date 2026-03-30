@@ -19,7 +19,7 @@ describe('Comparison', () => {
         expect(() => newComparison.validate()).toThrow(ValidationError);
     });
 
-    test('throw error on CONTAINSTEXT value containing seperator chars', () => {
+    test('throw error on CONTAINSTEXT value containing separator chars', () => {
         newComparison.value = 'abc:def';
         expect(() => newComparison.validate()).toThrow(ValidationError);
     });

@@ -134,13 +134,13 @@ const displayQuery = ({ query: statement, params = {} }) => {
 };
 
 /**
- * Check if a keywork contains any seperatorChars
+ * Check if a keywork contains any separatorChars
  *
- * @param {string} kw a kerword to test for seperatorChars
- * @param {string} sep a string of all seperatorChars to test against
+ * @param {string} kw a kerword to test for separatorChars
+ * @param {string} sep a string of all separatorChars to test against
  * @returns {boolean}
  */
-const hasSeperatorChars = (kw, sep = SEPARATOR_CHARS) => [...kw].some((chr) => sep.includes(chr));
+const hasSeparatorChars = (kw, sep = SEPARATOR_CHARS) => [...kw].some((chr) => sep.includes(chr));
 
 module.exports = {
     castBoolean,
@@ -148,5 +148,5 @@ module.exports = {
     checkStandardOptions,
     displayQuery,
     getQueryableProps,
-    hasSeperatorChars,
+    hasSeparatorChars,
 };
