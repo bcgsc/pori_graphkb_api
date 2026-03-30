@@ -456,7 +456,7 @@ const keywordSearch = ({
     }
     if (operator === OPERATORS.CONTAINSTEXT && hasSeparatorChars(keyword)) {
         throw new ValidationError(
-            `Invalid character(s) in keyword (${keyword}). ${operator} operator cannot be used in conjunction with indexes separatorChars ( ${SEPARATOR_CHARS} )`,
+            `Invalid character(s) in keyword (${keyword}). ${operator} operator cannot be used in conjunction with the separatorChars ( ${SEPARATOR_CHARS} ) used by the indexes`,
         );
     }
     if (model.isEdge) {
