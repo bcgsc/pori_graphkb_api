@@ -85,7 +85,10 @@ class Comparison {
             );
         }
 
-        if (this.operator === OPERATORS.CONTAINSTEXT) {
+        if (
+            this.operator === OPERATORS.CONTAINSTEXT
+            && !['CategoryVariant', 'PositionalVariant'].includes(this.name)
+        ) {
             const v = String(this.value);
 
             if (v.includes(' ')) {

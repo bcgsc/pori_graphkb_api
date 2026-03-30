@@ -20,4 +20,22 @@ describe('keywordSearch', () => {
             target: 'Ontology',
         })).not.toThrow(ValidationError);
     });
+
+    test('PositionalVariant special case: not to throw error', () => {
+        expect(() => keywordSearch({
+            keyword: 'gene:p.123del',
+            operator: 'CONTAINSTEXT',
+            paramIndex: 0,
+            target: 'PositionalVariant',
+        })).not.toThrow(ValidationError);
+    });
+
+    test('CategoryVariant special case: not to throw error', () => {
+        expect(() => keywordSearch({
+            keyword: 'gene1:gene2 fusion',
+            operator: 'CONTAINSTEXT',
+            paramIndex: 0,
+            target: 'CategoryVariant',
+        })).not.toThrow(ValidationError);
+    });
 });

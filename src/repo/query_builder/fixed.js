@@ -454,7 +454,11 @@ const keywordSearch = ({
     if (![OPERATORS.CONTAINSTEXT, OPERATORS.EQ].includes(operator)) {
         throw new ValidationError(`Invalid operator (${operator}). Keyword search only accepts = or CONTAINSTEXT`);
     }
-    if (operator === OPERATORS.CONTAINSTEXT && hasSeparatorChars(keyword)) {
+    if (
+        operator === OPERATORS.CONTAINSTEXT
+        && hasSeparatorChars(keyword)
+        && !['CategoryVariant', 'PositionalVariant'].includes(model.name)
+    ) {
         throw new ValidationError(
             `Invalid character(s) in keyword (${keyword}). ${operator} operator cannot be used in conjunction with the separatorChars ( ${SEPARATOR_CHARS} ) used by the indexes`,
         );
