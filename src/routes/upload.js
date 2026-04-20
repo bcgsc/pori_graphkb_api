@@ -17,7 +17,7 @@ const addHgvsUploadRoute = (app) => {
     const hgvsUploadRoutePattern = '/upload/hgvs';
 
     // attach models for checking class permissions
-    app.router.use(hgvsUploadRoutePattern, (req, _, next) => {
+    app.router.use(hgvsUploadRoutePattern, (req, res, next) => {
         const { body: { upload, uploadRef } } = req;
 
         req.models = [];
