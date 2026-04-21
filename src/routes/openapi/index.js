@@ -12,16 +12,17 @@ const HTTP_STATUS = require('http-status-codes');
 const swaggerUi = require('swagger-ui-express');
 
 const {
-    POST_TOKEN,
-    POST_PARSE,
-    GET_SCHEMA,
-    GET_VERSION,
-    QUERY,
-    GET_STATS,
-    POST_SIGN_LICENSE,
-    POST_LICENSE,
     GET_LICENSE,
+    GET_SCHEMA,
+    GET_STATS,
+    GET_VERSION,
+    POST_LICENSE,
+    POST_PARSE,
+    POST_SIGN_LICENSE,
+    POST_TOKEN,
+    QUERY,
     SUBGRAPHS,
+    UPLOAD_HGVS,
 } = require('./routes');
 const responses = require('./responses');
 const schemas = require('./schemas');
@@ -72,8 +73,7 @@ const STUB = {
     paths: {
         '/license': { get: GET_LICENSE, post: POST_LICENSE },
         '/license/sign': { post: POST_SIGN_LICENSE },
-        '/parse': { post: POST_PARSE },
-        '/query': { post: QUERY },
+        // Metadata
         '/schema': { get: GET_SCHEMA },
         '/spec': {
             get: {
@@ -104,9 +104,13 @@ const STUB = {
             },
         },
         '/stats': { get: GET_STATS },
+        '/version': { get: GET_VERSION },
+        // General
+        '/parse': { post: POST_PARSE },
+        '/upload/hgvs': { post: UPLOAD_HGVS },
+        '/query': { post: QUERY },
         '/subgraphs/{ontology}': { post: SUBGRAPHS },
         '/token': { post: POST_TOKEN },
-        '/version': { get: GET_VERSION },
     },
     tags: [{
         description: 'routes dealing with app metadata', name: 'Metadata',

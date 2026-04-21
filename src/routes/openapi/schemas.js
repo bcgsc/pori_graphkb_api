@@ -501,6 +501,36 @@ const VSubgraph = {
     type: 'object',
 };
 
+const UploadHgvsQuery = {
+    description: 'The UploadHgvsQuery object as the body payload of a upload/hgvs query',
+    properties: {
+        existsOk: {
+            default: true,
+            description: 'When conflict with existing record, returns that record instead of throwing an error',
+            type: 'boolean',
+        },
+        notation: {
+            description: 'HGVS-like variant notation',
+            type: 'string',
+        },
+        preferedRefSrcName: {
+            description: 'Source name of the prefered ontology for references (Feature)',
+            enum: [
+                'entrez gene',
+                'hgnc',
+            ],
+            type: 'string',
+        },
+        upload: {
+            default: true,
+            description: 'upload the parsed notation as new PositionalVariant record',
+            type: 'boolean',
+        },
+    },
+    required: ['notation'],
+    type: 'object',
+};
+
 const Clause = {
     oneOf: [
         {
@@ -603,4 +633,5 @@ module.exports = {
         description: 'The number of records to skip. Used in combination with limit for paginating queries.', min: 0, nullable: true, type: 'integer',
     },
     source,
+    UploadHgvsQuery,
 };
