@@ -535,7 +535,7 @@ const UPLOAD_HGVS = {
                     },
                 },
             },
-            description: 'A new PositionalVariant record has been created',
+            description: 'An existing PositionalVariant record has been fetched',
         },
         201: {
             content: {
@@ -551,7 +551,7 @@ const UPLOAD_HGVS = {
                     },
                 },
             },
-            description: 'An existing PositionalVariant record has been fetched',
+            description: 'A new PositionalVariant record has been created',
         },
         409: { $ref: '#/components/responses/RecordConflictError' },
     },
