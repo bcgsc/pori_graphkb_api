@@ -93,6 +93,7 @@ const addHgvsUploadRoute = (app) => {
             try {
                 session = await app.pool.acquire();
             } catch (err) {
+                logger.log('debug', err);
                 return next(err);
             }
 
@@ -104,12 +105,14 @@ const addHgvsUploadRoute = (app) => {
                 content = await getContent(session, notation, opt);
             } catch (err) {
                 session.close();
+                logger.log('debug', err);
                 return next(err);
             }
 
             // Return content as json; no upload.
             // Useful if properties need to be reviewed or added (e.g. germline, assembly, etc.)
             if (body.upload === false) {
+                session.close();
                 return res.status(HTTP_STATUS.OK).json(jc.decycle({ result: content }));
             }
 
