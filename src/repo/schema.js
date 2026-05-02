@@ -74,7 +74,7 @@ const createSchemaHistory = async (db) => {
 const generateDefaultGroups = () => {
     // create the default user groups
     const userGroups = {
-        admin: {}, manager: {}, readonly: {}, regular: {},
+        admin: {}, bulkWrite: {}, manager: {}, readonly: {}, regular: {},
     };
 
     for (const model of Object.values(schema.models)) {
