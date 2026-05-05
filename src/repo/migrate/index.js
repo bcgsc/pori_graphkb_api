@@ -635,7 +635,7 @@ const migrate4xFrom1xto2x = async (db) => {
     }
 
     const [existing] = await db.query(
-        "SELECT * FROM UserGroup WHERE name = 'bulkWrite' AND deletedAt IS NULL LIMIT 1",
+        'SELECT * FROM UserGroup WHERE name = \'bulkWrite\' AND deletedAt IS NULL LIMIT 1',
     ).all();
 
     if (!existing) {
