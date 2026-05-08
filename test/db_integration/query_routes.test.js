@@ -146,7 +146,7 @@ describeWithAuth('api read-only routes', () => {
             expect(response.body.result).toHaveProperty('length', 2);
         });
 
-        test('multiple keywords are co-required', async () => {
+        test('multiple keywords are co-required; without match', async () => {
             const response = await request({
                 body: {
                     keyword: 'kras resistance',
@@ -160,6 +160,22 @@ describeWithAuth('api read-only routes', () => {
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
             expect(response.body.result).toHaveProperty('length', 0);
+        });
+
+        test('multiple keywords are co-required; with match', async () => {
+            const response = await request({
+                body: {
+                    keyword: 'kras gain of function',
+                    queryType: 'keyword',
+                    target: 'Statement',
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            });
+            expect(response.statusCode).toBe(HTTP_STATUS.OK);
+            expect(response.body).toHaveProperty('result');
+            expect(response.body.result).toHaveProperty('length', 1);
         });
 
         test('error on no body', async () => {
