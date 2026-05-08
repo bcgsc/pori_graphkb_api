@@ -133,6 +133,24 @@ describeWithAuth('query builder', () => {
                 ),
             ).toHaveProperty('length', 1);
         });
+
+        test('short terms are discarded without errors when long terms are present', async () => {
+            expect(
+                await select(
+                    session,
+                    parse({ keyword: 'kras gain of function', queryType: 'keyword', target: 'Statement' }),
+                ),
+            ).toHaveProperty('length', 1);
+        });
+
+        test('short terms throw error when long terms are not present', async () => {
+            await expect(
+                select(
+                    session,
+                    parse({ keyword: 'of', queryType: 'keyword', target: 'Statement' }),
+                ),
+            ).rejects.toThrow(ValidationError);
+        });
     });
 
     test('custom projection', async () => {
