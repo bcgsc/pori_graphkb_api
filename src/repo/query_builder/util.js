@@ -134,9 +134,9 @@ const displayQuery = ({ query: statement, params = {} }) => {
 };
 
 /**
- * Check if a keywork contains any separatorChars
+ * Check if a keyword contains any separatorChars
  *
- * @param {string} kw a kerword to test for separatorChars
+ * @param {string} kw a keyword to test for separatorChars
  * @param {string} sep a string of all separatorChars to test against
  * @returns {boolean}
  */
