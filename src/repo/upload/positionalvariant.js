@@ -39,7 +39,7 @@ const formatReferenceDisplayName = (ref) => {
  * @param {string} opt.type the variant type name
  * @returns {string} the strignify record's RID
  */
-const getType = async (session, type) => {
+const getTypeRID = async (session, type) => {
     const result = await select(
         session,
         parse({
@@ -65,7 +65,7 @@ const getType = async (session, type) => {
  * @param {string} [opt.preferedRefSrcName] the name of the prefered reference source
  * @returns {string} the strignify record's RID
  */
-const getReference = async (session, ref, { preferedRefSrcName } = {}) => {
+const getReferenceRID = async (session, ref, { preferedRefSrcName } = {}) => {
     // Chromosome support
     const referenceDisplayName = formatReferenceDisplayName(ref);
 
@@ -123,17 +123,17 @@ const getContent = async (session, notation, { preferedRefSrcName } = {}) => {
     );
 
     // Replacing variant type by its RID
-    content.type = await getType(session, content.type);
+    content.type = await getTypeRID(session, content.type);
 
     // Replacing variant references by their RIDs
-    content.reference1 = await getReference(
+    content.reference1 = await getReferenceRID(
         session,
         content.reference1,
         { preferedRefSrcName },
     );
 
     if (content.reference2) {
-        content.reference2 = await getReference(
+        content.reference2 = await getReferenceRID(
             session,
             content.reference2,
             { preferedRefSrcName },
@@ -188,18 +188,18 @@ const uploadPositionalVariant = async (session, user, content, {
 
     // Make sure type is an RID
     if (!looksLikeRID(payload.type, true)) {
-        payload.type = await getType(session, payload.type);
+        payload.type = await getTypeRID(session, payload.type);
     }
     // Make sure references are RIDs
     if (!looksLikeRID(payload.reference1, true)) {
-        payload.reference1 = await getReference(
+        payload.reference1 = await getReferenceRID(
             session,
             payload.reference1,
             { preferedRefSrcName },
         );
     }
     if (payload.reference2 && !looksLikeRID(payload.reference2, true)) {
-        payload.reference2 = await getReference(
+        payload.reference2 = await getReferenceRID(
             session,
             payload.reference2,
             { preferedRefSrcName },
@@ -238,8 +238,8 @@ const uploadPositionalVariant = async (session, user, content, {
 module.exports = {
     formatReferenceDisplayName,
     getContent,
-    getReference,
-    getType,
+    getReferenceRID,
+    getTypeRID,
     positionalVariantQueryFilters,
     uploadPositionalVariant,
 };

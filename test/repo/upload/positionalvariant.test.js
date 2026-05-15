@@ -40,8 +40,8 @@ const {
 const {
     formatReferenceDisplayName,
     getContent,
-    getReference,
-    getType,
+    getReferenceRID,
+    getTypeRID,
     positionalVariantQueryFilters,
     uploadPositionalVariant,
 } = require('../../../src/repo/upload/positionalvariant');
@@ -69,7 +69,7 @@ describe('formatReferenceDisplayName', () => {
     });
 });
 
-describe('getType', () => {
+describe('getTypeRID', () => {
     const session = {};
 
     beforeEach(() => {
@@ -80,25 +80,25 @@ describe('getType', () => {
         jest.clearAllMocks();
     });
 
-    test('type is formatted to lowercase', async () => {
-        await getType(session, 'Substitution');
+    test('type arg gets formatted to lowercase', async () => {
+        await getTypeRID(session, 'Substitution');
         expect(parse).toHaveBeenCalledWith(expect.objectContaining({
             filters: { name: 'substitution' },
         }));
     });
 
     test('returns RID when vocabulary is found', async () => {
-        await expect(getType(session, 'substitution')).resolves.toBe('#123:45');
+        await expect(getTypeRID(session, 'substitution')).resolves.toBe('#123:45');
     });
 
     test('throws NotImplementedError when vocabulary is not found', async () => {
         select.mockResolvedValue([]);
 
-        await expect(getType(session, 'unknown')).rejects.toBeInstanceOf(NotImplementedError);
+        await expect(getTypeRID(session, 'unknown')).rejects.toBeInstanceOf(NotImplementedError);
     });
 });
 
-describe('getReference', () => {
+describe('getReferenceRID', () => {
     const session = {};
 
     beforeEach(() => {
@@ -110,24 +110,24 @@ describe('getReference', () => {
     });
 
     test('normalizes chromosome notation before querying', async () => {
-        await getReference(session, '12');
+        await getReferenceRID(session, '12');
         expect(parse).toHaveBeenCalledWith(expect.objectContaining({
             filters: { displayName: 'chr12' },
         }));
     });
 
     test('returns first RID when there is no preferedRefSrcName provided', async () => {
-        await expect(getReference(session, 'BRCA2', {})).resolves.toBe('#123:45');
+        await expect(getReferenceRID(session, 'BRCA2', {})).resolves.toBe('#123:45');
     });
 
     test('uses preferred source if preferedRefSrcName is provided', async () => {
-        await expect(getReference(session, 'BRCA2', { preferedRefSrcName: 'entrez gene' })).resolves.toBe('#123:46');
+        await expect(getReferenceRID(session, 'BRCA2', { preferedRefSrcName: 'entrez gene' })).resolves.toBe('#123:46');
     });
 
     test('throws NotImplementedError when no feature is found', async () => {
         select.mockResolvedValue([]);
 
-        await expect(getReference(session, 'BRCA2', {})).rejects.toBeInstanceOf(NotImplementedError);
+        await expect(getReferenceRID(session, 'BRCA2', {})).rejects.toBeInstanceOf(NotImplementedError);
     });
 });
 
@@ -137,9 +137,9 @@ describe('getContent', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         select
-            .mockResolvedValueOnce([{ '@rid': '#123:45' }]) // getType()
-            .mockResolvedValueOnce([{ '@rid': '#123:46', source: { name: 'hgnc' } }]) // getReference()
-            .mockResolvedValueOnce([{ '@rid': '#123:47', source: { name: 'hgnc' } }]); // getReference()
+            .mockResolvedValueOnce([{ '@rid': '#123:45' }]) // getTypeRID()
+            .mockResolvedValueOnce([{ '@rid': '#123:46', source: { name: 'hgnc' } }]) // getReferenceRID()
+            .mockResolvedValueOnce([{ '@rid': '#123:47', source: { name: 'hgnc' } }]); // getReferenceRID()
     });
 
     test('throws ValidationError when notation is empty string', async () => {
@@ -216,9 +216,9 @@ describe('uploadPositionalVariant', () => {
     test('conversion to RIDs and create new record', async () => {
         create.mockResolvedValue({ '@rid': '#21:1' });
         select
-            .mockResolvedValueOnce([{ '@rid': '#20:1' }]) // getType()
-            .mockResolvedValueOnce([{ '@rid': '#20:2', source: { name: 'hgnc' } }]) // getReference()
-            .mockResolvedValueOnce([{ '@rid': '#20:3', source: { name: 'hgnc' } }]); // getReference()
+            .mockResolvedValueOnce([{ '@rid': '#20:1' }]) // getTypeRID()
+            .mockResolvedValueOnce([{ '@rid': '#20:2', source: { name: 'hgnc' } }]) // getReferenceRID()
+            .mockResolvedValueOnce([{ '@rid': '#20:3', source: { name: 'hgnc' } }]); // getReferenceRID()
 
         const content = {
             reference1: 'BRCA2',
