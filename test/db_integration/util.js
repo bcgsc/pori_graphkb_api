@@ -3,6 +3,7 @@ const uuidV4 = require('uuid/v4');
 
 const { EDGE_RECORDS, NODE_RECORDS, RECORDS } = require('../repo/subgraphs/data');
 const { getUserByName, create, update } = require('../../src/repo/commands');
+const { SEPARATOR_CHARS } = require('../../src/repo/query_builder/constants');
 const { logger } = require('../../src/repo/logging');
 const { connectDB } = require('../../src/repo');
 const { createConfig } = require('../../src');
@@ -54,7 +55,7 @@ const rebuildIndexes = async (session) => {
                 ON ${cls}(${field})
                 FULLTEXT
                 METADATA {
-                    "separatorChars": ":;,.|+*/\\=!?[]()",
+                    "separatorChars": "${SEPARATOR_CHARS}",
                     "ignoreChars": "",
                     "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
                     "minWordLength": 3
