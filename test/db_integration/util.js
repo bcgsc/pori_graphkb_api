@@ -45,22 +45,24 @@ const rebuildIndexes = async (session) => {
         ['Ontology', 'sourceId'],
         ['Ontology', 'name'],
     ]) {
-        // Drop index
-        const indexName = `${cls}.${field}_fulltext`;
-        await session.command(`DROP INDEX ${indexName}`).all();
+        try {
+            // Drop index
+            const indexName = `${cls}.${field}_fulltext`;
+            await session.command(`DROP INDEX ${indexName}`).all();
 
-        // Recreate index with hardcoded metadata
-        await session.command(`
-                CREATE INDEX ${indexName}
-                ON ${cls}(${field})
-                FULLTEXT
-                METADATA {
-                    "separatorChars": "${SEPARATOR_CHARS}",
-                    "ignoreChars": "",
-                    "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
-                    "minWordLength": 3
-                }
-        `).all();
+            // Recreate index with hardcoded metadata
+            await session.command(`
+                    CREATE INDEX ${indexName}
+                    ON ${cls}(${field})
+                    FULLTEXT
+                    METADATA {
+                        "separatorChars": "${SEPARATOR_CHARS}",
+                        "ignoreChars": "",
+                        "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
+                        "minWordLength": 3
+                    }
+            `).all();
+        } catch (e) { }
     }
 };
 
