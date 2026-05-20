@@ -33,13 +33,48 @@ const createEmptyDb = async () => {
 };
 
 /**
+ * KBDEV-1426
+ * OrientDB 3.1+ dosen't have the same metadata defaults as 3.0
+ *
+ * SELECT algorithm, separatorChars, ignoreChars, stopWords, minWordLength, name
+ * FROM (SELECT expand(indexes) FROM metadata:indexmanager) WHERE name LIKE '%_fulltext'
+ */
+const rebuildIndexes = async (session) => {
+    for (const [cls, field] of [
+        ['Ontology', 'sourceId'],
+        ['Ontology', 'name'],
+    ]) {
+        // Drop index
+        const indexName = `${cls}.${field}_fulltext`;
+        await session.query(`DROP INDEX ${indexName}`);
+
+        // Recreate index with hardcoded metadata
+        await session.query(`
+                CREATE INDEX ${indexName}
+                ON ${cls}(${field})
+                FULLTEXT
+                METADATA {
+                    "separatorChars": ":;,.|+*/\\=!?[]()",
+                    "ignoreChars": "",
+                    "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
+                    "minWordLength": 3
+                }
+        `);
+    }
+};
+
+/**
  * Creates a RO DB to be used in testing complex queries
  */
 const createSeededDb = async () => {
     const db = await createEmptyDb();
     const { pool, admin } = db;
-    // create a source
     const session = await pool.acquire();
+
+    // force indexes to hardcoded metadata
+    await rebuildIndexes(session);
+
+    // create a source
     const source = await create(
         session,
         { content: { name: 'default source' }, modelName: 'Source', user: admin },
