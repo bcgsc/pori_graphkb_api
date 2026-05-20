@@ -46,10 +46,10 @@ const rebuildIndexes = async (session) => {
     ]) {
         // Drop index
         const indexName = `${cls}.${field}_fulltext`;
-        await session.query(`DROP INDEX ${indexName}`);
+        await session.command(`DROP INDEX ${indexName}`).all();
 
         // Recreate index with hardcoded metadata
-        await session.query(`
+        await session.command(`
                 CREATE INDEX ${indexName}
                 ON ${cls}(${field})
                 FULLTEXT
@@ -59,7 +59,7 @@ const rebuildIndexes = async (session) => {
                     "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
                     "minWordLength": 3
                 }
-        `);
+        `).all();
     }
 };
 
