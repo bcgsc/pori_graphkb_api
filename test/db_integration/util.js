@@ -3,7 +3,6 @@ const uuidV4 = require('uuid/v4');
 
 const { EDGE_RECORDS, NODE_RECORDS, RECORDS } = require('../repo/subgraphs/data');
 const { getUserByName, create, update } = require('../../src/repo/commands');
-const { SEPARATOR_CHARS } = require('../../src/repo/query_builder/constants');
 const { logger } = require('../../src/repo/logging');
 const { connectDB } = require('../../src/repo');
 const { createConfig } = require('../../src');
@@ -53,12 +52,13 @@ const rebuildIndexes = async (session) => {
         } catch (e) { }
 
         // Recreate index with hardcoded metadata
+        // Note: '\' needs to be escaped across 3 layers (the currrent JS code, the SQL, and the OrientDB metadata parsing)
         await session.command(`
             CREATE INDEX ${indexName}
             ON ${cls}(${field})
             FULLTEXT
             METADATA {
-                "separatorChars": "${SEPARATOR_CHARS}",
+                "separatorChars": ":;,.|+*/\\\\=!?[]()"
                 "ignoreChars": "",
                 "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
                 "minWordLength": 3
