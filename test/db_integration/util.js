@@ -56,7 +56,7 @@ const rebuildIndexes = async (session) => {
         // Subsequent JSON.stringify() is handling part of the escaping issue.
         const metadata = {
             ignoreChars: '"',
-            indexRadix: true,
+            indexRadix: false,
             minWordLength: 3,
             separatorChars: ' \r\n\t:;,.|+*/\\=!?[]()',
             stopWords: [
@@ -74,11 +74,11 @@ const rebuildIndexes = async (session) => {
             METADATA ${JSON.stringify(metadata)}
         `).all();
     }
-    // Logging indexes metadata
-    const metadata = await session.query(`
-        SELECT * FROM (SELECT expand(indexes) FROM metadata:indexmanager) WHERE name LIKE '%_fulltext'
-    `).all();
-    throw new Error(JSON.stringify(metadata));
+    // // Logging indexes metadata
+    // const metadata = await session.query(`
+    //     SELECT * FROM (SELECT expand(indexes) FROM metadata:indexmanager) WHERE name LIKE '%_fulltext'
+    // `).all();
+    // throw new Error(JSON.stringify(metadata));
 };
 
 /**
