@@ -51,29 +51,28 @@ const rebuildIndexes = async (session) => {
             await session.command(`DROP INDEX ${indexName}`).all();
         } catch (e) { }
 
-        // Recreate index with hardcoded metadata
-        // Note: '\' needs to be escaped across 3 layers (the currrent JS code, the SQL, and the OrientDB metadata parsing)
+        // Hardcoded metadata
+        // Some characters needs to be escaped across 3 layers (the currrent JS code, the SQL query, and the OrientDB metadata parsing).
+        // Subsequent JSON.stringify() is handling part of the escaping issue.
+        const metadata = {
+            ignoreChars: '"',
+            indexRadix: true,
+            minWordLength: 3,
+            separatorChars: ' \r\n\t:;,.|+*/\\=!?[]()',
+            stopWords: [
+                'which', 'a', 'or', 'be', 'in', 'for', 'this', 'was',
+                'is', 'while', 'him', 'the', 'that', 'with', 'as',
+                'at', 'his', 'what', 'her', 'and', 'were', 'up',
+            ],
+        };
+
+        // Create index
         await session.command(`
             CREATE INDEX ${indexName}
             ON ${cls}(${field})
             FULLTEXT
-            METADATA {
-                "indexRadix": true,
-                "separatorChars": ":;,.|+*/\\\\=!?[]()",
-                "ignoreChars": "",
-                "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
-                "minWordLength": 3
-            }
+            METADATA ${JSON.stringify(metadata)}
         `).all();
-    }
-
-    // Logging indexes metadata
-    const metadata = await session.query(`
-        SELECT * FROM (SELECT expand(indexes) FROM metadata:indexmanager) WHERE name LIKE '%_fulltext'
-    `).all();
-
-    for (const record of metadata) {
-        logger.info(JSON.stringify(record));
     }
 };
 
