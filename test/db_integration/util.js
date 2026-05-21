@@ -66,6 +66,15 @@ const rebuildIndexes = async (session) => {
             }
         `).all();
     }
+
+    // Logging indexes metadata
+    const metadata = await session.query(`
+        SELECT * FROM (SELECT expand(indexes) FROM metadata:indexmanager) WHERE name LIKE '%_fulltext'
+    `).all();
+
+    for (const record of metadata) {
+        logger.info(JSON.stringify(record));
+    }
 };
 
 /**
