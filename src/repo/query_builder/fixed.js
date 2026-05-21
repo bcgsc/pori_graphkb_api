@@ -464,15 +464,6 @@ const keywordSearch = ({
         ? splitIntoKeywords(keyword)
         : [keyword.trim().toLowerCase()];
 
-    // let wordList = [];
-    // if (operator === OPERATORS.CONTAINSTEXT) {
-    //     wordList = (schemaDefn.inheritsFrom(model.name, 'Variant') || model.name) === 'Variant'
-    //         ? splitIntoKeywords(keyword)
-    //         : keyword.split(/\s+/).map((word) => word.trim().toLowerCase());
-    // } else {
-    //     wordList = [keyword.trim().toLowerCase()];
-    // }
-
     // words needs to be 3 letters or more
     wordList = operator === OPERATORS.CONTAINSTEXT
         ? wordList.filter((word) => word.length >= 3)
