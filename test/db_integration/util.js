@@ -58,6 +58,7 @@ const rebuildIndexes = async (session) => {
             ON ${cls}(${field})
             FULLTEXT
             METADATA {
+                "indexRadix": true,
                 "separatorChars": ":;,.|+*/\\\\=!?[]()",
                 "ignoreChars": "",
                 "stopWords": ["which","a","or","be","in","for","this","was","is","while","him","the","that","with","as","at","his","what","her","and","were","up"],
