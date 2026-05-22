@@ -89,8 +89,8 @@ const createSeededDb = async () => {
     const { pool, admin } = db;
     const session = await pool.acquire();
 
-    // force indexes to hardcoded metadata
-    await rebuildIndexes(session);
+    // // force indexes to hardcoded metadata
+    // await rebuildIndexes(session);
 
     // create a source
     const source = await create(
