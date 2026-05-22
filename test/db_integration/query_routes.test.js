@@ -111,7 +111,11 @@ describeWithAuth('api read-only routes', () => {
         });
     });
 
-    describe('/query search statements by keyword', () => {
+    // KBDEV-1426. Skipping keyword queryType tests for OrientDB != 3.0
+    (process.env.ORIENTDB_VERSION === '3.0' || process.env.ORIENTDB_VERSION === undefined
+        ? describe
+        : describe.skip
+    )('/query search statements by keyword', () => {
         test('count ignores limit', async () => {
             const response = await request({
                 body: {
@@ -128,8 +132,6 @@ describeWithAuth('api read-only routes', () => {
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
             expect(response.body).toEqual({ metadata: { records: 1 }, result: [{ count: 2 }] });
-            const orientVersion = process.env.ORIENTDB_VERSION;
-            expect(orientVersion).toBe('3.0');
         });
 
         test('get from related variant reference', async () => {
