@@ -38,6 +38,7 @@ jobs:
           GKB_DB_HOST: localhost
           GKB_DBS_PASS: root # default password for new db
           GKB_LOG_LEVEL: ERROR
+          ORIENTDB_VERSION: ${{ matrix.orientdb }} # KBDEV-1426. Skipping some tests on OrientDB 3.1+
       - uses: EnricoMi/publish-unit-test-result-action@v1.6
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
