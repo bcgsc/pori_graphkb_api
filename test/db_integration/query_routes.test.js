@@ -128,6 +128,8 @@ describeWithAuth('api read-only routes', () => {
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
             expect(response.body).toEqual({ metadata: { records: 1 }, result: [{ count: 2 }] });
+            const orientVersion = process.env.ORIENTDB_VERSION;
+            expect(orientVersion).toBe('3.0');
         });
 
         test('get from related variant reference', async () => {
