@@ -112,7 +112,11 @@ describeWithAuth('query builder', () => {
         });
     });
 
-    describe('selectByKeyword', () => {
+    // KBDEV-1426. Skipping keyword queryType tests for OrientDB != 3.0
+    (process.env.ORIENTDB_VERSION === '3.0' || process.env.ORIENTDB_VERSION === undefined
+        ? describe
+        : describe.skip
+    )('selectByKeyword', () => {
         test('get from related variant reference', async () => {
             const query = parse({ keyword: 'kras', queryType: 'keyword', target: 'Statement' });
             const result = await select(session, query);
@@ -132,6 +136,24 @@ describeWithAuth('query builder', () => {
                     parse({ keyword: 'kras sensitivity', queryType: 'keyword', target: 'Statement' }),
                 ),
             ).toHaveProperty('length', 1);
+        });
+
+        test('short terms are discarded without errors when long terms are present', async () => {
+            expect(
+                await select(
+                    session,
+                    parse({ keyword: 'kras gain of function', queryType: 'keyword', target: 'Statement' }),
+                ),
+            ).toHaveProperty('length', 1);
+        });
+
+        test('short terms throw error when long terms are not present', async () => {
+            await expect(
+                select(
+                    session,
+                    parse({ keyword: 'of', queryType: 'keyword', target: 'Statement' }),
+                ),
+            ).rejects.toThrow(ValidationError);
         });
     });
 

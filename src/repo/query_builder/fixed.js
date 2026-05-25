@@ -25,7 +25,7 @@ const {
     SIMILARITY_EDGES,
     TREE_EDGES,
 } = require('./constants');
-const { castRangeInt } = require('./util');
+const { castRangeInt, splitIntoKeywords } = require('./util');
 
 const disambiguationClause = (cond, edges = SIMILARITY_EDGES) => `TRAVERSE both(${edges.map((e) => `'${e}'`).join(', ')}) FROM ${cond} MAXDEPTH ${MAX_NEIGHBORS}`;
 
@@ -456,19 +456,25 @@ const keywordSearch = ({
     if (model.isEdge) {
         throw new ValidationError(`Cannot keyword search edge classes (${target})`);
     }
-
     if (!keyword) {
         throw new ValidationError('Missing required keyword parameter');
     }
 
-    // remove any duplicate words
-    const wordList = operator === OPERATORS.CONTAINSTEXT
-        ? keyword.split(/\s+/).map((word) => word.trim().toLowerCase())
+    let wordList = operator === OPERATORS.CONTAINSTEXT
+        ? splitIntoKeywords(keyword)
         : [keyword.trim().toLowerCase()];
 
+    // words needs to be 3 letters or more
+    wordList = operator === OPERATORS.CONTAINSTEXT
+        ? wordList.filter((word) => word.length >= 3)
+        : wordList;
+
+    // need at least one word
     if (wordList.length < 1) {
         throw new ValidationError('missing keywords');
     }
+
+    // remove any duplicate words
     const keywords = Array.from(new Set(wordList)).filter((k) => k).sort();
 
     const params = {};
@@ -569,4 +575,4 @@ class FixedSubquery {
     }
 }
 
-module.exports = { FixedSubquery };
+module.exports = { FixedSubquery, keywordSearch };
