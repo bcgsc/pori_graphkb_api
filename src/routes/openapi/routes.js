@@ -498,7 +498,7 @@ const UPLOAD_HGVS = {
                         },
                     },
                     '3 - Pick a prefered ontology': {
-                        description: 'When more than one Feature record match the reference, pick the one from a prefered ontology source',
+                        description: 'When more than one Feature record matches the reference, pick the one from a prefered ontology source',
                         value: {
                             notation: 'TP53:p.V10del',
                             preferedRefSrcName: 'entrez gene',
