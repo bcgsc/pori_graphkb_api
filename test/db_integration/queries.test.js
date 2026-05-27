@@ -112,11 +112,7 @@ describeWithAuth('query builder', () => {
         });
     });
 
-    // KBDEV-1426. Skipping keyword queryType tests for OrientDB != 3.0
-    (process.env.ORIENTDB_VERSION === '3.0' || process.env.ORIENTDB_VERSION === undefined
-        ? describe
-        : describe.skip
-    )('selectByKeyword', () => {
+    describe('selectByKeyword', () => {
         test('get from related variant reference', async () => {
             const query = parse({ keyword: 'kras', queryType: 'keyword', target: 'Statement' });
             const result = await select(session, query);
