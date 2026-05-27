@@ -6,8 +6,8 @@ const { util: { looksLikeRID } } = require('@bcgsc-pori/graphkb-schema');
 const { create, select } = require('../commands');
 const { parse } = require('../query_builder/index');
 const {
+    NoRecordFoundError,
     RecordConflictError,
-    NotImplementedError,
     ValidationError,
 } = require('../error');
 
@@ -50,8 +50,8 @@ const getTypeRID = async (session, type) => {
     );
 
     if (result.length === 0) {
-        throw new NotImplementedError({
-            message: `Vocabulary ${type} not implemented as DB record. Vocabulary ontology must be uploaded first`,
+        throw new NoRecordFoundError({
+            message: `Vocabulary record ${type} dosen't exists. Vocabulary ontology must be uploaded first`,
         });
     }
     return String(result[0]['@rid']);
@@ -82,8 +82,8 @@ const getReferenceRID = async (session, ref, { preferedRefSrcName } = {}) => {
 
     if (result.length === 0) {
         // TODO: Add support for new Feature upload
-        throw new NotImplementedError({
-            message: `Feature ${referenceDisplayName} not implemented as DB record`,
+        throw new NoRecordFoundError({
+            message: `Feature record ${referenceDisplayName} dosen't exists`,
         });
     }
     if (result.length > 1) {

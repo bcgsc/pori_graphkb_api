@@ -9,7 +9,7 @@ jest.mock('../../../src/repo/query_builder/index', () => ({
 }));
 
 jest.mock('../../../src/repo/error', () => ({
-    NotImplementedError: class NotImplementedError extends Error {
+    NoRecordFoundError: class NoRecordFoundError extends Error {
         constructor(obj) {
             super(obj.message);
             this.name = 'ValidationError';
@@ -33,7 +33,7 @@ jest.mock('../../../src/repo/error', () => ({
 const { create, select } = require('../../../src/repo/commands');
 const { parse } = require('../../../src/repo/query_builder/index');
 const {
-    NotImplementedError,
+    NoRecordFoundError,
     RecordConflictError,
     ValidationError,
 } = require('../../../src/repo/error');
@@ -91,10 +91,10 @@ describe('getTypeRID', () => {
         await expect(getTypeRID(session, 'substitution')).resolves.toBe('#123:45');
     });
 
-    test('throws NotImplementedError when vocabulary is not found', async () => {
+    test('throws NoRecordFoundError when vocabulary is not found', async () => {
         select.mockResolvedValue([]);
 
-        await expect(getTypeRID(session, 'unknown')).rejects.toBeInstanceOf(NotImplementedError);
+        await expect(getTypeRID(session, 'unknown')).rejects.toBeInstanceOf(NoRecordFoundError);
     });
 });
 
@@ -124,10 +124,10 @@ describe('getReferenceRID', () => {
         await expect(getReferenceRID(session, 'BRCA2', { preferedRefSrcName: 'entrez gene' })).resolves.toBe('#123:46');
     });
 
-    test('throws NotImplementedError when no feature is found', async () => {
+    test('throws NoRecordFoundError when no feature is found', async () => {
         select.mockResolvedValue([]);
 
-        await expect(getReferenceRID(session, 'BRCA2', {})).rejects.toBeInstanceOf(NotImplementedError);
+        await expect(getReferenceRID(session, 'BRCA2', {})).rejects.toBeInstanceOf(NoRecordFoundError);
     });
 });
 
