@@ -37,7 +37,7 @@ const formatReferenceDisplayName = (ref) => {
  *
  * @param {Object} session the DB session object
  * @param {string} opt.type the variant type name
- * @returns {string} the strignify record's RID
+ * @returns {string} the strignified record's RID
  */
 const getTypeRID = async (session, type) => {
     const result = await select(
