@@ -123,6 +123,7 @@ const createSchema = async (db) => {
         async (prop) => createPropertyInDb(prop, E),
     ));
 
+    // TODO: Should these indices be defined in the schema instead?
     await Promise.all(Array.from(['E', 'V', 'User'], (cls) => db.index.create({
         class: cls,
         metadata: { ignoreNullValues: false },
@@ -131,6 +132,7 @@ const createSchema = async (db) => {
         type: 'unique',
     })));
     logger.log('info', 'defined schema for the major base classes');
+
     // create the other schema classes
     const classesByLevel = schema.splitClassLevels().slice(1);
 
