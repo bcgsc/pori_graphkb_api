@@ -130,7 +130,11 @@ const createModelInDb = async (modelName, db, opt = {}) => {
                     return;
                 }
             }
-            logger.info(`creating index ${index.name} type ${index.type}`);
+            if (index.engine) {
+                logger.info(`creating index ${index.name} type ${index.type} engine ${index.engine}`);
+            } else {
+                logger.info(`creating index ${index.name} type ${index.type}`);
+            }
             await db.index.create(index);
         };
         await Promise.all(
