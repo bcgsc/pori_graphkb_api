@@ -130,11 +130,8 @@ const createModelInDb = async (modelName, db, opt = {}) => {
                     return;
                 }
             }
-            if (index.engine) {
-                logger.info(`creating index ${index.name} type ${index.type} engine ${index.engine}`);
-            } else {
-                logger.info(`creating index ${index.name} type ${index.type}`);
-            }
+            // eslint-disable-next-line multiline-ternary
+            logger.info(`creating index ${index.name} type ${index.type}${index.engine ? ` engine ${index.engine}` : ''}`);
             await db.index.create(index);
         };
         await Promise.all(
