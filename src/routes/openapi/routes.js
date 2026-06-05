@@ -477,6 +477,88 @@ const POST_LICENSE = {
     tags: ['Permissions'],
 };
 
+const UPLOAD_HGVS = {
+    requestBody: {
+        content: {
+            'application/json': {
+                examples: {
+                    '1 - Parse and upload': {
+                        description: 'Parsing an HGVS-like variant notation, with RID substitutions, and upload as new PositionalVariant',
+                        value: {
+                            notation: 'TP53:p.V10del',
+
+                        },
+                    },
+                    '2 - Parse only': {
+                        description: 'Parsing an HGVS-like variant notation, with RID substitutions, without actual upload',
+                        value: {
+                            notation: 'TP53:p.V10del',
+                            upload: false,
+
+                        },
+                    },
+                    '3 - Pick a prefered ontology': {
+                        description: 'When more than one Feature record matches the reference, pick the one from a prefered ontology source',
+                        value: {
+                            notation: 'TP53:p.V10del',
+                            preferedRefSrcName: 'entrez gene',
+
+                        },
+                    },
+                    '4 - Return error if already exists': {
+                        description: '',
+                        value: {
+                            notation: 'TP53:p.V10del',
+                            existsOk: false,
+                        },
+                    },
+                },
+                schema: {
+                    $ref: '#/components/schemas/UploadHgvsQuery',
+                },
+            },
+        },
+        required: true,
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    schema: {
+                        properties: {
+                            result: {
+                                type: 'object',
+                            },
+                        },
+                        required: ['result'],
+                        type: 'object',
+                    },
+                },
+            },
+            description: 'An existing PositionalVariant record has been fetched',
+        },
+        201: {
+            content: {
+                'application/json': {
+                    schema: {
+                        properties: {
+                            result: {
+                                type: 'object',
+                            },
+                        },
+                        required: ['result'],
+                        type: 'object',
+                    },
+                },
+            },
+            description: 'A new PositionalVariant record has been created',
+        },
+        409: { $ref: '#/components/responses/RecordConflictError' },
+    },
+    summary: 'Parse and upload a variant string as a PositionalVariant record',
+    tags: ['General'],
+};
+
 module.exports = {
     GET_LICENSE,
     GET_SCHEMA,
@@ -488,4 +570,5 @@ module.exports = {
     POST_TOKEN,
     QUERY,
     SUBGRAPHS,
+    UPLOAD_HGVS,
 };
