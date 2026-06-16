@@ -94,6 +94,24 @@ const createModelInDb = async (modelName, db, opt = {}) => {
             async (prop) => createPropertyInDb(prop, cls),
         ));
     }
+
+    // KBDEB-1537. Adding Ontology.name_sourceId FULLTEXT LUCENE index
+    if (modelName === 'Ontology') {
+        if (!model.indices) {
+            model.indices = [];
+        }
+        model.indices.push({
+            class: 'Ontology',
+            engine: 'LUCENE',
+            metadata: {
+                analyzer: 'org.apache.lucene.analysis.standard.StandardAnalyzer',
+            },
+            name: 'Ontology.name_sourceId',
+            properties: ['name', 'sourceId'],
+            type: 'FULLTEXT',
+        });
+    }
+
     if (indices) {
         const createIndex = async (index) => {
             let exists = false;
@@ -112,11 +130,8 @@ const createModelInDb = async (modelName, db, opt = {}) => {
                     return;
                 }
             }
-            if (!index.engine && index.type === 'FULLTEXT') {
-                // TODO: https://www.bcgsc.ca/jira/browse/SYS-58339 pending db update to 3.1
-                // index.engine = 'LUCENE';
-            }
-            logger.info(`creating index ${index.name} type ${index.type}`);
+            // eslint-disable-next-line multiline-ternary
+            logger.info(`creating index ${index.name} type ${index.type}${index.engine ? ` engine ${index.engine}` : ''}`);
             await db.index.create(index);
         };
         await Promise.all(
