@@ -22,7 +22,7 @@ const clearDB = async (db, admin) => {
     await db.command('delete edge e').all();
     await db.command('delete vertex v').all();
     await db.command(`delete from user where name != '${admin.name}'`).all();
-    await db.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\'').all();
+    await db.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\' and name != \'bulkWrite\'').all();
 };
 
 module.exports = { clearDB, setUpEmptyDB };
