@@ -158,9 +158,9 @@ const describePost = (model) => {
     if (model.routes.GET) {
         links.getById = {
             description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [GET \`${model.routeName
-                }/{rid}\`](.#/${model.name
-                }/get_${model.routeName.slice(1)
-                }__rid_) requests`,
+            }/{rid}\`](.#/${model.name
+            }/get_${model.routeName.slice(1)
+            }__rid_) requests`,
             operationId: `get_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
         };
@@ -168,9 +168,9 @@ const describePost = (model) => {
     if (model.routes.PATCH) {
         links.patchById = {
             description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [PATCH \`${model.routeName
-                }/{rid}\`](.#/${model.name
-                }/patch_${model.routeName.slice(1)
-                }__rid_) requests`,
+            }/{rid}\`](.#/${model.name
+            }/patch_${model.routeName.slice(1)
+            }__rid_) requests`,
             operationId: `patch_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
         };
@@ -178,9 +178,9 @@ const describePost = (model) => {
     if (model.routes.DELETE) {
         links.deleteById = {
             description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [DELETE \`${model.routeName
-                }/{rid}\`](.#/${model.name
-                }/delete_${model.routeName.slice(1)
-                }__rid_) requests`,
+            }/{rid}\`](.#/${model.name
+            }/delete_${model.routeName.slice(1)
+            }__rid_) requests`,
             operationId: `delete_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
         };
