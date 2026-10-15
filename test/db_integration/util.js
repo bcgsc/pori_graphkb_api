@@ -12,7 +12,7 @@ const clearDB = async ({ session, admin }) => {
     await session.command('delete edge e').all();
     await session.command('delete vertex v').all();
     await session.command(`delete from user where name != '${admin.name}'`).all();
-    await session.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\'').all();
+    await session.command('delete from usergroup where name != \'readonly\' and name != \'admin\' and name != \'regular\' and name != \'bulkWrite\'').all();
 };
 
 const createEmptyDb = async () => {

@@ -79,6 +79,7 @@ const addClassToPermissionsSchema = async (db, model) => {
     // default to no permissions
     await db.command(`UPDATE UserGroup SET permissions.${model.name} = ${Number(PERMISSIONS.NONE)}`).all();
     await db.command(`UPDATE UserGroup SET permissions.${model.name} = ${Number(regularPermission)} where name = 'admin' or name = 'regular'`).all();
+    await db.command(`UPDATE UserGroup SET permissions.${model.name} = ${Number(regularPermission)} where name = 'bulkWrite'`).all();
     await db.command(`UPDATE UserGroup SET permissions.${model.name} = ${Number(PERMISSIONS.READ)} where name = 'readonly'`).all();
 };
 
@@ -625,6 +626,27 @@ const migrate4xFrom0xto1x = async (db) => {
     }
 };
 
+const migrate4xFrom1xto2x = async (db) => {
+    logger.info('Ensure the bulkWrite user group exists with default permissions');
+    const bulkWrite = generateDefaultGroups().find((group) => group.name === 'bulkWrite');
+
+    if (!bulkWrite) {
+        throw new Error('Missing default permissions for the bulkWrite user group');
+    }
+
+    const [existing] = await db.query(
+        'SELECT * FROM UserGroup WHERE name = \'bulkWrite\' AND deletedAt IS NULL LIMIT 1',
+    ).all();
+
+    if (!existing) {
+        const content = schema.formatRecord('UserGroup', bulkWrite, { addDefaults: true, dropExtra: false });
+        await db.insert().into(schema.models.UserGroup.name).set(content).one();
+        return;
+    }
+
+    await db.update(existing['@rid']).set({ permissions: bulkWrite.permissions }).one();
+};
+
 const logMigration = async (db, name, url, version) => {
     const schemaHistory = await db.class.get('SchemaHistory');
     await schemaHistory.create({
@@ -646,6 +668,11 @@ const migrate = async (db, opt = {}) => {
     const { checkOnly = false } = opt;
     const currentVersion = await _version.getCurrentVersion(db);
     const { version: targetVersion, name, url } = _version.getLoadVersion();
+
+    // Downgrade migrations are not supported by this migration pipeline.
+    if (semver.gt(currentVersion, targetVersion)) {
+        throw new Error(`Database schema version (${currentVersion}) is newer than installed schema package (${targetVersion}). Downgrade migrations are not supported.`);
+    }
 
     if (!requiresMigration(currentVersion, targetVersion)) {
         logger.info(`Versions (${currentVersion}, ${targetVersion}) are compatible and do not require migration`);
@@ -685,6 +712,7 @@ const migrate = async (db, opt = {}) => {
         ['3.15.0', '3.16.0', async () => {}], // no db migration required
         ['3.16.0', '4.0.0', async () => {}], // no db migration required
         ['4.0.0', '4.1.0', migrate4xFrom0xto1x],
+        ['4.1.0', '4.2.0', migrate4xFrom1xto2x],
     ];
 
     while (requiresMigration(migratedVersion, targetVersion)) {
