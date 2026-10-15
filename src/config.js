@@ -14,7 +14,6 @@ module.exports = {
         GKB_DISABLE_AUTH: false,
         GKB_KEYCLOAK_CLIENT_ID: 'GraphKB',
         GKB_KEYCLOAK_KEY_FILE: 'config/keys/keycloak-dev.key',
-        GKB_KEYCLOAK_ROLE: 'GraphKB',
         GKB_KEYCLOAK_URI: 'http://keycloakdev.bcgsc.ca/auth/realms/GSC/protocol/openid-connect/token',
         GKB_KEY_FILE: 'id_rsa',
         GKB_LOG_LEVEL: process.env.GKB_LOG_LEVEL || 'debug',

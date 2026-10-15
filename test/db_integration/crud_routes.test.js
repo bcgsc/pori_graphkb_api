@@ -16,7 +16,6 @@ const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
 jest.setTimeout(TEST_TIMEOUT_MS);
 const PUBLIC_KEY = 'test/data/test_key.pem';
-const GKB_KEYCLOAK_ROLE = 'monkeys';
 
 // fake the KC token
 jest.mock('../../src/routes/keycloak', () => {
@@ -29,9 +28,6 @@ jest.mock('../../src/routes/keycloak', () => {
             const token = jwt.sign(
                 {
                     preferred_username: username,
-                    realm_access: {
-                        roles: ['monkeys'],
-                    },
                 },
                 PRIVATE_KEY,
                 { algorithm: 'RS256', expiresIn: 10000000000 },
@@ -98,7 +94,6 @@ describeWithAuth('api crud routes', () => {
             GKB_DB_CREATE: false,
             GKB_DISABLE_AUTH: false,
             GKB_KEYCLOAK_KEY_FILE: PUBLIC_KEY,
-            GKB_KEYCLOAK_ROLE,
         });
         await app.listen();
         session = await app.pool.acquire();

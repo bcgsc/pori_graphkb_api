@@ -30,15 +30,14 @@ const generateToken = async (db, username, key, exp = null) => {
 };
 
 /**
- * Verify the token and ensure the user has the appropriate role to access GraphKB
+ * Verify the token to ensure the user has access to GraphKB
  *
  * @param {string} token the token to be parsed
  * @param {string} key the public key file contents to use to verify the token
- * @param {string} role the role that should be encoded into the token to allow access
  *
  * @returns {object} the parsed content of the key cloak token
  */
-const validateKeyCloakToken = (token, key, role) => {
+const validateKeyCloakToken = (token, key) => {
     let parsed;
 
     try {
@@ -48,14 +47,7 @@ const validateKeyCloakToken = (token, key, role) => {
         throw new AuthenticationError(err);
     }
 
-    if (
-        parsed.realm_access
-        && parsed.realm_access.roles
-        && parsed.realm_access.roles.includes(role)
-    ) {
-        return parsed;
-    }
-    throw new PermissionError(`Insufficient permissions. User must have the role: ${role}`);
+    return parsed;
 };
 
 /**
@@ -65,7 +57,7 @@ const validateKeyCloakToken = (token, key, role) => {
  */
 const addPostToken = (app) => {
     const {
-        GKB_DISABLE_AUTH, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE, GKB_KEY,
+        GKB_DISABLE_AUTH, GKB_KEYCLOAK_KEY, GKB_KEY,
     } = app.conf;
 
     app.router.route('/token').post(async (req, res, next) => {
@@ -95,7 +87,7 @@ const addPostToken = (app) => {
 
         if (!GKB_DISABLE_AUTH) {
             try {
-                kcTokenContent = validateKeyCloakToken(keyCloakToken, GKB_KEYCLOAK_KEY, GKB_KEYCLOAK_ROLE);
+                kcTokenContent = validateKeyCloakToken(keyCloakToken, GKB_KEYCLOAK_KEY);
             } catch (err) {
                 if (err instanceof PermissionError) {
                     logger.log('debug', err);
