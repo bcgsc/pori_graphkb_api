@@ -157,12 +157,9 @@ const describePost = (model) => {
 
     if (model.routes.GET) {
         links.getById = {
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [GET \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/get_${
-                model.routeName.slice(1)
+            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [GET \`${model.routeName
+            }/{rid}\`](.#/${model.name
+            }/get_${model.routeName.slice(1)
             }__rid_) requests`,
             operationId: `get_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
@@ -170,12 +167,9 @@ const describePost = (model) => {
     }
     if (model.routes.PATCH) {
         links.patchById = {
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [PATCH \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/patch_${
-                model.routeName.slice(1)
+            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [PATCH \`${model.routeName
+            }/{rid}\`](.#/${model.name
+            }/patch_${model.routeName.slice(1)
             }__rid_) requests`,
             operationId: `patch_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
@@ -183,12 +177,9 @@ const describePost = (model) => {
     }
     if (model.routes.DELETE) {
         links.deleteById = {
-            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [DELETE \`${
-                model.routeName
-            }/{rid}\`](.#/${
-                model.name
-            }/delete_${
-                model.routeName.slice(1)
+            description: `The \`@rid\` value returned in the response can be used as the \`rid\` parameter in [DELETE \`${model.routeName
+            }/{rid}\`](.#/${model.name
+            }/delete_${model.routeName.slice(1)
             }__rid_) requests`,
             operationId: `delete_${model.routeName.slice(1)}__rid_`,
             parameters: { rid: '$response.body#/result.@rid' },
@@ -517,7 +508,7 @@ const registerSpecEndpoints = (router, spec) => {
           </head>
           <body>
             <redoc id="redoc-container" require-props-first="true" sort-props-alphabetically="true" spec-url="${req.baseUrl}/spec.json"></redoc>
-            <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"> </script>
+            <script src="https://cdn.jsdelivr.net/npm/redoc@2.0.0/bundles/redoc.standalone.js"> </script>
           </body>
         </html>`;
         res.set('Content-Type', 'text/html');
