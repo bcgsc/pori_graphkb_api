@@ -111,6 +111,57 @@ const POST_PARSE = {
     tags: ['General'],
 };
 
+const POST_DISPLAY_NAME = {
+    requestBody: {
+        content: {
+            'application/json': {
+                example: {
+                    '@class': 'CategoryVariant',
+                    reference1: '#44:0',
+                    reference2: '#44:0',
+                    type: '#146:190',
+                },
+                schema: {
+                    additionalProperties: true,
+                    description: 'Model content in the same format accepted by its resource POST endpoint',
+                    properties: {
+                        '@class': {
+                            description: 'The schema model name for this content',
+                            example: 'CategoryVariant',
+                            type: 'string',
+                        },
+                    },
+                    required: ['@class'],
+                    type: 'object',
+                },
+            },
+        },
+        required: true,
+    },
+    responses: {
+        200: {
+            content: {
+                'application/json': {
+                    schema: {
+                        properties: {
+                            result: {
+                                description: 'The calculated display name',
+                                type: 'string',
+                            },
+                        },
+                        required: ['result'],
+                        type: 'object',
+                    },
+                },
+            },
+        },
+        400: { $ref: '#/components/responses/BadInput' },
+        401: { $ref: '#/components/responses/NotAuthorized' },
+    },
+    summary: 'Calculate a display name for model content',
+    tags: ['General'],
+};
+
 const GET_SCHEMA = {
     parameters: [
         { $ref: '#/components/parameters/Accept' },
@@ -241,6 +292,14 @@ const QUERY = {
         content: {
             'application/json': {
                 examples: {
+                    'displayName search': {
+                        description: 'Get records by displayName search. This will look for displayNames matching the searched name and return the related records (even with incomplete protein positions for variants)',
+                        value: {
+                            keyword: 'SMAD4:p.D5',
+                            queryType: 'displayName',
+                            target: 'Variant',
+                        },
+                    },
                     'equivalent terms tree': {
                         description: 'Get terms to be matched based on some input term name',
                         value: {
@@ -262,14 +321,6 @@ const QUERY = {
                             keyword: 'kras',
                             queryType: 'keyword',
                             target: 'Statement',
-                        },
-                    },
-                    'displayName search': {
-                        description: 'Get records by displayName search. This will look for displayNames matching the searched name and return the related records (even with incomplete protein positions for variants)',
-                        value: {
-                            keyword: 'SMAD4:p.D5',
-                            queryType: 'displayName',
-                            target: 'Variant',
                         },
                     },
                     'match variants by gene': {
@@ -386,8 +437,8 @@ const SUBGRAPHS = {
                         description: 'Get a virtual subgraph, with some default overrides on virtualization options.',
                         value: {
                             base: ['#135:14856'],
-                            subgraphType: 'tree',
                             subgraph: 'virtual',
+                            subgraphType: 'tree',
                             vOpt: {
                                 inverted: true,
                                 selfLoopAllowed: false,
@@ -508,8 +559,8 @@ const UPLOAD_HGVS = {
                     '4 - Return error if already exists': {
                         description: '',
                         value: {
-                            notation: 'TP53:p.V10del',
                             existsOk: false,
+                            notation: 'TP53:p.V10del',
                         },
                     },
                 },
@@ -564,6 +615,7 @@ module.exports = {
     GET_SCHEMA,
     GET_STATS,
     GET_VERSION,
+    POST_DISPLAY_NAME,
     POST_LICENSE,
     POST_PARSE,
     POST_SIGN_LICENSE,

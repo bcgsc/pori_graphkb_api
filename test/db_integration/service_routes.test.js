@@ -138,6 +138,32 @@ describeWithAuth('service routes', () => {
         });
     });
 
+    describe('/displayName', () => {
+        test('calculates the display name from model content', async () => {
+            const res = await request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe('KRAS mutation');
+        });
+
+        test('fails when @class is missing', async () => {
+            await expect(request({
+                body: { ...db.records.krasMut, '@class': undefined },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({ response: { statusCode: HTTP_STATUS.BAD_REQUEST } });
+        });
+    });
+
     describe('/extensions', () => {
         // will need to mock requestWithRetry so we don't actually make requests to these external APIs
         test('parse pubmed record', async () => {

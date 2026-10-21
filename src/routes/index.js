@@ -10,7 +10,7 @@ const { logger } = require('../repo/logging');
 const {
     checkStandardOptions,
 } = require('../repo/query_builder/util');
-const { selectCounts } = require('../repo/commands');
+const { fetchDisplayName, selectCounts } = require('../repo/commands');
 const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
 
@@ -72,6 +72,47 @@ const addParserRoute = (app) => {
     });
 };
 
+const addDisplayNameRoute = (app) => {
+    logger.info('NEW ROUTE [POST] /displayName');
+    app.router.post('/displayName', async (req, res, next) => {
+        if (!req.body || typeof req.body !== 'object') {
+            return next(new ValidationError('request body must be a model object'));
+        }
+        if (!req.body['@class']) {
+            return next(new ValidationError('body.@class is a required input'));
+        }
+        const content = { ...req.body };
+
+        if (!Object.prototype.hasOwnProperty.call(content, 'displayName')) {
+            content.displayName = null;
+        }
+        const modelName = content['@class'];
+
+        let session;
+
+        try {
+            session = await app.pool.acquire();
+        } catch (err) {
+            return next(err);
+        }
+
+        try {
+            const result = await fetchDisplayName(session, modelName, content);
+            session.close();
+            return res.status(HTTP_STATUS.OK).json(jc.decycle({ result }));
+        } catch (err) {
+            session.close();
+            return next(err);
+        }
+    });
+};
+
 module.exports = {
-    addErrorRoute, addParserRoute, addQueryRoute, addStatsRoute, openapi, resource,
+    addDisplayNameRoute,
+    addErrorRoute,
+    addParserRoute,
+    addQueryRoute,
+    addStatsRoute,
+    openapi,
+    resource,
 };
