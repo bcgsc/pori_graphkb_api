@@ -141,7 +141,11 @@ describeWithAuth('service routes', () => {
     describe('/displayName', () => {
         test('calculates the display name from model content', async () => {
             const res = await request({
-                body: db.records.krasMut,
+                body: {
+                    type: '#145:67',
+                    reference1: '#125:76072',
+                    '@class': 'CategoryVariant',
+                },
                 headers: {
                     Authorization: mockToken,
                 },
@@ -154,7 +158,10 @@ describeWithAuth('service routes', () => {
 
         test('fails when @class is missing', async () => {
             await expect(request({
-                body: { ...db.records.krasMut, '@class': undefined },
+                body: {
+                    type: '#145:67',
+                    reference1: '#125:76072',
+                },
                 headers: {
                     Authorization: mockToken,
                 },
