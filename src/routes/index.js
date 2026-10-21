@@ -81,12 +81,11 @@ const addDisplayNameRoute = (app) => {
         if (!req.body['@class']) {
             return next(new ValidationError('body.@class is a required input'));
         }
-        const content = { ...req.body };
+        const {'@class': modelName, ...content} = { ...req.body };
 
-        if (!Object.prototype.hasOwnProperty.call(content, 'displayName')) {
+        if (!('displayName' in content)) {
             content.displayName = null;
         }
-        const modelName = content['@class'];
 
         let session;
 
