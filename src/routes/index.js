@@ -81,7 +81,7 @@ const addDisplayNameRoute = (app) => {
         if (!req.body['@class']) {
             return next(new ValidationError('body.@class is a required input'));
         }
-        const {'@class': modelName, ...content} = { ...req.body };
+        const { '@class': modelName, ...content } = { ...req.body };
 
         if (!('displayName' in content)) {
             content.displayName = null;
