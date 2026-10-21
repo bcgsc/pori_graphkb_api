@@ -670,7 +670,7 @@ const migrate = async (db, opt = {}) => {
     const { version: targetVersion, name, url } = _version.getLoadVersion();
 
     // Downgrade migrations are not supported by this migration pipeline.
-    if (semver.gt(currentVersion, targetVersion)) {
+    if (requiresMigration(currentVersion, targetVersion) && semver.gt(currentVersion, targetVersion)) {
         throw new Error(`Database schema version (${currentVersion}) is newer than installed schema package (${targetVersion}). Downgrade migrations are not supported.`);
     }
 
