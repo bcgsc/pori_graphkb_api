@@ -10,7 +10,7 @@ const HTTP_STATUS = require('http-status-codes');
 const { AppServer } = require('../../src');
 const { generateToken } = require('../../src/routes/auth');
 
-const { createEmptyDb, tearDownDb } = require('./util');
+const { createSeededDb, tearDownDb } = require('./util');
 
 const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 
@@ -39,7 +39,7 @@ describeWithAuth('service routes', () => {
         mockToken;
 
     beforeAll(async () => {
-        db = await createEmptyDb();
+        db = await createSeededDb();
         const session = await db.pool.acquire();
         app = new AppServer({ ...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true });
 
@@ -135,6 +135,32 @@ describeWithAuth('service routes', () => {
                 return;
             }
             throw new Error('Did not throw expected error');
+        });
+    });
+
+    describe('/displayName', () => {
+        test('calculates the display name from model content', async () => {
+            const res = await request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe('KRAS mutation');
+        });
+
+        test('fails when @class is missing', async () => {
+            await expect(request({
+                body: { ...db.records.krasMut, '@class': undefined },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({ response: { statusCode: HTTP_STATUS.BAD_REQUEST } });
         });
     });
 
