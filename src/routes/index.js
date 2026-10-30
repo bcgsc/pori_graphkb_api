@@ -73,8 +73,8 @@ const addParserRoute = (app) => {
 };
 
 const addDisplayNameRoute = (app) => {
-    logger.info('NEW ROUTE [POST] /displayName');
-    app.router.post('/displayName', async (req, res, next) => {
+    logger.info('NEW ROUTE [POST] /displayname');
+    app.router.post('/displayname', async (req, res, next) => {
         if (!req.body || typeof req.body !== 'object') {
             return next(new ValidationError('request body must be a model object'));
         }
@@ -82,10 +82,6 @@ const addDisplayNameRoute = (app) => {
             return next(new ValidationError('body.@class is a required input'));
         }
         const { '@class': modelName, ...content } = { ...req.body };
-
-        if (!('displayName' in content)) {
-            content.displayName = null;
-        }
 
         let session;
 
@@ -96,13 +92,19 @@ const addDisplayNameRoute = (app) => {
         }
 
         try {
-            const result = await fetchDisplayName(session, modelName, content);
+            const formattedContent = schemaDefn.formatRecord(
+                modelName,
+                content,
+                { ignoreMissing: true },
+            );
+            logger.debug(JSON.stringify(formattedContent));
+            const result = await fetchDisplayName(session, modelName, formattedContent);
             session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({ result }));
         } catch (err) {
             session.close();
             return next(err);
-        }
+        }      
     });
 };
 
