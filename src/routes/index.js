@@ -104,7 +104,7 @@ const addDisplayNameRoute = (app) => {
         } catch (err) {
             session.close();
             return next(err);
-        }      
+        }
     });
 };
 
