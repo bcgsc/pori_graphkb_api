@@ -112,6 +112,32 @@ const POST_PARSE = {
 };
 
 const POST_DISPLAY_NAME = {
+    parameters: [
+        {
+            description: 'Add schema defaults for attributes that were not provided',
+            in: 'query',
+            name: 'addDefaults',
+            schema: { default: true, type: 'boolean' },
+        },
+        {
+            description: 'Drop model attributes that are not defined in the schema',
+            in: 'query',
+            name: 'dropExtra',
+            schema: { default: true, type: 'boolean' },
+        },
+        {
+            description: 'Allow model attributes that are not defined in the schema when dropExtra is false',
+            in: 'query',
+            name: 'ignoreExtra',
+            schema: { default: false, type: 'boolean' },
+        },
+        {
+            description: 'Allow required model attributes to be omitted',
+            in: 'query',
+            name: 'ignoreMissing',
+            schema: { default: true, type: 'boolean' },
+        },
+    ],
     requestBody: {
         content: {
             'application/json': {

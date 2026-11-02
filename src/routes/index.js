@@ -8,6 +8,7 @@ const openapi = require('./openapi');
 const resource = require('./resource');
 const { logger } = require('../repo/logging');
 const {
+    castBoolean,
     checkStandardOptions,
 } = require('../repo/query_builder/util');
 const { fetchDisplayName, selectCounts } = require('../repo/commands');
@@ -82,6 +83,19 @@ const addDisplayNameRoute = (app) => {
             return next(new ValidationError('body.@class is a required input'));
         }
         const { '@class': modelName, ...content } = { ...req.body };
+        const formatOptions = { ignoreMissing: true };
+
+        for (const name of ['addDefaults', 'dropExtra', 'ignoreExtra', 'ignoreMissing']) {
+            const value = req.query[name];
+
+            if (value !== undefined) {
+                try {
+                    formatOptions[name] = castBoolean(value);
+                } catch (err) {
+                    return next(err);
+                }
+            }
+        }
 
         let session;
 
@@ -95,7 +109,7 @@ const addDisplayNameRoute = (app) => {
             const formattedContent = schemaDefn.formatRecord(
                 modelName,
                 content,
-                { ignoreMissing: true },
+                formatOptions,
             );
             logger.debug(JSON.stringify(formattedContent));
             const result = await fetchDisplayName(session, modelName, formattedContent);

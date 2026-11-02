@@ -152,6 +152,49 @@ describeWithAuth('service routes', () => {
             expect(res.body.result).toBe('KRAS mutation');
         });
 
+        test('calculates a Disease display name from its source ID', async () => {
+            const res = await request({
+                body: {
+                    '@class': 'Disease',
+                    source: '#37:0',
+                    sourceId: '123456789',
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe('123456789');
+        });
+
+        test('passes formatting options separately from model content', async () => {
+            const res = await request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                qs: { addDefaults: false, dropExtra: true, ignoreExtra: true },
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe('KRAS mutation');
+        });
+
+        test('rejects non-boolean formatting options', async () => {
+            await expect(request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                qs: { ignoreMissing: 'invalid' },
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({ response: { statusCode: HTTP_STATUS.BAD_REQUEST } });
+        });
+
         test('fails when @class is missing', async () => {
             await expect(request({
                 body: { ...db.records.krasMut, '@class': undefined },
