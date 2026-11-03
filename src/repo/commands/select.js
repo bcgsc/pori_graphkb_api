@@ -191,6 +191,7 @@ const select = async (db, query, opt = {}) => {
  */
 const fetchDisplayName = async (db, modelName, content, user = null) => {
     const model = schema.get(modelName);
+
     const checkRecordPermissions = (records) => {
         if (!user) {
             return;
