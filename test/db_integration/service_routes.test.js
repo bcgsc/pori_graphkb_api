@@ -169,6 +169,58 @@ describeWithAuth('service routes', () => {
             expect(res.body.result).toBe('123456789');
         });
 
+        test('calculates a Statement display name from linked records', async () => {
+            const statement = db.records.sensToDrug;
+            const expectedDisplayName = [
+                '{conditions:variant} is associated with {relevance} to {subject}',
+                'in {conditions:disease} ({evidence}) ({evidenceLevel})',
+            ].join(' ');
+            const res = await request({
+                body: {
+                    '@class': 'Statement',
+                    conditions: statement.conditions,
+                    evidence: statement.evidence,
+                    evidenceLevel: [],
+                    relevance: statement.relevance,
+                    source: db.records.source['@rid'],
+                    sourceId: '4',
+                    subject: statement.subject,
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe(expectedDisplayName);
+        });
+
+        test('rejects a Statement missing a required attribute', async () => {
+            const statement = db.records.sensToDrug;
+
+            await expect(request({
+                body: {
+                    '@class': 'Statement',
+                    conditions: statement.conditions,
+                    relevance: statement.relevance,
+                    source: db.records.source['@rid'],
+                    sourceId: '4',
+                    subject: statement.subject,
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({
+                response: {
+                    body: { message: 'TypeError: content.evidence is not iterable' },
+                    statusCode: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+                },
+            });
+        });
+
         test('passes formatting options separately from model content', async () => {
             const res = await request({
                 body: db.records.krasMut,
