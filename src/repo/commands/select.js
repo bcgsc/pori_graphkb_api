@@ -5,6 +5,7 @@
  * @ignore
  */
 const {
+    PERMISSIONS,
     schema,
     ValidationError,
     sentenceTemplates,
@@ -18,7 +19,9 @@ const { parse } = require('../query_builder');
 const {
     MultipleRecordsFoundError,
     NoRecordFoundError,
+    PermissionError,
 } = require('../error');
+const { checkUserAccessFor } = require('../../middleware/auth');
 const { trimRecords } = require('../util');
 const { wrapIfTypeError } = require('./util');
 
@@ -186,8 +189,23 @@ const select = async (db, query, opt = {}) => {
 /**
  * Calculate the display name when it requires a db connection to resolve linked records
  */
-const fetchDisplayName = async (db, modelName, content) => {
+const fetchDisplayName = async (db, modelName, content, user = null) => {
     const model = schema.get(modelName);
+    const checkRecordPermissions = (records) => {
+        if (!user) {
+            return;
+        }
+
+        for (const record of records) {
+            const linkedModelName = record['@class'];
+
+            if (!checkUserAccessFor(user, linkedModelName, PERMISSIONS.READ)) {
+                throw new PermissionError(
+                    `The user ${user.name} does not have read permission on class ${linkedModelName}`,
+                );
+            }
+        }
+    };
 
     if (schema.ancestors(modelName).includes('Variant')) {
         const links = [content.type, content.reference1];
@@ -196,13 +214,15 @@ const fetchDisplayName = async (db, modelName, content) => {
             links.push(content.reference2);
         }
         const query = parse({
-            returnProperties: ['displayName', 'shortName'],
+            returnProperties: ['@class', 'displayName', 'shortName'],
             target: links,
         });
-        const [type, reference1, reference2] = await select(
+        const records = await select(
             db,
             query,
         );
+        checkRecordPermissions(records);
+        const [type, reference1, reference2] = records;
 
         if (model.name === 'CategoryVariant') {
             if (reference2) {
@@ -245,6 +265,7 @@ const fetchDisplayName = async (db, modelName, content) => {
                 target: links,
             }),
         );
+        checkRecordPermissions(records);
         const recordsById = {};
         const recId = (x) => util.castToRID(x).toString();
 

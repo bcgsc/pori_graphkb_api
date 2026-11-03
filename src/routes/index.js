@@ -14,6 +14,7 @@ const {
 const { fetchDisplayName, selectCounts } = require('../repo/commands');
 const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
+const { checkClassReadPermissions } = require('../middleware/auth');
 
 const parseClassListQueryParam = (param) => param.split(',').map((cls) => schemaDefn.get(cls).name);
 
@@ -75,13 +76,21 @@ const addParserRoute = (app) => {
 
 const addDisplayNameRoute = (app) => {
     logger.info('NEW ROUTE [POST] /displayname');
-    app.router.post('/displayname', async (req, res, next) => {
+    app.router.post('/displayname', (req, res, next) => {
         if (!req.body || typeof req.body !== 'object') {
             return next(new ValidationError('request body must be a model object'));
         }
         if (!req.body['@class']) {
             return next(new ValidationError('body.@class is a required input'));
         }
+
+        try {
+            req.model = schemaDefn.get(req.body['@class']); // eslint-disable-line no-param-reassign
+        } catch (err) {
+            return next(err);
+        }
+        return checkClassReadPermissions(req, res, next);
+    }, async (req, res, next) => {
         const { '@class': modelName, ...content } = { ...req.body };
         const formatOptions = { ignoreMissing: true };
 
@@ -112,7 +121,12 @@ const addDisplayNameRoute = (app) => {
                 formatOptions,
             );
             logger.debug(JSON.stringify(formattedContent));
-            const result = await fetchDisplayName(session, modelName, formattedContent);
+            const result = await fetchDisplayName(
+                session,
+                modelName,
+                formattedContent,
+                req.user,
+            );
             session.close();
             return res.status(HTTP_STATUS.OK).json(jc.decycle({ result }));
         } catch (err) {

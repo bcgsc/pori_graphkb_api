@@ -82,6 +82,21 @@ const checkClassPermissions = async (req, res, next) => {
 };
 
 /**
+ * Check that the user has read permission for the class assigned to the request,
+ * regardless of the HTTP method used by the route.
+ */
+const checkClassReadPermissions = async (req, res, next) => {
+    const { model, user } = req;
+
+    if (checkUserAccessFor(user, model.name, PERMISSIONS.READ)) {
+        return next();
+    }
+    return res.status(HTTP_STATUS.FORBIDDEN).json(new PermissionError(
+        `The user ${user.name} does not have read permission on class ${model.name}`,
+    ));
+};
+
+/**
  * Check that the user has permissions for a given subgraph route, for both the intended
  * ontology class and Edge classes. Note that to do this, models and user
  * need to already be assigned to the request.
@@ -126,6 +141,7 @@ const checkHgvsUploadPermissions = async (req, res, next) => {
 
 module.exports = {
     checkClassPermissions,
+    checkClassReadPermissions,
     checkHgvsUploadPermissions,
     checkSubgraphPermissions,
     checkToken,

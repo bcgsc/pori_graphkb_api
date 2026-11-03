@@ -6,6 +6,9 @@
  */
 const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
+const jwt = require('jsonwebtoken');
+
+const { PERMISSIONS } = require('@bcgsc-pori/graphkb-schema');
 
 const { AppServer } = require('../../src');
 const { generateToken } = require('../../src/routes/auth');
@@ -36,7 +39,9 @@ const util = require('../../src/extensions/util');
 describeWithAuth('service routes', () => {
     let db,
         app,
-        mockToken;
+        mockToken,
+        noAccessToken,
+        restrictedLinkedClassToken;
 
     beforeAll(async () => {
         db = await createSeededDb();
@@ -50,6 +55,17 @@ describeWithAuth('service routes', () => {
             app.conf.GKB_KEY,
             REALLY_LONG_TIME,
         );
+        noAccessToken = jwt.sign({
+            exp: REALLY_LONG_TIME,
+            user: { groups: [{ permissions: {} }], name: 'no-access' },
+        }, app.conf.GKB_KEY);
+        restrictedLinkedClassToken = jwt.sign({
+            exp: REALLY_LONG_TIME,
+            user: {
+                groups: [{ permissions: { CategoryVariant: PERMISSIONS.READ } }],
+                name: 'restricted-linked-class',
+            },
+        }, app.conf.GKB_KEY);
         await session.close();
     });
 
@@ -150,6 +166,32 @@ describeWithAuth('service routes', () => {
             });
             expect(res.statusCode).toBe(HTTP_STATUS.OK);
             expect(res.body.result).toBe('KRAS mutation');
+        });
+
+        test('rejects a user without read permission for the model', async () => {
+            await expect(request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: noAccessToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({
+                response: { statusCode: HTTP_STATUS.FORBIDDEN },
+            });
+        });
+
+        test('rejects a user without read permission for linked records', async () => {
+            await expect(request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: restrictedLinkedClassToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({
+                response: { statusCode: HTTP_STATUS.FORBIDDEN },
+            });
         });
 
         test('calculates a Disease display name from its source ID', async () => {

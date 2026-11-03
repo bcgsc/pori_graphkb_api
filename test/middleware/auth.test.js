@@ -4,7 +4,10 @@ const {
     schema,
 } = require('@bcgsc-pori/graphkb-schema');
 
-const { checkClassPermissions } = require('../../src/middleware/auth');
+const {
+    checkClassPermissions,
+    checkClassReadPermissions,
+} = require('../../src/middleware/auth');
 const { generateDefaultGroups } = require('../../src/repo/schema');
 
 describe('checkClassPermissions', () => {
@@ -556,6 +559,28 @@ describe('checkClassPermissions', () => {
                 expect(next).not.toHaveBeenCalled();
                 expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.FORBIDDEN);
             });
+        });
+    });
+
+    describe('explicit class read permission', () => {
+        beforeEach(() => {
+            req = {
+                method: 'POST',
+                model: schema.models.Disease,
+            };
+        });
+
+        test('allows a POST route when the user has read permission', () => {
+            req.user = { groups: [groups.readonly] };
+            checkClassReadPermissions(req, res, next);
+            expect(next).toHaveBeenCalled();
+        });
+
+        test('rejects a POST route when the user lacks read permission', () => {
+            req.user = { groups: [{ permissions: {} }], name: 'no-access' };
+            checkClassReadPermissions(req, res, next);
+            expect(next).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.FORBIDDEN);
         });
     });
 });
