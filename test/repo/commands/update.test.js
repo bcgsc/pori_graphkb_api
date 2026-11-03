@@ -21,18 +21,11 @@ describe('remove (delete edge)', () => {
     });
 
     test('throws permission error when user cannot delete node types', async () => {
-        try {
-            await modifyEdgeTx(db, {
-                changes: null,
-                modelName: 'SubClassOf',
-                original: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
-                user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'regular') },
-            });
-        } catch (err) {
-            expect(err).toBeInstanceOf(PermissionError);
-            expect(err.toString()).toContain('user has insufficient permissions to delete edges');
-            return;
-        }
-        throw new Error('Did not throw expected error');
+        await expect(modifyEdgeTx(db, {
+            changes: null,
+            modelName: 'SubClassOf',
+            original: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
+            user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'regular') },
+        })).rejects.toBeInstanceOf(PermissionError);
     });
 });

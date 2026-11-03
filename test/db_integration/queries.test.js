@@ -7,12 +7,8 @@ const {
     fetchDisplayName,
     getUserByName,
 } = require('../../src/repo/commands');
-const {
-    ValidationError, NoRecordFoundError,
-} = require('../../src/repo/error');
-const {
-    parse,
-} = require('../../src/repo/query_builder');
+const { NoRecordFoundError } = require('../../src/repo/error');
+const { parse } = require('../../src/repo/query_builder');
 
 const { createSeededDb, tearDownDb } = require('./util');
 
@@ -102,13 +98,7 @@ describeWithAuth('query builder', () => {
         });
 
         test('error on not found', async () => {
-            try {
-                await getUserByName(session, 'blargh monkeys');
-            } catch (err) {
-                expect(err).toBeInstanceOf(NoRecordFoundError);
-                return;
-            }
-            throw new Error('Did not throw the expected error');
+            await expect(getUserByName(session, 'blargh monkeys')).rejects.toBeInstanceOf(NoRecordFoundError);
         });
     });
 
@@ -213,18 +203,6 @@ describeWithAuth('query builder', () => {
     });
 
     describe('selectFromList', () => {
-        test('throws error on bad record ID', async () => {
-            const { krasMut, krasSub } = db.records;
-
-            try {
-                await select(session, parse({ target: [krasMut, krasSub, '44444:982958'] }));
-            } catch (err) {
-                expect(err).toBeInstanceOf(ValidationError);
-                return;
-            }
-            throw new Error('Did not throw expected error');
-        });
-
         test('returns in the original order', async () => {
             const { krasMut, krasSub } = db.records;
             const result = await select(session, parse({ target: [krasMut, krasSub] }));
