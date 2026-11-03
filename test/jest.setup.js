@@ -3,10 +3,13 @@ jest.mock('orientjs', () => {
         constructor(value = { cluster: 1, position: 1 }) {
             if (typeof value === 'string') {
                 this.value = value;
+                const [cluster, position] = value.replace(/^#/, '').split(':');
+                this.cluster = Number(cluster);
+                this.position = Number(position);
             } else {
-                const cluster = value.cluster ?? 1;
-                const position = value.position ?? 1;
-                this.value = `#${cluster}:${position}`;
+                this.cluster = value.cluster ?? 1;
+                this.position = value.position ?? 1;
+                this.value = `#${this.cluster}:${this.position}`;
             }
         }
 
