@@ -4,14 +4,13 @@ on:
   - push
   - workflow_dispatch
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         node: [24]
-        orientdb: ['3.0', '3.1', '3.2.13']
+        orientdb: ["3.0", "3.1", "3.2.13"]
     name: orientdb-${{ matrix.orientdb }} node-${{ matrix.node }}
     services:
       orientdb:
@@ -41,13 +40,13 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           files: coverage/junit.xml
-        if: matrix.node == 16 && matrix.orientdb == '3.0'
+        if: matrix.node == 24 && matrix.orientdb == '3.0'
       - uses: codecov/codecov-action@v1
         with:
           yml: codecov.yml
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_if_ci_error: true
-        if: matrix.node == 16 && matrix.orientdb == '3.0'
+        if: matrix.node == 24 && matrix.orientdb == '3.0'
   docker:
     runs-on: ubuntu-latest
     name: docker build
