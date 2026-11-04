@@ -457,6 +457,13 @@ describeWithAuth('api read-only routes', () => {
                         '@class': expect.anything(),
                         '@rid': expect.anything(),
                     }));
+
+                    for (const reference of [condition.reference1, condition.reference2].filter(Boolean)) {
+                        expect(reference).toEqual(expect.objectContaining({
+                            '@class': expect.anything(),
+                            '@rid': expect.anything(),
+                        }));
+                    }
                 }
             }
         });
