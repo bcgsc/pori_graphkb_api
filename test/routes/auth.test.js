@@ -4,10 +4,6 @@ const fs = require('fs');
 const {
     validateKeyCloakToken,
 } = require('../../src/routes/auth');
-const {
-    AuthenticationError,
-    PermissionError,
-} = require('../../src/repo/error');
 
 const PRIVATE_KEY = fs.readFileSync('test/data/test_key');
 const PUBLIC_KEY = fs.readFileSync('test/data/test_key.pem');
