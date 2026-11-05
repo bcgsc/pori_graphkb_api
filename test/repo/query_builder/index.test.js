@@ -1,6 +1,5 @@
-const {
-    parse, parseRecord,
-} = require('../../../src/repo/query_builder');
+const { ValidationError } = require('../../../src/repo/error');
+const { parse, parseRecord } = require('../../../src/repo/query_builder');
 
 const { stripSQL } = require('./util');
 
@@ -179,6 +178,11 @@ describe('WrapperQuery.parse', () => {
                 AND (untemplatedSeq = 'V' OR untemplatedSeq = 'X' OR untemplatedSeq IS NULL)
                 AND break1Start.pos = 12
             ) WHERE deletedAt IS NULL LIMIT 1000`));
+    });
+
+    test('throws error on bad record ID', () => {
+        expect(() => parse({ target: ['#123:45', '44444:982958'] }))
+            .toThrow(ValidationError);
     });
 
     describe('list attributes', () => {

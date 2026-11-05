@@ -10,7 +10,11 @@ const { createUser } = require('../../src/repo/commands/create');
 const { generateToken } = require('../../src/routes/auth');
 const { createEmptyDb, tearDownDb, clearDB } = require('./util');
 
-const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
+const request = async (opt) => requestPromise({
+    json: true,
+    resolveWithFullResponse: true,
+    ...opt,
+});
 
 const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
@@ -137,37 +141,31 @@ describeWithAuth('api crud routes', () => {
         });
 
         test('error on missing username', async () => {
-            try {
-                await request({
-                    body: {
-                        password: 'anything',
-                    },
-                    method: 'POST',
-                    uri: `${app.url}/token`,
-                });
-            } catch (err) {
-                const res = err.response;
-                expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                body: {
+                    password: 'anything',
+                },
+                method: 'POST',
+                uri: `${app.url}/token`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('error on missing password', async () => {
-            try {
-                await request({
-                    body: {
-                        username: db.admin.name,
-                    },
-                    method: 'POST',
-                    uri: `${app.url}/token`,
-                });
-            } catch (err) {
-                const res = err.response;
-                expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                body: {
+                    username: db.admin.name,
+                },
+                method: 'POST',
+                uri: `${app.url}/token`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
     });
 
@@ -190,78 +188,71 @@ describeWithAuth('api crud routes', () => {
             });
 
             test('error on query params given', async () => {
-                try {
-                    await request({
-                        body: {
-                            name: 'blargh monkeys',
-                        },
-                        headers: {
-                            Authorization: adminUserToken,
-                        },
-                        method: 'POST',
-                        qs: { history: true },
-                        uri: `${app.url}/users`,
-                    });
-                } catch (err) {
-                    const res = err.response;
-                    expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    body: {
+                        name: 'blargh monkeys',
+                    },
+                    headers: {
+                        Authorization: adminUserToken,
+                    },
+                    method: 'POST',
+                    qs: { history: true },
+                    uri: `${app.url}/users`,
+                })).rejects.toMatchObject({
+                    response: {
+                        statusCode: HTTP_STATUS.BAD_REQUEST,
+                    },
+                });
             });
 
             test('error on missing required property', async () => {
-                try {
-                    await request({
+                await expect(request({
+                    body: {
+                    },
+                    headers: {
+                        Authorization: adminUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/users`,
+                })).rejects.toMatchObject({
+                    response: {
                         body: {
+                            name: 'ValidationError',
                         },
-                        headers: {
-                            Authorization: adminUserToken,
-                        },
-                        method: 'POST',
-                        uri: `${app.url}/users`,
-                    });
-                } catch ({ response }) {
-                    expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                    expect(response.body).toHaveProperty('name', 'ValidationError');
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                        statusCode: HTTP_STATUS.BAD_REQUEST,
+                    },
+                });
             });
 
             test('error on missing token', async () => {
-                try {
-                    await request({
-                        body: {
-                            name: 'blargh monkeys',
-                        },
-                        method: 'POST',
-                        uri: `${app.url}/users`,
-                    });
-                } catch ({ response }) {
-                    expect(response.statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    body: {
+                        name: 'blargh monkeys',
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/users`,
+                })).rejects.toMatchObject({
+                    response: {
+                        statusCode: HTTP_STATUS.UNAUTHORIZED,
+                    },
+                });
             });
 
             test('error on duplicate record conflict', async () => {
-                try {
-                    await request({
-                        body: {
-                            name: db.admin.name,
-                        },
-                        headers: {
-                            Authorization: adminUserToken,
-                        },
-                        method: 'POST',
-                        uri: `${app.url}/users`,
-                    });
-                } catch ({ response }) {
-                    expect(response.statusCode).toBe(HTTP_STATUS.CONFLICT);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    body: {
+                        name: db.admin.name,
+                    },
+                    headers: {
+                        Authorization: adminUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/users`,
+                })).rejects.toMatchObject({
+                    response: {
+                        statusCode: HTTP_STATUS.CONFLICT,
+                    },
+                });
             });
 
             test('create record with embedded property', async () => {
@@ -579,49 +570,49 @@ describeWithAuth('api crud routes', () => {
             });
 
             test('error on delete non-existant record', async () => {
-                try {
-                    await request({
-                        headers: { Authorization: adminUserToken },
-                        method: 'DELETE',
-                        uri: `${app.url}/diseases/456:0`,
-                    });
-                } catch ({ response: res }) {
-                    expect(res.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
-                    expect(res.body).toHaveProperty('name', 'NoRecordFoundError');
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    headers: { Authorization: adminUserToken },
+                    method: 'DELETE',
+                    uri: `${app.url}/diseases/456:0`,
+                })).rejects.toMatchObject({
+                    response: {
+                        body: {
+                            name: 'NoRecordFoundError',
+                        },
+                        statusCode: HTTP_STATUS.NOT_FOUND,
+                    },
+                });
             });
 
             test('error on malformed rid', async () => {
-                try {
-                    await request({
-                        headers: { Authorization: adminUserToken },
-                        method: 'DELETE',
-                        uri: `${app.url}/diseases/k`,
-                    });
-                } catch ({ response: res }) {
-                    expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                    expect(res.body).toHaveProperty('name', 'ValidationError');
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    headers: { Authorization: adminUserToken },
+                    method: 'DELETE',
+                    uri: `${app.url}/diseases/k`,
+                })).rejects.toMatchObject({
+                    response: {
+                        body: {
+                            name: 'ValidationError',
+                        },
+                        statusCode: HTTP_STATUS.BAD_REQUEST,
+                    },
+                });
             });
 
             test('error query params given', async () => {
-                try {
-                    await request({
-                        headers: { Authorization: adminUserToken },
-                        method: 'DELETE',
-                        qs: { history: true },
-                        uri: `${app.url}/diseases/456:0`,
-                    });
-                } catch ({ response: res }) {
-                    expect(res.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                    expect(res.body).toHaveProperty('name', 'ValidationError');
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    headers: { Authorization: adminUserToken },
+                    method: 'DELETE',
+                    qs: { history: true },
+                    uri: `${app.url}/diseases/456:0`,
+                })).rejects.toMatchObject({
+                    response: {
+                        body: {
+                            name: 'ValidationError',
+                        },
+                        statusCode: HTTP_STATUS.BAD_REQUEST,
+                    },
+                });
             });
         });
     });
@@ -705,20 +696,17 @@ describeWithAuth('api crud routes', () => {
             });
 
             test('error on non-admin user', async () => {
-                try {
-                    await request({
-                        headers: {
-                            Authorization: managerUserToken,
-                        },
-                        method: 'POST',
-                        uri: `${app.url}/license`,
-                    });
-                } catch (err) {
-                    const res = err.response;
-                    expect(res.statusCode).toBe(HTTP_STATUS.FORBIDDEN);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    headers: {
+                        Authorization: managerUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/license`,
+                })).rejects.toMatchObject({
+                    response: {
+                        statusCode: HTTP_STATUS.FORBIDDEN,
+                    },
+                });
             });
         });
 
@@ -754,24 +742,21 @@ describeWithAuth('api crud routes', () => {
 
         describe('middleware check access to data routes', () => {
             test('denies when the user has not signed', async () => {
-                try {
-                    await request({
-                        body: {
-                            limit: 1,
-                            target: 'Vocabulary',
-                        },
-                        headers: {
-                            Authorization: unsignedUserToken,
-                        },
-                        method: 'POST',
-                        uri: `${app.url}/query`,
-                    });
-                } catch (err) {
-                    const res = err.response;
-                    expect(res.statusCode).toBe(HTTP_STATUS.FORBIDDEN);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(request({
+                    body: {
+                        limit: 1,
+                        target: 'Vocabulary',
+                    },
+                    headers: {
+                        Authorization: unsignedUserToken,
+                    },
+                    method: 'POST',
+                    uri: `${app.url}/query`,
+                })).rejects.toMatchObject({
+                    response: {
+                        statusCode: HTTP_STATUS.FORBIDDEN,
+                    },
+                });
             });
 
             test('allows when the user has signed', async () => {

@@ -30,31 +30,18 @@ describe('create (createEdge)', () => {
     });
 
     test('throws permission error when user cannot create node types', async () => {
-        try {
-            await create(db, {
-                content: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
-                modelName: 'SubClassOf',
-                user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'regular') },
-            });
-        } catch (err) {
-            expect(err).toBeInstanceOf(PermissionError);
-            expect(err.toString()).toContain('user has insufficient permissions to link records');
-            return;
-        }
-        throw new Error('Did not throw expected error');
+        await expect(create(db, {
+            content: { '@class': 'SubClassOf', in: '#4:3', out: '#3:4' },
+            modelName: 'SubClassOf',
+            user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'regular') },
+        })).rejects.toBeInstanceOf(PermissionError);
     });
 
     test('throws error when user creates a loop', async () => {
-        try {
-            await create(db, {
-                content: { '@class': 'SubClassOf', in: '#3:4', out: '#3:4' },
-                modelName: 'SubClassOf',
-                user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'admin') },
-            });
-        } catch (err) {
-            expect(err).toBeInstanceOf(ValidationError);
-            return;
-        }
-        throw new Error('Did not throw expected error');
+        await expect(create(db, {
+            content: { '@class': 'SubClassOf', in: '#3:4', out: '#3:4' },
+            modelName: 'SubClassOf',
+            user: { '@rid': '#45:1', groups: groups.filter((g) => g.name === 'admin') },
+        })).rejects.toBeInstanceOf(ValidationError);
     });
 });

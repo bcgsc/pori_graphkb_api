@@ -1,3 +1,4 @@
+const { ValidationError } = require('../../src/repo/error');
 const {
     groupRecordsBy,
     trimRecords,
@@ -24,7 +25,7 @@ describe('groupRecordsBy', () => {
         ];
         expect(() => {
             groupRecordsBy(records, ['city'], { aggregate: false, value: 'name' });
-        }).toThrow('non-unique grouping');
+        }).toThrow(ValidationError);
     });
 
     test('uses the whole record when nestedProperty is null', () => {
