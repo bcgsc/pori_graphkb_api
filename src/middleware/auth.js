@@ -103,8 +103,30 @@ const checkSubgraphPermissions = async (req, res, next) => {
     return next();
 };
 
+/**
+ * Check that the user has permissions for the upload classes. Note that to do this, models and user
+ * need to already be assigned to the request.
+ *
+ * @param {GraphKBRequest} req
+ * @param {ClassDefinition} req.models an array of models for this request
+ *
+ */
+const checkHgvsUploadPermissions = async (req, res, next) => {
+    const { models, user } = req;
+
+    for (let i = 0; i < models.length; i++) {
+        if (!checkUserAccessFor(user, models[i], PERMISSIONS.CREATE)) {
+            return res.status(HTTP_STATUS.FORBIDDEN).json(new PermissionError(
+                `The user ${user.name} does not have sufficient permissions on classes ${models[i]}`,
+            ));
+        }
+    }
+    return next();
+};
+
 module.exports = {
     checkClassPermissions,
+    checkHgvsUploadPermissions,
     checkSubgraphPermissions,
     checkToken,
     checkUserAccessFor,

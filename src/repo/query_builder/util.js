@@ -4,7 +4,7 @@ const {
     util,
     schema,
 } = require('@bcgsc-pori/graphkb-schema');
-const { MAX_LIMIT, MAX_NEIGHBORS } = require('./constants');
+const { MAX_LIMIT, MAX_NEIGHBORS, SEPARATOR_CHARS } = require('./constants');
 
 /**
  * Format a value as an Integer. Throw an error if it is not an integer or does not
@@ -133,10 +133,40 @@ const displayQuery = ({ query: statement, params = {} }) => {
     return result;
 };
 
+/**
+ * Check if a keyword contains any separatorChars
+ *
+ * @param {string} kw a keyword to test for separatorChars
+ * @param {string} sep a string of all separatorChars to test against
+ * @returns {boolean}
+ */
+const hasSeparatorChars = (kw, sep = SEPARATOR_CHARS) => [...kw].some((chr) => sep.includes(chr));
+
+/**
+ * Split a string into an array of keywords based on separatorChars and whitespaces
+ * Also convert to lowercase
+ *
+ * @param {string} s a string to split into an array of keywords
+ * @param {string} sep a string of all separatorChars
+ * @returns {Array.<string>}
+ */
+const splitIntoKeywords = (s, sep = SEPARATOR_CHARS) => {
+    const pattern = new RegExp(
+        // the regex itself needs some escaping. also adding whitespace support
+        `[\\s${sep.replace(/[-\\\]^[]/g, '\\$&')}]+`,
+    );
+    return s
+        .trim()
+        .split(pattern)
+        .map((word) => word.toLowerCase());
+};
+
 module.exports = {
     castBoolean,
     castRangeInt,
     checkStandardOptions,
     displayQuery,
     getQueryableProps,
+    hasSeparatorChars,
+    splitIntoKeywords,
 };

@@ -115,7 +115,11 @@ describeWithAuth('api read-only routes', () => {
         });
     });
 
-    describe('/query search statements by keyword', () => {
+    // KBDEV-1426. Skipping keyword queryType tests for OrientDB != 3.0
+    (process.env.ORIENTDB_VERSION === '3.0' || process.env.ORIENTDB_VERSION === undefined
+        ? describe
+        : describe.skip
+    )('/query search statements by keyword', () => {
         test('count ignores limit', async () => {
             const response = await request({
                 body: {
@@ -150,10 +154,10 @@ describeWithAuth('api read-only routes', () => {
             expect(response.body.result).toHaveProperty('length', 2);
         });
 
-        test('multiple keywords are co-required', async () => {
+        test('multiple keywords are co-required; without match', async () => {
             const response = await request({
                 body: {
-                    keyword: 'kras,resistance',
+                    keyword: 'kras resistance',
                     queryType: 'keyword',
                     target: 'Statement',
                 },
@@ -164,6 +168,22 @@ describeWithAuth('api read-only routes', () => {
             expect(response.statusCode).toBe(HTTP_STATUS.OK);
             expect(response.body).toHaveProperty('result');
             expect(response.body.result).toHaveProperty('length', 0);
+        });
+
+        test('multiple keywords are co-required; with match', async () => {
+            const response = await request({
+                body: {
+                    keyword: 'kras gain of function',
+                    queryType: 'keyword',
+                    target: 'Statement',
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            });
+            expect(response.statusCode).toBe(HTTP_STATUS.OK);
+            expect(response.body).toHaveProperty('result');
+            expect(response.body.result).toHaveProperty('length', 1);
         });
 
         test('error on no body', async () => {

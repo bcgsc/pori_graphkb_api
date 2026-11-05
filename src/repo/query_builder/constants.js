@@ -68,6 +68,8 @@ const SIMILARITY_EDGES = [
     'GeneralizationOf',
 ];
 
+const SEPARATOR_CHARS = ':;,.|+*/\\=!?[]()';
+
 module.exports = {
     DEFAULT_NEIGHBORS: 3,
     DIRECTIONS,
@@ -77,6 +79,7 @@ module.exports = {
     MIN_WORD_SIZE: 3,
     OPERATORS,
     PARAM_PREFIX,
+    SEPARATOR_CHARS,
     SIMILARITY_EDGES,
     TREE_EDGES,
 };

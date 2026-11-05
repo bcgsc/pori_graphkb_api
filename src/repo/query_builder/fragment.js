@@ -3,9 +3,9 @@ const { RecordID: RID } = require('orientjs');
 
 const { ValidationError, schema, util } = require('@bcgsc-pori/graphkb-schema');
 
-const { OPERATORS, PARAM_PREFIX } = require('./constants');
+const { OPERATORS, PARAM_PREFIX, SEPARATOR_CHARS } = require('./constants');
 const { FixedSubquery } = require('./fixed');
-const { getQueryableProps } = require('./util');
+const { getQueryableProps, hasSeparatorChars } = require('./util');
 
 const NUMBER_ONLY_OPERATORS = [OPERATORS.GT, OPERATORS.GTE, OPERATORS.LT, OPERATORS.LTE];
 
@@ -83,6 +83,26 @@ class Comparison {
                     prop.name
                 }). To check for a substring, use CONTAINSTEXT instead`,
             );
+        }
+
+        if (
+            this.operator === OPERATORS.CONTAINSTEXT
+            && !['CategoryVariant', 'PositionalVariant', 'Variant'].includes(this.name)
+        ) {
+            const v = String(this.value);
+
+            if (v.includes(' ')) {
+                throw new ValidationError(
+                    'CONTAINSTEXT should not be used in conjunction with whitespaces',
+                );
+            }
+            if (hasSeparatorChars(v)) {
+                throw new ValidationError(
+                    `CONTAINSTEXT should not be used in conjunction with index separator characters ( ${
+                        SEPARATOR_CHARS
+                    } )`,
+                );
+            }
         }
 
         if (this.valueIsIterable) {
@@ -470,4 +490,4 @@ class Subquery {
     }
 }
 
-module.exports = { Subquery };
+module.exports = { Comparison, Subquery };
