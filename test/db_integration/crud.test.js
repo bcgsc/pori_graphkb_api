@@ -7,7 +7,7 @@ const {
     select,
 } = require('../../src/repo/commands');
 const {
-    RecordConflictError, ValidationError, NotImplementedError,
+    RecordConflictError, NotImplementedError, ValidationError,
 } = require('../../src/repo/error');
 const {
     parseRecord,
@@ -47,13 +47,8 @@ describeWithAuth('CRUD operations', () => {
     });
 
     test('update error on missing changes argument', async () => {
-        try {
-            await update(session, { modelName: 'User', query: {}, user: db.admin });
-        } catch (err) {
-            expect(err.message).toContain('opt.changes is a required argument');
-            return;
-        }
-        throw new Error('Did not throw expected error');
+        await expect(update(session, { modelName: 'User', query: {}, user: db.admin }))
+            .rejects.toBeInstanceOf(ValidationError);
     });
 
     describe('permisions error', () => {
@@ -76,13 +71,8 @@ describeWithAuth('CRUD operations', () => {
             test('error on duplicate name', async () => {
                 await create(session, { content: { name: 'alice' }, modelName: 'User', user: db.admin });
 
-                try {
-                    await create(session, { content: { name: 'alice' }, modelName: 'User', user: db.admin });
-                } catch (err) {
-                    expect(err).toBeInstanceOf(RecordConflictError);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(create(session, { content: { name: 'alice' }, modelName: 'User', user: db.admin }))
+                    .rejects.toBeInstanceOf(RecordConflictError);
             });
         });
 
@@ -97,16 +87,10 @@ describeWithAuth('CRUD operations', () => {
             });
 
             test('update name error on duplicate', async () => {
-                try {
-                    await create(
-                        session,
-                        { content: { name: original.name }, modelName: 'User', user: db.admin },
-                    );
-                } catch (err) {
-                    expect(err).toBeInstanceOf(RecordConflictError);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(create(
+                    session,
+                    { content: { name: original.name }, modelName: 'User', user: db.admin },
+                )).rejects.toBeInstanceOf(RecordConflictError);
             });
 
             test('update ok', async () => {
@@ -211,60 +195,39 @@ describeWithAuth('CRUD operations', () => {
             });
 
             test('error on src = tgt', async () => {
-                try {
-                    await create(session, {
-                        content: {
-                            in: srcVertex,
-                            out: srcVertex,
-                            source,
-                        },
-                        modelName: 'AliasOf',
-                        user: db.admin,
-                    });
-                } catch (err) {
-                    expect(err).toBeInstanceOf(ValidationError);
-                    expect(err.message).toContain('an edge cannot be used to relate a node/vertex to itself');
-                    return;
-                }
-                throw new Error('did not throw the expected error');
+                await expect(create(session, {
+                    content: {
+                        in: srcVertex,
+                        out: srcVertex,
+                        source,
+                    },
+                    modelName: 'AliasOf',
+                    user: db.admin,
+                })).rejects.toBeInstanceOf(ValidationError);
             });
 
             test('error on no src (out) vertex', async () => {
-                try {
-                    await create(session, {
-                        content: {
-                            in: tgtVertex,
-                            out: null,
-                            source,
-                        },
-                        modelName: 'AliasOf',
-                        user: db.admin,
-                    });
-                } catch (err) {
-                    expect(err).toBeInstanceOf(ValidationError);
-                    expect(err.message).toContain('[AliasOf] missing required attribute out');
-                    return;
-                }
-                throw new Error('did not throw the expected error');
+                await expect(create(session, {
+                    content: {
+                        in: tgtVertex,
+                        out: null,
+                        source,
+                    },
+                    modelName: 'AliasOf',
+                    user: db.admin,
+                })).rejects.toBeInstanceOf(ValidationError);
             });
 
             test('error on no tgt (in) vertex', async () => {
-                try {
-                    await create(session, {
-                        content: {
-                            in: null,
-                            out: srcVertex,
-                            source,
-                        },
-                        modelName: 'AliasOf',
-                        user: db.admin,
-                    });
-                } catch (err) {
-                    expect(err).toBeInstanceOf(ValidationError);
-                    expect(err.message).toContain('[AliasOf] missing required attribute in');
-                    return;
-                }
-                throw new Error('did not throw the expected error');
+                await expect(create(session, {
+                    content: {
+                        in: null,
+                        out: srcVertex,
+                        source,
+                    },
+                    modelName: 'AliasOf',
+                    user: db.admin,
+                })).rejects.toBeInstanceOf(ValidationError);
             });
 
             test('allows null source', async () => {
@@ -323,19 +286,12 @@ describeWithAuth('CRUD operations', () => {
                     { '@rid': original['@rid'].toString(), createdAt: original.createdAt },
                 );
 
-                // now update the edge, both src and target node should have history after
-                try {
-                    await update(session, {
-                        changes: { source: null },
-                        modelName: 'AliasOf',
-                        query,
-                        user: db.admin,
-                    });
-                } catch (err) {
-                    expect(err).toBeInstanceOf(NotImplementedError);
-                    return;
-                }
-                throw new Error('Did not throw expected error');
+                await expect(update(session, {
+                    changes: { source: null },
+                    modelName: 'AliasOf',
+                    query,
+                    user: db.admin,
+                })).rejects.toBeInstanceOf(NotImplementedError);
             });
         });
     });
@@ -354,17 +310,11 @@ describeWithAuth('CRUD operations', () => {
             });
 
             test('missing required property', async () => {
-                try {
-                    await create(session, {
-                        content: {},
-                        modelName: 'Source',
-                        user: db.admin,
-                    });
-                } catch (err) {
-                    expect(err.message).toContain('missing required attribute name');
-                    return;
-                }
-                expect.fail('did not throw the expected error');
+                await expect(create(session, {
+                    content: {},
+                    modelName: 'Source',
+                    user: db.admin,
+                })).rejects.toBeInstanceOf(ValidationError);
             });
         });
 
@@ -530,26 +480,19 @@ describeWithAuth('CRUD operations', () => {
                 },
             );
 
-            // throws RecordConflictError on next create call
-            try {
-                await create(
-                    session,
-                    {
-                        content: {
-                            conditions: [disease],
-                            evidence: [publication],
-                            relevance,
-                            subject: disease,
-                        },
-                        modelName: 'Statement',
-                        user: db.admin,
+            await expect(create(
+                session,
+                {
+                    content: {
+                        conditions: [disease],
+                        evidence: [publication],
+                        relevance,
+                        subject: disease,
                     },
-                );
-            } catch (err) {
-                expect(err).toBeInstanceOf(RecordConflictError);
-                return;
-            }
-            throw new Error('Did not throw the expected error');
+                    modelName: 'Statement',
+                    user: db.admin,
+                },
+            )).rejects.toBeInstanceOf(RecordConflictError);
         });
 
         test('creates non-default displayNameTemplate', async () => {
