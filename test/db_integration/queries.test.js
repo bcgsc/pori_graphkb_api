@@ -7,7 +7,7 @@ const {
     fetchDisplayName,
     getUserByName,
 } = require('../../src/repo/commands');
-const { NoRecordFoundError } = require('../../src/repo/error');
+const { NoRecordFoundError, ValidationError } = require('../../src/repo/error');
 const { parse } = require('../../src/repo/query_builder');
 
 const { createSeededDb, tearDownDb } = require('./util');
