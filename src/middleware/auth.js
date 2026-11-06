@@ -58,11 +58,12 @@ const checkUserAccessFor = (user, modelName, operationPermission) => {
  *
  * @param {GraphKBRequest} req
  * @param {ClassDefinition} req.model the resolved model for this request
+ * @param {string} [operationOverride] optional HTTP verb to evaluate for permission checks
  *
  */
-const checkClassPermissions = async (req, res, next) => {
+const checkClassPermissions = async (req, res, next, operationOverride) => {
     const { model, user } = req;
-    const operation = req.method;
+    const operation = operationOverride || req.method;
 
     const mapping = {
         DELETE: PERMISSIONS.DELETE,
@@ -78,21 +79,6 @@ const checkClassPermissions = async (req, res, next) => {
     }
     return res.status(HTTP_STATUS.FORBIDDEN).json(new PermissionError(
         `The user ${user.name} does not have sufficient permissions to perform a ${operation} operation on class ${model.name}`,
-    ));
-};
-
-/**
- * Check that the user has read permission for the class assigned to the request,
- * regardless of the HTTP method used by the route.
- */
-const checkClassReadPermissions = async (req, res, next) => {
-    const { model, user } = req;
-
-    if (checkUserAccessFor(user, model.name, PERMISSIONS.READ)) {
-        return next();
-    }
-    return res.status(HTTP_STATUS.FORBIDDEN).json(new PermissionError(
-        `The user ${user.name} does not have read permission on class ${model.name}`,
     ));
 };
 
@@ -141,7 +127,6 @@ const checkHgvsUploadPermissions = async (req, res, next) => {
 
 module.exports = {
     checkClassPermissions,
-    checkClassReadPermissions,
     checkHgvsUploadPermissions,
     checkSubgraphPermissions,
     checkToken,

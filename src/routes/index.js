@@ -14,7 +14,7 @@ const {
 const { fetchDisplayName, selectCounts } = require('../repo/commands');
 const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
-const { checkClassReadPermissions } = require('../middleware/auth');
+const { checkClassPermissions } = require('../middleware/auth');
 
 const parseClassListQueryParam = (param) => param.split(',').map((cls) => schemaDefn.get(cls).name);
 
@@ -89,7 +89,7 @@ const addDisplayNameRoute = (app) => {
         } catch (err) {
             return next(err);
         }
-        return checkClassReadPermissions(req, res, next);
+        return checkClassPermissions(req, res, next, 'GET');
     }, async (req, res, next) => {
         const { '@class': modelName, ...content } = { ...req.body };
         const formatOptions = { ignoreMissing: true };

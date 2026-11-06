@@ -6,7 +6,6 @@ const {
 
 const {
     checkClassPermissions,
-    checkClassReadPermissions,
 } = require('../../src/middleware/auth');
 const { generateDefaultGroups } = require('../../src/repo/schema');
 
@@ -562,7 +561,7 @@ describe('checkClassPermissions', () => {
         });
     });
 
-    describe('explicit class read permission', () => {
+    describe('explicit operation override', () => {
         beforeEach(() => {
             req = {
                 method: 'POST',
@@ -570,15 +569,15 @@ describe('checkClassPermissions', () => {
             };
         });
 
-        test('allows a POST route when the user has read permission', () => {
+        test('allows a request when the user has permission for the overridden operation', () => {
             req.user = { groups: [groups.readonly] };
-            checkClassReadPermissions(req, res, next);
+            checkClassPermissions(req, res, next, 'GET');
             expect(next).toHaveBeenCalled();
         });
 
-        test('rejects a POST route when the user lacks read permission', () => {
-            req.user = { groups: [{ permissions: {} }], name: 'no-access' };
-            checkClassReadPermissions(req, res, next);
+        test('rejects a request when the user lacks permission for the overridden operation', () => {
+            req.user = { groups: [groups.readonly] };
+            checkClassPermissions(req, res, next, 'POST');
             expect(next).not.toHaveBeenCalled();
             expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.FORBIDDEN);
         });
