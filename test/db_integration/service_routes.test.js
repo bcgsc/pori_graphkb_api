@@ -100,17 +100,15 @@ describeWithAuth('service routes', () => {
         });
 
         test('fail on missing required body attribute content', async () => {
-            try {
-                await request({
-                    body: {},
-                    method: 'POST',
-                    uri: `${app.url}/parse`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                body: {},
+                method: 'POST',
+                uri: `${app.url}/parse`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('allows missing feature when requireFeatures flag is false', async () => {
@@ -126,31 +124,27 @@ describeWithAuth('service routes', () => {
         });
 
         test('error on missing features when requireFeatures flag is default or true', async () => {
-            try {
-                await request({
-                    body: { content: 'p.G12F' },
-                    method: 'POST',
-                    uri: `${app.url}/parse`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                body: { content: 'p.G12F' },
+                method: 'POST',
+                uri: `${app.url}/parse`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('error on unexpected attribute', async () => {
-            try {
-                await request({
-                    body: { content: 'KRAS:p.G12D', someOtherAttr: 'blargh' },
-                    method: 'POST',
-                    uri: `${app.url}/parse`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                body: { content: 'KRAS:p.G12D', someOtherAttr: 'blargh' },
+                method: 'POST',
+                uri: `${app.url}/parse`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
     });
 
@@ -509,23 +503,21 @@ describeWithAuth('service routes', () => {
             // content retrieved directly from the pubmed API
             util.requestWithRetry.mockResolvedValueOnce({ result: {} });
 
-            try {
-                await request({
-                    headers: {
-                        Authorization: mockToken,
-                    },
-                    method: 'GET',
-                    uri: `${app.url}/extensions/pubmed/NM_30016509`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'GET',
+                uri: `${app.url}/extensions/pubmed/NM_30016509`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
-        test.todo('test clinical trial');
+        test.todo('clinical trial');
 
-        test.todo('test entrez gene');
+        test.todo('entrez gene');
     });
 });

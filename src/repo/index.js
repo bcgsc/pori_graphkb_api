@@ -133,7 +133,7 @@ const connectDB = async ({
         });
         session = await pool.acquire();
     } catch (err) {
-        server.close();
+        await server.close();
         throw err;
     }
 
@@ -161,7 +161,7 @@ const connectDB = async ({
         session = await pool.acquire();
     } catch (err) {
         logger.error(err);
-        server.close();
+        await server.close();
         throw err;
     }
 
@@ -169,10 +169,10 @@ const connectDB = async ({
         await loadSchema(session);
     } catch (err) {
         logger.error(err);
-        session.close();
+        await session.close();
         throw err;
     }
-    session.close();
+    await session.close();
     // create the admin user
     return { pool, server };
 };

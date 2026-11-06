@@ -220,19 +220,19 @@ describeWithAuth('subgraphs traversal', () => {
         test('throwing ValidationError on malformed base (invalid RID)', async () => {
             await expect(
                 baseValidation(session, 'Disease', ['xyz']),
-            ).rejects.toThrow(ValidationError);
+            ).rejects.toBeInstanceOf(ValidationError);
         });
 
         test('throwing ValidationError on malformed base (Valid RID, wrong ontology)', async () => {
             await expect(
                 baseValidation(session, 'Source', base),
-            ).rejects.toThrow(ValidationError);
+            ).rejects.toBeInstanceOf(ValidationError);
         });
 
         test('not throwing error on valid base', async () => {
             await expect(
                 baseValidation(session, 'Disease', base),
-            ).resolves.not.toThrow(ValidationError);
+            ).resolves.toBeUndefined();
         });
     });
 

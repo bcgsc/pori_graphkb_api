@@ -4,11 +4,15 @@ const fs = require('fs');
 const {
     validateKeyCloakToken,
 } = require('../../src/routes/auth');
+const {
+    AuthenticationError,
+} = require('../../src/repo/error');
 
 const PRIVATE_KEY = fs.readFileSync('test/data/test_key');
 const PUBLIC_KEY = fs.readFileSync('test/data/test_key.pem');
 const OTHER_KEY = fs.readFileSync('test/data/extra.pem');
 const TOKEN_TIMEOUT = 10000;
+const EXPECTED_ROLE = 'monkeys';
 
 describe('validateKeyCloakToken', () => {
     test('error on bad token key', () => {
@@ -16,7 +20,7 @@ describe('validateKeyCloakToken', () => {
             preferred_username: 'blargh',
         };
         const token = jwt.sign(kcContent, PRIVATE_KEY, { algorithm: 'RS256', expiresIn: TOKEN_TIMEOUT });
-        expect(() => validateKeyCloakToken(token, OTHER_KEY)).toThrow('invalid signature');
+        expect(() => validateKeyCloakToken(token, OTHER_KEY, EXPECTED_ROLE)).toThrow(AuthenticationError);
     });
 
     test('ok for valid token', () => {

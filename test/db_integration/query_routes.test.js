@@ -9,7 +9,11 @@ const { generateToken } = require('../../src/routes/auth');
 
 const { createSeededDb, tearDownDb } = require('./util');
 
-const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
+const request = async (opt) => requestPromise({
+    json: true,
+    resolveWithFullResponse: true,
+    ...opt,
+});
 
 const REALLY_LONG_TIME = 10000000000;
 const TEST_TIMEOUT_MS = 100000;
@@ -86,18 +90,18 @@ describeWithAuth('api read-only routes', () => {
         });
 
         test('error on bad std option', async () => {
-            try {
-                await request({
+            await expect(
+                request({
                     headers: { Authorization: mockToken },
                     method: 'GET',
                     qs: { history: 'k' },
                     uri: `${app.url}/stats`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+                }),
+            ).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
     });
 
@@ -183,34 +187,30 @@ describeWithAuth('api read-only routes', () => {
         });
 
         test('error on no body', async () => {
-            try {
-                await request({
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('error on bad std option', async () => {
-            try {
-                await request({
-                    body: {
-                        history: 'k', keyword: 'kras', queryType: 'keyword', target: 'Statement',
-                    },
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                body: {
+                    history: 'k', keyword: 'kras', queryType: 'keyword', target: 'Statement',
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
     });
 
@@ -250,56 +250,52 @@ describeWithAuth('api read-only routes', () => {
         });
 
         test('error on no body', async () => {
-            try {
-                await request({
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('error on bad std option', async () => {
-            try {
-                await request({
-                    body: {
-                        history: 'k', keyword: 'kras', queryType: 'displayName', target: 'Variant',
-                    },
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                body: {
+                    history: 'k', keyword: 'kras', queryType: 'displayName', target: 'Variant',
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
     });
 
     describe('/query', () => {
         test('empty target array is bad request', async () => {
-            try {
-                await request({
+            await expect(request({
+                body: {
+                    target: [],
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
                     body: {
-                        target: [],
+                        name: 'ValidationError',
                     },
-                    headers: {
-                        Authorization: mockToken,
-                    },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                expect(response.body).toHaveProperty('name', 'ValidationError');
-                return;
-            }
-            throw new Error('Did not throw expected error');
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('count ignores limit', async () => {
@@ -377,46 +373,45 @@ describeWithAuth('api read-only routes', () => {
         });
 
         test('error on property validation failure', async () => {
-            try {
-                await request({
+            await expect(request({
+                body: {
+                    filters: { biotype: 'blargh' },
+                    target: 'Feature',
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
                     body: {
-                        filters: { biotype: 'blargh' },
-                        target: 'Feature',
+                        name: 'ValidationError',
                     },
-                    headers: {
-                        Authorization: mockToken,
-                    },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                expect(response.body).toHaveProperty('name', 'ValidationError');
-                return;
-            }
-            throw new Error('Did not throw expected error');
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('error on validation failure of standard option: neighbors', async () => {
-            try {
-                await request({
+            await expect(request({
+                body: {
+                    neighbors: -1,
+                    target: 'Feature',
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
                     body: {
-                        neighbors: -1,
-                        target: 'Feature',
+                        name: 'ValidationError',
                     },
-                    headers: {
-                        Authorization: mockToken,
-                    },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                expect(response.body).toHaveProperty('name', 'ValidationError');
-                return;
-            }
-
-            throw new Error('Did not throw expected error');
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('history is excluded by default', async () => {
@@ -478,12 +473,16 @@ describeWithAuth('api read-only routes', () => {
                 expect(statement).toHaveProperty('conditions');
 
                 for (const condition of statement.conditions) {
-                    expect(condition).toHaveProperty('@rid');
-                    expect(condition).toHaveProperty('@class');
+                    expect(condition).toEqual(expect.objectContaining({
+                        '@class': expect.anything(),
+                        '@rid': expect.anything(),
+                    }));
 
-                    if (condition.reference1) {
-                        expect(condition.reference1).toHaveProperty('@rid');
-                        expect(condition.reference1).toHaveProperty('@class');
+                    for (const reference of [condition.reference1, condition.reference2].filter(Boolean)) {
+                        expect(reference).toEqual(expect.objectContaining({
+                            '@class': expect.anything(),
+                            '@rid': expect.anything(),
+                        }));
                     }
                 }
             }
@@ -492,20 +491,20 @@ describeWithAuth('api read-only routes', () => {
 
     describe('/:model/:rid', () => {
         test('error on invalid rid', async () => {
-            try {
-                await request({
-                    headers: {
-                        Authorization: mockToken,
+            await expect(request({
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'GET',
+                uri: `${app.url}/features/kme`,
+            })).rejects.toMatchObject({
+                response: {
+                    body: {
+                        name: 'ValidationError',
                     },
-                    method: 'GET',
-                    uri: `${app.url}/features/kme`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                expect(response.body).toHaveProperty('name', 'ValidationError');
-                return;
-            }
-            throw new Error('Did not throw expected error');
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('ok with rid with hash prefix', async () => {
@@ -537,34 +536,30 @@ describeWithAuth('api read-only routes', () => {
         });
 
         test('error on non-existant rid', async () => {
-            try {
-                await request({
-                    headers: { Authorization: mockToken },
-                    method: 'GET',
-                    uri: `${app.url}/features/4444:2235252`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                headers: { Authorization: mockToken },
+                method: 'GET',
+                uri: `${app.url}/features/4444:2235252`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.NOT_FOUND,
+                },
+            });
         });
 
         test('error on query param', async () => {
             const { records: { kras: { '@rid': rid } } } = db;
 
-            try {
-                await request({
-                    headers: { Authorization: mockToken },
-                    method: 'GET',
-                    qs: { history: true },
-                    uri: `${app.url}/features/${encodeURIComponent(rid)}`,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                return;
-            }
-            throw new Error('Did not throw expected error');
+            await expect(request({
+                headers: { Authorization: mockToken },
+                method: 'GET',
+                qs: { history: true },
+                uri: `${app.url}/features/${encodeURIComponent(rid)}`,
+            })).rejects.toMatchObject({
+                response: {
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
     });
 
@@ -591,94 +586,88 @@ describeWithAuth('api read-only routes', () => {
         });
 
         test('fails for properly formatted non-existant cluster RID', async () => {
-            try {
-                await request({
-                    body: { target: [record1, '1111:1111'] },
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
-                expect(response.body).toHaveProperty('message');
-                expect(response.body.message).toContain('expected 2 records but only found 1');
-                return;
-            }
-            throw new Error('Did not throw the expected error');
+            await expect(request({
+                body: { target: [record1, '1111:1111'] },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
+                    body: {
+                        message: expect.stringContaining('expected 2 records but only found 1'),
+                    },
+                    statusCode: HTTP_STATUS.NOT_FOUND,
+                },
+            });
         });
 
         test('errors on missing non-existant RID on a valid cluster', async () => {
-            try {
-                await request({
-                    body: { target: [record1, '1:1111'] },
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
-                expect(response.body).toHaveProperty('message');
-                expect(response.body.message).toContain('expected 2 records but only found 1');
-                return;
-            }
-            throw new Error('Did not throw the expected error');
+            await expect(request({
+                body: { target: [record1, '1:1111'] },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
+                    body: {
+                        message: expect.stringContaining('expected 2 records but only found 1'),
+                    },
+                    statusCode: HTTP_STATUS.NOT_FOUND,
+                },
+            });
         });
 
         test('error on bad neighbors argument', async () => {
-            try {
-                await request({
+            await expect(request({
+                body: {
+                    neighbors: 'k',
+                    target: [record1],
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
                     body: {
-                        neighbors: 'k',
-                        target: [record1],
+                        message: expect.stringContaining('k is not a valid integer'),
                     },
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                expect(response.body).toHaveProperty('message');
-                expect(response.body.message).toContain('k is not a valid integer');
-                return;
-            }
-            throw new Error('Did not throw the expected error');
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('error on malformed RID', async () => {
-            try {
-                await request({
+            await expect(request({
+                body: {
+                    target: [record1, '7'],
+                },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
                     body: {
-                        target: [record1, '7'],
+                        message: expect.stringContaining('not a valid RID'),
                     },
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-                expect(response.body).toHaveProperty('message');
-                expect(response.body.message).toContain('not a valid RID');
-                return;
-            }
-
-            throw new Error('Did not throw the expected error');
+                    statusCode: HTTP_STATUS.BAD_REQUEST,
+                },
+            });
         });
 
         test('errors on deleted records', async () => {
-            try {
-                await request({
-                    body: { target: [record1, record2, deletedRecord] },
-                    headers: { Authorization: mockToken },
-                    method: 'POST',
-                    uri,
-                });
-            } catch ({ response }) {
-                expect(response.statusCode).toBe(HTTP_STATUS.NOT_FOUND);
-                expect(response.body).toHaveProperty('message');
-                expect(response.body.message).toContain('expected 3 records but only found 2');
-                return;
-            }
-            throw new Error('Did not throw the expected error');
+            await expect(request({
+                body: { target: [record1, record2, deletedRecord] },
+                headers: { Authorization: mockToken },
+                method: 'POST',
+                uri,
+            })).rejects.toMatchObject({
+                response: {
+                    body: {
+                        message: expect.stringContaining('expected 3 records but only found 2'),
+                    },
+                    statusCode: HTTP_STATUS.NOT_FOUND,
+                },
+            });
         });
 
         test('includes deleted records when history true', async () => {
