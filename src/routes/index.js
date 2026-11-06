@@ -8,11 +8,13 @@ const openapi = require('./openapi');
 const resource = require('./resource');
 const { logger } = require('../repo/logging');
 const {
+    castBoolean,
     checkStandardOptions,
 } = require('../repo/query_builder/util');
-const { selectCounts } = require('../repo/commands');
+const { fetchDisplayName, selectCounts } = require('../repo/commands');
 const { addErrorRoute } = require('./error');
 const { addQueryRoute } = require('./query');
+const { checkClassPermissions } = require('../middleware/auth');
 
 const parseClassListQueryParam = (param) => param.split(',').map((cls) => schemaDefn.get(cls).name);
 
@@ -72,6 +74,74 @@ const addParserRoute = (app) => {
     });
 };
 
+const addDisplayNameRoute = (app) => {
+    logger.info('NEW ROUTE [POST] /displayname');
+    app.router.post('/displayname', (req, res, next) => {
+        if (!req.body || typeof req.body !== 'object') {
+            return next(new ValidationError('request body must be a model object'));
+        }
+        if (!req.body['@class']) {
+            return next(new ValidationError('body.@class is a required input'));
+        }
+
+        try {
+            req.model = schemaDefn.get(req.body['@class']); // eslint-disable-line no-param-reassign
+        } catch (err) {
+            return next(err);
+        }
+        return checkClassPermissions(req, res, next, 'GET');
+    }, async (req, res, next) => {
+        const { '@class': modelName, ...content } = { ...req.body };
+        const formatOptions = { ignoreMissing: true };
+
+        for (const name of ['addDefaults', 'dropExtra', 'ignoreExtra', 'ignoreMissing']) {
+            const value = req.query[name];
+
+            if (value !== undefined) {
+                try {
+                    formatOptions[name] = castBoolean(value);
+                } catch (err) {
+                    return next(err);
+                }
+            }
+        }
+
+        let session;
+
+        try {
+            session = await app.pool.acquire();
+        } catch (err) {
+            return next(err);
+        }
+
+        try {
+            const formattedContent = schemaDefn.formatRecord(
+                modelName,
+                content,
+                formatOptions,
+            );
+            logger.debug(JSON.stringify(formattedContent));
+            const result = await fetchDisplayName(
+                session,
+                modelName,
+                formattedContent,
+                req.user,
+            );
+            session.close();
+            return res.status(HTTP_STATUS.OK).json(jc.decycle({ result }));
+        } catch (err) {
+            session.close();
+            return next(err);
+        }
+    });
+};
+
 module.exports = {
-    addErrorRoute, addParserRoute, addQueryRoute, addStatsRoute, openapi, resource,
+    addDisplayNameRoute,
+    addErrorRoute,
+    addParserRoute,
+    addQueryRoute,
+    addStatsRoute,
+    openapi,
+    resource,
 };
