@@ -266,7 +266,6 @@ const fetchDisplayName = async (db, modelName, content, user = null) => {
                 target: links,
             }),
         );
-        checkRecordPermissions(records);
         const recordsById = {};
         const recId = (x) => util.castToRID(x).toString();
 
