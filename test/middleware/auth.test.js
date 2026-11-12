@@ -4,7 +4,9 @@ const {
     schema,
 } = require('@bcgsc-pori/graphkb-schema');
 
-const { checkClassPermissions } = require('../../src/middleware/auth');
+const {
+    checkClassPermissions,
+} = require('../../src/middleware/auth');
 const { generateDefaultGroups } = require('../../src/repo/schema');
 
 describe('checkClassPermissions', () => {
@@ -556,6 +558,28 @@ describe('checkClassPermissions', () => {
                 expect(next).not.toHaveBeenCalled();
                 expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.FORBIDDEN);
             });
+        });
+    });
+
+    describe('explicit operation override', () => {
+        beforeEach(() => {
+            req = {
+                method: 'POST',
+                model: schema.models.Disease,
+            };
+        });
+
+        test('allows a request when the user has permission for the overridden operation', () => {
+            req.user = { groups: [groups.readonly] };
+            checkClassPermissions(req, res, next, 'GET');
+            expect(next).toHaveBeenCalled();
+        });
+
+        test('rejects a request when the user lacks permission for the overridden operation', () => {
+            req.user = { groups: [groups.readonly] };
+            checkClassPermissions(req, res, next, 'POST');
+            expect(next).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(HTTP_STATUS.FORBIDDEN);
         });
     });
 });

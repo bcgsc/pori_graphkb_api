@@ -20,6 +20,7 @@ const {
     POST_PARSE,
     POST_SIGN_LICENSE,
     POST_TOKEN,
+    POST_DISPLAY_NAME,
     QUERY,
     SUBGRAPHS,
     UPLOAD_HGVS,
@@ -111,6 +112,7 @@ const STUB = {
         '/query': { post: QUERY },
         '/subgraphs/{ontology}': { post: SUBGRAPHS },
         '/token': { post: POST_TOKEN },
+        '/displayName': { post: POST_DISPLAY_NAME },
     },
     tags: [{
         description: 'routes dealing with app metadata', name: 'Metadata',

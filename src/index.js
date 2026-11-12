@@ -26,7 +26,7 @@ const { addResourceRoutes } = require('./routes/resource');
 const { addPostToken } = require('./routes/auth');
 const { addEulaRoutes } = require('./routes/eula');
 const {
-    addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute,
+    addDisplayNameRoute, addStatsRoute, addParserRoute, addQueryRoute, addErrorRoute,
 } = require('./routes');
 const config = require('./config');
 const packageLockJson = require('../package-lock.json');
@@ -185,6 +185,7 @@ class AppServer {
 
         addEulaRoutes(this);
 
+        addDisplayNameRoute(this);
         addQueryRoute(this);
         addStatsRoute(this);
 

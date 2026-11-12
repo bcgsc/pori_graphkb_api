@@ -6,11 +6,14 @@
  */
 const requestPromise = require('request-promise');
 const HTTP_STATUS = require('http-status-codes');
+const jwt = require('jsonwebtoken');
+
+const { PERMISSIONS } = require('@bcgsc-pori/graphkb-schema');
 
 const { AppServer } = require('../../src');
 const { generateToken } = require('../../src/routes/auth');
 
-const { createEmptyDb, tearDownDb } = require('./util');
+const { createSeededDb, tearDownDb } = require('./util');
 
 const request = async (opt) => requestPromise({ json: true, resolveWithFullResponse: true, ...opt });
 
@@ -36,10 +39,12 @@ const util = require('../../src/extensions/util');
 describeWithAuth('service routes', () => {
     let db,
         app,
-        mockToken;
+        mockToken,
+        noAccessToken,
+        restrictedLinkedClassToken;
 
     beforeAll(async () => {
-        db = await createEmptyDb();
+        db = await createSeededDb();
         const session = await db.pool.acquire();
         app = new AppServer({ ...db.conf, GKB_DB_CREATE: false, GKB_DISABLE_AUTH: true });
 
@@ -50,6 +55,17 @@ describeWithAuth('service routes', () => {
             app.conf.GKB_KEY,
             REALLY_LONG_TIME,
         );
+        noAccessToken = jwt.sign({
+            exp: REALLY_LONG_TIME,
+            user: { groups: [{ permissions: {} }], name: 'no-access' },
+        }, app.conf.GKB_KEY);
+        restrictedLinkedClassToken = jwt.sign({
+            exp: REALLY_LONG_TIME,
+            user: {
+                groups: [{ permissions: { CategoryVariant: PERMISSIONS.READ } }],
+                name: 'restricted-linked-class',
+            },
+        }, app.conf.GKB_KEY);
         await session.close();
     });
 
@@ -129,6 +145,153 @@ describeWithAuth('service routes', () => {
                     statusCode: HTTP_STATUS.BAD_REQUEST,
                 },
             });
+        });
+    });
+
+    describe('/displayName', () => {
+        test('calculates the display name from model content', async () => {
+            const res = await request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe('KRAS mutation');
+        });
+
+        test('rejects a user without read permission for the model', async () => {
+            await expect(request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: noAccessToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({
+                response: { statusCode: HTTP_STATUS.FORBIDDEN },
+            });
+        });
+
+        test('rejects a user without read permission for linked records', async () => {
+            await expect(request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: restrictedLinkedClassToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({
+                response: { statusCode: HTTP_STATUS.FORBIDDEN },
+            });
+        });
+
+        test('calculates a Disease display name from its source ID', async () => {
+            const res = await request({
+                body: {
+                    '@class': 'Disease',
+                    source: '#37:0',
+                    sourceId: '123456789',
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe('123456789');
+        });
+
+        test('calculates a Statement display name from linked records', async () => {
+            const statement = db.records.sensToDrug;
+            const expectedDisplayName = [
+                '{conditions:variant} is associated with {relevance} to {subject}',
+                'in {conditions:disease} ({evidence}) ({evidenceLevel})',
+            ].join(' ');
+            const res = await request({
+                body: {
+                    '@class': 'Statement',
+                    conditions: statement.conditions,
+                    evidence: statement.evidence,
+                    evidenceLevel: [],
+                    relevance: statement.relevance,
+                    source: db.records.source['@rid'],
+                    sourceId: '4',
+                    subject: statement.subject,
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe(expectedDisplayName);
+        });
+
+        test('rejects a Statement missing a required attribute', async () => {
+            const statement = db.records.sensToDrug;
+
+            await expect(request({
+                body: {
+                    '@class': 'Statement',
+                    conditions: statement.conditions,
+                    relevance: statement.relevance,
+                    source: db.records.source['@rid'],
+                    sourceId: '4',
+                    subject: statement.subject,
+                },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({
+                response: {
+                    body: { message: 'TypeError: content.evidence is not iterable' },
+                    statusCode: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+                },
+            });
+        });
+
+        test('passes formatting options separately from model content', async () => {
+            const res = await request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                qs: { addDefaults: false, dropExtra: true, ignoreExtra: true },
+                uri: `${app.url}/displayName`,
+            });
+            expect(res.statusCode).toBe(HTTP_STATUS.OK);
+            expect(res.body.result).toBe('KRAS mutation');
+        });
+
+        test('rejects non-boolean formatting options', async () => {
+            await expect(request({
+                body: db.records.krasMut,
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                qs: { ignoreMissing: 'invalid' },
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({ response: { statusCode: HTTP_STATUS.BAD_REQUEST } });
+        });
+
+        test('fails when @class is missing', async () => {
+            await expect(request({
+                body: { ...db.records.krasMut, '@class': undefined },
+                headers: {
+                    Authorization: mockToken,
+                },
+                method: 'POST',
+                uri: `${app.url}/displayName`,
+            })).rejects.toMatchObject({ response: { statusCode: HTTP_STATUS.BAD_REQUEST } });
         });
     });
 

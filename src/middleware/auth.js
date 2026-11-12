@@ -58,11 +58,12 @@ const checkUserAccessFor = (user, modelName, operationPermission) => {
  *
  * @param {GraphKBRequest} req
  * @param {ClassDefinition} req.model the resolved model for this request
+ * @param {string} [operationOverride] optional HTTP verb to evaluate for permission checks
  *
  */
-const checkClassPermissions = async (req, res, next) => {
+const checkClassPermissions = async (req, res, next, operationOverride) => {
     const { model, user } = req;
-    const operation = req.method;
+    const operation = operationOverride || req.method;
 
     const mapping = {
         DELETE: PERMISSIONS.DELETE,
